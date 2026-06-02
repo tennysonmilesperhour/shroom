@@ -1,33 +1,24 @@
-import { redirect } from "next/navigation";
-import { createClient } from "@/utils/supabase/server";
 import Nav from "@/components/Nav";
 import SporeMark from "@/components/SporeMark";
 
-export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
+// Auth is benched for now — in-house only until the build is finished.
+// Re-enable by restoring the getUser()/redirect guard + the auth middleware.
+export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
-    <>
-      <header className="top">
+    <div className="shell">
+      <aside className="sidebar">
         <div className="brand">
-          <SporeMark />
+          <SporeMark size={26} />
           <span className="logo">Quantum Blue</span>
         </div>
-        <div className="sub">Mycology OS</div>
-        <div className="spacer" />
-        <div className="who">{user.email}</div>
-        <form action="/auth/signout" method="post">
-          <button className="link" type="submit">
-            sign out
-          </button>
-        </form>
-      </header>
-      <Nav />
-      <main>{children}</main>
-    </>
+        <Nav />
+        <div className="foot">
+          <span className="who">In-house build</span>
+        </div>
+      </aside>
+      <div className="content">
+        <main>{children}</main>
+      </div>
+    </div>
   );
 }

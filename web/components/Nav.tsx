@@ -3,13 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const TABS = [
+const TABS: [string, string][] = [
   ["/", "Dashboard"],
   ["/strains", "Strains"],
   ["/batches", "Batches"],
   ["/harvests", "Harvests"],
   ["/environment", "Environment"],
-  ["/contamination", "Contam"],
+  ["/contamination", "Contamination"],
   ["/business", "Business"],
   ["/commerce", "Commerce"],
   ["/traceability", "Traceability"],
@@ -20,7 +20,7 @@ const TABS = [
 export default function Nav() {
   const path = usePathname();
   return (
-    <nav className="tabs">
+    <nav className="side">
       {TABS.map(([href, label]) => {
         const active = href === "/" ? path === "/" : path.startsWith(href);
         return (
