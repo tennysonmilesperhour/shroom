@@ -50,10 +50,11 @@ multi-channel sales (wholesale / distributor / CSA / farmers-market / restaurant
 
 ---
 
-## 2. Five ideas for innovation
+## 2. Innovation roadmap (10 ideas)
 
 These go beyond what the incumbents ship today. Items marked ✅ are **already
-implemented** in this codebase; the rest are designed-in extension points.
+implemented** (FastAPI reference and/or Supabase); the rest are designed-in
+extension points. Ideas 6–10 are grounded in the Master Cultivation sheet data.
 
 1. **Computer-vision contamination early-warning.**
    Phone-photo a block/tub; a vision model flags trichoderma / cobweb / wet-spot
@@ -77,9 +78,35 @@ implemented** in this codebase; the rest are designed-in extension points.
    re-cloned from an earlier, more vigorous node.
 
 5. ✅ **One-click FSMA-204 recall + consumer provenance.**
-   `/analytics/recall/{lot_code}` forward-traces a lot → harvests → orders →
-   customers in milliseconds (the 24-hour FDA requirement, met instantly). The
-   same graph powers a QR "scan-to-see-provenance" experience for buyers.
+   `/analytics/recall/{lot_code}` (and the Supabase `recall_trace(lot)` RPC)
+   forward-traces a lot → harvests → orders → customers in milliseconds (the
+   24-hour FDA requirement, met instantly). The same graph powers a QR
+   "scan-to-see-provenance" experience for buyers.
+
+6. ✅ **Live multi-tier inventory valuation.**
+   `v_inventory_valuation` values every dried jar across wholesale / distributor
+   / retail tiers in real time off `price_tiers` — replacing the sheet's manual
+   valuation columns (J-01's 31.2 g → $94–156 / $218–250 / $374–468).
+
+7. **Protocol-aware task automation.**
+   Auto-generate the SOP checklists (Daily Environmental Check, Harvest Day,
+   Dunk & Reset) as recurring, batch-scoped tasks straight from the `protocols`
+   table — so the operator's hard-won routines run themselves.
+
+8. **Lessons-grounded AI advisor (RAG).**
+   Ground the advisor in the operation's own `reference_guides` + `issue_log`
+   so it answers from lived history ("last time SG F2 stalled it was CO₂ — extend
+   the tent opening and bump FAE") instead of generic mycology.
+
+9. **Demand-driven production planner.**
+   Read the sales-lead CRM (`customers.volume_est` + requested products, e.g.
+   Greg the chef's LM/Reishi/Cordyceps ask) and back-solve how many bags/tubs of
+   which strains to inoculate now to meet committed demand on time.
+
+10. **Strain portfolio optimizer.**
+    Rank the 19-strain library by realized biological-efficiency × dry-ratio ×
+    ease × potency-tier price to turn the sheet's gut-feel "Grow Again? Y/N" into
+    a data-driven keep/retire decision.
 
 ---
 
