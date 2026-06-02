@@ -34,14 +34,20 @@ export default async function Dashboard() {
 
   return (
     <>
-      <h2 className="section">Operation Dashboard</h2>
-      <p className="lead">Live, persisted single source of truth.</p>
+      <div>
+        <div className="eyebrow">Operation</div>
+        <h2 className="section">Today&rsquo;s <em>state of the mycelium</em></h2>
+        <p className="lead">A live, persisted single source of truth — from spawn point to shelf.</p>
+      </div>
 
-      <div className="grid kpis">
-        <Kpi label="Active batches" value={active} />
+      <div className="kpi-row">
+        <Kpi label="Active batches" value={active} feature />
         <Kpi label="Blocks in production" value={blocks} />
         <Kpi label="Harvested (fresh)" value={freshG} unit="g" />
         <Kpi label="Overall dry ratio" value={overallRatio} unit="%" />
+      </div>
+
+      <div className="grid kpis" style={{ marginTop: "var(--space-3)" }}>
         <Kpi label="Dried on-hand (distrib.)" value={`${money(invLow)}–${money(invHigh)}`} />
         <Kpi label="Open tasks" value={openTasks} />
       </div>

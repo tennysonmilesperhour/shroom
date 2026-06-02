@@ -1,20 +1,39 @@
-// Quantum Blue ambient background: a faint mycelial network of hyphae and nodes
-// with bright sparks travelling the threads — the electric link between the
-// psilocybin molecule and consciousness. Purely decorative, fixed behind content.
+// Quantum Blue ambient background.
+//
+// Three layered fields, slow and breathing:
+//   1. faint hex/molecular lattice — the "consciousness link" hint
+//   2. mycelial hyphae — long organic arcs forming the network
+//   3. bioluminescent particles — soft drifting nodes + travelling sparks
+//
+// Mask fades from radial center so the network never crowds content edges.
+// Compositor-friendly (opacity / transform / offset-distance only).
+// Respects prefers-reduced-motion via CSS.
 
 const HYPHAE = [
-  "M -50 180 C 220 120, 360 300, 600 240 S 1000 120, 1240 260 S 1500 220, 1600 300",
-  "M -40 520 C 240 460, 420 640, 700 560 S 1080 460, 1320 600 S 1520 560, 1600 620",
-  "M -60 760 C 200 700, 480 860, 760 780 S 1120 700, 1360 820 S 1540 800, 1600 840",
-  "M 120 -40 C 200 220, 80 420, 260 640 S 360 880, 300 980",
-  "M 720 -40 C 760 240, 640 440, 820 660 S 900 900, 840 1000",
-  "M 1180 -40 C 1240 220, 1120 460, 1300 660 S 1360 900, 1300 1000",
+  "M -80 220 C 180 140, 360 320, 620 240 S 1020 120, 1280 270 S 1520 230, 1640 320",
+  "M -60 540 C 220 470, 440 650, 720 560 S 1100 470, 1340 600 S 1540 560, 1640 620",
+  "M -80 780 C 200 720, 480 880, 760 800 S 1140 720, 1380 840 S 1560 820, 1640 860",
+  "M 140 -50 C 220 230, 100 430, 280 650 S 380 880, 320 1000",
+  "M 740 -50 C 780 250, 660 450, 840 670 S 920 900, 860 1010",
+  "M 1200 -50 C 1260 230, 1140 470, 1320 670 S 1380 900, 1320 1010",
+  // Two extra delicate threads
+  "M -40 360 C 220 320, 500 420, 780 380 S 1180 320, 1480 400",
+  "M -40 660 C 260 620, 540 720, 820 680 S 1220 620, 1480 700",
 ];
 
-const NODES = [
-  [600, 240], [700, 560], [760, 780], [260, 640], [820, 660], [1300, 660],
-  [220, 120], [1080, 460], [1320, 600], [360, 300], [1000, 120], [480, 860],
+const NODES: ReadonlyArray<readonly [number, number, number]> = [
+  // [x, y, sizeScale]
+  [620, 240, 1], [720, 560, 1.1], [760, 800, 0.9], [280, 650, 1.2], [840, 670, 1],
+  [1320, 670, 0.9], [220, 140, 0.8], [1100, 470, 1.1], [1340, 600, 1], [360, 320, 0.85],
+  [1020, 120, 1.15], [480, 880, 0.9], [780, 380, 0.7], [540, 720, 0.7], [1180, 320, 0.7],
 ];
+
+// Tiny hex/voronoi-ish points for the lattice — faint, never busy
+const LATTICE_PATH =
+  "M 100 100 L 180 60 L 260 100 L 260 180 L 180 220 L 100 180 Z " +
+  "M 260 100 L 340 60 L 420 100 L 420 180 L 340 220 L 260 180 " +
+  "M 420 100 L 500 60 L 580 100 L 580 180 L 500 220 L 420 180 " +
+  "M 580 100 L 660 60 L 740 100 L 740 180 L 660 220 L 580 180 ";
 
 export default function QuantumBackground() {
   return (
@@ -22,31 +41,63 @@ export default function QuantumBackground() {
       <svg viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">
         <defs>
           <linearGradient id="mycoGrad" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#5b8cff" />
-            <stop offset="50%" stopColor="#38e1ff" />
-            <stop offset="100%" stopColor="#9b7bff" />
+            <stop offset="0%" stopColor="oklch(66% 0.18 268)" />
+            <stop offset="45%" stopColor="oklch(82% 0.18 195)" />
+            <stop offset="100%" stopColor="oklch(60% 0.21 295)" />
           </linearGradient>
-          <radialGradient id="floor" cx="50%" cy="100%" r="80%">
-            <stop offset="0%" stopColor="#0a2a24" stopOpacity="0.5" />
-            <stop offset="100%" stopColor="#04100e" stopOpacity="0" />
+          <radialGradient id="floor" cx="50%" cy="100%" r="70%">
+            <stop offset="0%" stopColor="oklch(22% 0.06 230)" stopOpacity="0.55" />
+            <stop offset="100%" stopColor="oklch(11% 0.03 245)" stopOpacity="0" />
           </radialGradient>
+          <radialGradient id="canopy" cx="20%" cy="0%" r="70%">
+            <stop offset="0%" stopColor="oklch(60% 0.21 295)" stopOpacity="0.18" />
+            <stop offset="100%" stopColor="oklch(60% 0.21 295)" stopOpacity="0" />
+          </radialGradient>
+          <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="0.6" />
+          </filter>
         </defs>
 
-        <rect x="0" y="500" width="1440" height="400" fill="url(#floor)" />
+        {/* Atmospheric layers */}
+        <rect x="0" y="0" width="1440" height="900" fill="url(#canopy)" />
+        <rect x="0" y="520" width="1440" height="380" fill="url(#floor)" />
 
-        {HYPHAE.map((d, i) => (
-          <path key={i} d={d} className={`hypha ${i % 3 === 1 ? "b" : i % 3 === 2 ? "c" : ""}`} />
+        {/* Faint molecular lattice (consciousness/quantum hint) */}
+        <g className="lattice" opacity="0.5">
+          <path d={LATTICE_PATH} />
+          <g transform="translate(680 460)">
+            <path d={LATTICE_PATH} />
+          </g>
+        </g>
+
+        {/* Mycelial hyphae */}
+        <g filter="url(#soft)">
+          {HYPHAE.map((d, i) => (
+            <path
+              key={i}
+              d={d}
+              className={`hypha ${i % 3 === 1 ? "b" : i % 3 === 2 ? "c" : ""}`}
+            />
+          ))}
+        </g>
+
+        {/* Network nodes */}
+        {NODES.map(([cx, cy, s], i) => (
+          <circle
+            key={i}
+            cx={cx}
+            cy={cy}
+            r={2.4 * s}
+            className="node"
+            style={{ animationDelay: `${(i % 7) * 0.85}s` }}
+          />
         ))}
 
-        {NODES.map(([cx, cy], i) => (
-          <circle key={i} cx={cx} cy={cy} r={2.5} className="node" style={{ animationDelay: `${(i % 6) * 0.7}s` }} />
-        ))}
-
-        {/* Travelling sparks bound to the first three hyphae. */}
-        {[0, 1, 2].map((i) => (
+        {/* Travelling bioluminescent sparks along select hyphae */}
+        {[0, 1, 2, 4].map((i) => (
           <circle
             key={`s${i}`}
-            r={2.6}
+            r={i === 4 ? 2.0 : 2.6}
             className={`spark trav ${i === 1 ? "b" : i === 2 ? "c" : ""}`}
             style={{ offsetPath: `path('${HYPHAE[i]}')` } as React.CSSProperties}
           />

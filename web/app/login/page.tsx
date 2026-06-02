@@ -31,26 +31,43 @@ export default function LoginPage() {
 
   return (
     <div className="login-wrap">
-      <form className="card login-card" onSubmit={submit}>
+      <form className="login-card" onSubmit={submit}>
         <div className="brand">
-          <SporeMark size={30} />
-          <span className="logo" style={{ fontSize: 24 }}>Quantum Blue</span>
+          <SporeMark size={36} />
+          <span className="logo">Quantum Blue</span>
         </div>
-        <p className="lead" style={{ textAlign: "center" }}>Mycology OS</p>
+        <p className="lead">
+          A mycology operating system —<br />
+          <span className="muted">grow, sell, comply.</span>
+        </p>
         <div className="field">
-          <input type="email" placeholder="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          <input
+            type="email"
+            placeholder="you@quantumblue.farm"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            autoComplete="email"
+          />
         </div>
         <div className="field">
-          <input type="password" placeholder="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+          <input
+            type="password"
+            placeholder="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            autoComplete={mode === "in" ? "current-password" : "new-password"}
+          />
         </div>
-        <button className="primary" style={{ width: "100%" }} disabled={busy}>
+        <button className="primary" style={{ width: "100%", marginTop: 6 }} disabled={busy}>
           {busy ? "…" : mode === "in" ? "Sign in" : "Create account"}
         </button>
         {err && <div className="err">{err}</div>}
-        {msg && <div className="lead" style={{ marginTop: 8 }}>{msg}</div>}
-        <div style={{ textAlign: "center", marginTop: 12 }}>
+        {msg && <p className="lead" style={{ marginTop: 12, fontSize: 12, textAlign: "left" }}>{msg}</p>}
+        <div style={{ textAlign: "center", marginTop: 16 }}>
           <button type="button" className="toggle" onClick={() => setMode(mode === "in" ? "up" : "in")}>
-            {mode === "in" ? "Need an account? Sign up" : "Have an account? Sign in"}
+            {mode === "in" ? "Need an account?  Sign up →" : "Have an account?  Sign in →"}
           </button>
         </div>
       </form>
