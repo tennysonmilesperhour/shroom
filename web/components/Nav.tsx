@@ -11,6 +11,7 @@ const TABS = [
   ["/environment", "Environment"],
   ["/contamination", "Contam"],
   ["/business", "Business"],
+  ["/commerce", "Commerce"],
   ["/traceability", "Traceability"],
   ["/reference", "Reference"],
   ["/advisor", "Advisor"],
