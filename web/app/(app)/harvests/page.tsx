@@ -1,14 +1,14 @@
 import { createClient } from "@/utils/supabase/server";
-import { Kpi } from "@/components/ui";
+import { Kpi, Card } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
 export default async function HarvestsPage() {
   const supabase = await createClient();
-  const { data: rows } = await supabase
-    .from("v_dry_ratio")
-    .select("*")
-    .order("harvested_on", { ascending: false });
+  const [{ data: rows }, { data: jars }] = await Promise.all([
+    supabase.from("v_dry_ratio").select("*").order("harvested_on", { ascending: false }),
+    supabase.from("dry_inventory").select("*, strains(name)").order("jar_id"),
+  ]);
 
   const data = rows ?? [];
   const fresh = data.reduce((s, r) => s + (r.fresh_g ?? 0), 0);
@@ -46,6 +46,29 @@ export default async function HarvestsPage() {
           </tbody>
         </table>
       </div>
+
+      <Card title="Dried inventory (jars)">
+        {(jars ?? []).length === 0 ? (
+          <div className="muted">No dried jars recorded.</div>
+        ) : (
+          <table>
+            <thead><tr><th>Jar</th><th>Strain</th><th className="right">Flush</th><th className="right">Dry (g)</th><th className="right">Used</th><th className="right">Remaining</th><th>Location</th></tr></thead>
+            <tbody>
+              {(jars ?? []).map((j: any) => (
+                <tr key={j.id}>
+                  <td><b>{j.jar_id}</b></td>
+                  <td>{j.strains?.name ?? "—"}</td>
+                  <td className="right">F{j.flush_number}</td>
+                  <td className="right">{j.dry_weight_g}</td>
+                  <td className="right">{j.used_g}</td>
+                  <td className="right">{j.remaining_g}</td>
+                  <td className="muted">{j.location}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </Card>
     </>
   );
 }

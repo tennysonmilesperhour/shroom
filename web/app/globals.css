@@ -62,7 +62,9 @@ h1, h2, h3, .display { font-family: 'Space Grotesk', 'Inter', sans-serif; letter
   background: linear-gradient(92deg, var(--cyan), var(--indigo) 55%, var(--violet));
   -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
 }
-.sidebar nav.side { display: flex; flex-direction: column; gap: 2px; }
+.sidebar nav.side { display: flex; flex-direction: column; gap: 2px; overflow-y: auto; }
+.sidebar nav.side .grp-block { display: flex; flex-direction: column; gap: 2px; }
+.sidebar nav.side .grp { font-size: 10px; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); font-weight: 700; padding: 14px 12px 5px; opacity: .65; }
 .sidebar nav.side a {
   display: flex; align-items: center; gap: 10px; color: var(--muted);
   font-size: 13.5px; font-weight: 500; padding: 9px 12px; border-radius: 9px; transition: all .14s;
