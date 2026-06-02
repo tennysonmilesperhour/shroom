@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shroom OS — Quantum Blue Mycology</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header>
+    <div class="logo">Shroom<span>OS</span></div>
+    <div class="sub">Quantum Blue Mycology · grow + business backend</div>
+    <div class="spacer"></div>
+    <div class="health" id="health">connecting…</div>
+  </header>
+
+  <nav id="nav">
+    <button data-view="dashboard" class="active">Dashboard</button>
+    <button data-view="strains">Strains</button>
+    <button data-view="batches">Batches</button>
+    <button data-view="harvests">Harvests</button>
+    <button data-view="environment">Environment</button>
+    <button data-view="business">Business</button>
+    <button data-view="recall">Traceability</button>
+    <button data-view="advisor">Advisor</button>
+  </nav>
+
+  <main>
+    <section id="dashboard" class="view active"></section>
+    <section id="strains" class="view"></section>
+    <section id="batches" class="view"></section>
+    <section id="harvests" class="view"></section>
+    <section id="environment" class="view"></section>
+    <section id="business" class="view"></section>
+    <section id="recall" class="view"></section>
+    <section id="advisor" class="view"></section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

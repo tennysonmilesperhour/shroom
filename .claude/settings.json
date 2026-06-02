@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -lc 'cd \"$CLAUDE_PROJECT_DIR\" && [ -d .venv ] || (python3 -m venv .venv && .venv/bin/pip install -q --upgrade pip && .venv/bin/pip install -q -r requirements.txt); [ -f shroom.db ] || .venv/bin/python -m backend.app.seed >/dev/null 2>&1; echo \"Shroom OS env ready (./run.sh to start, .venv/bin/python -m pytest tests/ -q to test)\"'"
+          }
+        ]
+      }
+    ]
+  }
+}
