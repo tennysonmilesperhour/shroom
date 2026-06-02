@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import Nav from "@/components/Nav";
+import SporeMark from "@/components/SporeMark";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -12,10 +13,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <>
       <header className="top">
-        <div className="logo">
-          Shroom<span>OS</span>
+        <div className="brand">
+          <SporeMark />
+          <span className="logo">Quantum Blue</span>
         </div>
-        <div className="sub">Quantum Blue Mycology</div>
+        <div className="sub">Mycology OS</div>
         <div className="spacer" />
         <div className="who">{user.email}</div>
         <form action="/auth/signout" method="post">

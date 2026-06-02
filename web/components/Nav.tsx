@@ -9,6 +9,7 @@ const TABS = [
   ["/batches", "Batches"],
   ["/harvests", "Harvests"],
   ["/environment", "Environment"],
+  ["/contamination", "Contam"],
   ["/business", "Business"],
   ["/traceability", "Traceability"],
   ["/reference", "Reference"],

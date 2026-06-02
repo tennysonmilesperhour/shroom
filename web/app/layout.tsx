@@ -1,15 +1,19 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import QuantumBackground from "@/components/QuantumBackground";
 
 export const metadata: Metadata = {
-  title: "Shroom OS — Quantum Blue Mycology",
-  description: "Mushroom grow operation + business backend",
+  title: "Quantum Blue — Mycology OS",
+  description: "Quantum Blue: grow operation + business backend",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <QuantumBackground />
+        {children}
+      </body>
     </html>
   );
 }

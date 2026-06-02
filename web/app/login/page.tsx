@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
+import SporeMark from "@/components/SporeMark";
 
 export default function LoginPage() {
   const supabase = createClient();
@@ -31,8 +32,11 @@ export default function LoginPage() {
   return (
     <div className="login-wrap">
       <form className="card login-card" onSubmit={submit}>
-        <div className="logo">Shroom<span>OS</span></div>
-        <p className="lead" style={{ textAlign: "center" }}>Quantum Blue Mycology</p>
+        <div className="brand">
+          <SporeMark size={30} />
+          <span className="logo" style={{ fontSize: 24 }}>Quantum Blue</span>
+        </div>
+        <p className="lead" style={{ textAlign: "center" }}>Mycology OS</p>
         <div className="field">
           <input type="email" placeholder="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
         </div>

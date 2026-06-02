@@ -10,7 +10,7 @@ export default async function StrainsPage() {
   const supabase = await createClient();
   const { data: strains } = await supabase
     .from("strains")
-    .select("*")
+    .select("*, parent:strains!lineage_parent_id(name, generation)")
     .order("library_status")
     .order("name");
 
@@ -38,6 +38,7 @@ export default async function StrainsPage() {
             <div>Syringes on hand: <b>{s.syringes_on_hand}</b></div>
             <div>Target: <b>{cToF(s.target_temp_c)}°F / {s.target_humidity}% / {s.target_co2_ppm}ppm</b></div>
             <div>Typical BE: <b>{s.typical_be}%</b> over <b>{s.typical_flushes}</b> flushes</div>
+            <div>Lineage: <b>{s.parent ? `cloned from ${s.parent.name} (F${s.parent.generation})` : "founder"}</b></div>
             <div style={{ gridColumn: "1/3" }}>Notes: <b>{s.notes || "—"}</b></div>
           </div>
         </details>

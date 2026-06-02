@@ -6,12 +6,21 @@ export const dynamic = "force-dynamic";
 
 export default async function BusinessPage() {
   const supabase = await createClient();
-  const [orders, customers, valuation, scoreboard] = await Promise.all([
+  const [orders, customers, valuation, scoreboard, supply] = await Promise.all([
     supabase.from("orders").select("*, customers(name), order_lines(quantity,unit_price)").order("order_date", { ascending: false }),
     supabase.from("customers").select("*").order("priority", { ascending: false, nullsFirst: false }),
     supabase.from("v_inventory_valuation").select("*"),
     supabase.from("v_strain_scoreboard").select("*").gt("fresh_kg", 0).order("biological_efficiency_pct", { ascending: false, nullsFirst: false }),
+    supabase.from("batches").select("stage, strains(mushroom_type)").in("stage", ["colonization", "spawn_to_bulk", "fruiting", "harvesting"]),
   ]);
+
+  // Innovation #9: demand-driven planner — committed demand vs. current supply.
+  const demand = (customers.data ?? []).filter((c) => c.status === "warm" || (c.volume_est && c.volume_est !== ""));
+  const supplyByType: Record<string, number> = {};
+  (supply.data ?? []).forEach((b: any) => {
+    const t = b.strains?.mushroom_type ?? "?";
+    supplyByType[t] = (supplyByType[t] ?? 0) + 1;
+  });
 
   const orderTotal = (o: any) => (o.order_lines ?? []).reduce((s: number, l: any) => s + l.quantity * l.unit_price, 0);
 
@@ -73,6 +82,29 @@ export default async function BusinessPage() {
           </table>
         </Card>
       </div>
+
+      <Card title="Production planner (#9) — committed demand vs. supply">
+        <div className="grid two">
+          <div>
+            <div className="muted" style={{ marginBottom: 6 }}>Active production (batches in flight)</div>
+            {Object.entries(supplyByType).map(([t, n]) => (
+              <div key={t} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}>
+                <Badge tone={t === "psychedelic" ? "blue" : t === "functional" ? "green" : "amber"}>{t}</Badge>
+                <b>{n} batches</b>
+              </div>
+            ))}
+          </div>
+          <div>
+            <div className="muted" style={{ marginBottom: 6 }}>Demand signals (warm / sized leads)</div>
+            {demand.map((c) => (
+              <div key={c.id} style={{ padding: "4px 0" }}>
+                <b>{c.name}</b> <span className="muted">{c.volume_est || c.role}</span>
+                {c.notes && <div className="muted" style={{ fontSize: 11 }}>{c.notes.slice(0, 90)}</div>}
+              </div>
+            ))}
+          </div>
+        </div>
+      </Card>
 
       <Card title="Sales-lead CRM">
         <table>
