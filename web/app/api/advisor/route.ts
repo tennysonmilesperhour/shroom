@@ -67,9 +67,25 @@ export async function POST(request: Request) {
       }),
     });
     const data = await resp.json();
+    if (!resp.ok) {
+      const msg = data?.error?.message || `Anthropic API ${resp.status}`;
+      return NextResponse.json({ answered: false, reason: `Anthropic error: ${msg}`, context });
+    }
     const text = (data.content ?? []).map((b: any) => b.text ?? "").join("");
+    if (!text.trim()) {
+      return NextResponse.json({ answered: false, reason: "Empty response from Anthropic.", context });
+    }
     return NextResponse.json({ answered: true, answer: text });
   } catch (e: any) {
     return NextResponse.json({ answered: false, reason: `Advisor call failed: ${e.message}`, context });
   }
+}
+
+// Lightweight status check so the UI can show whether the key is configured
+// in THIS deployment's environment (Preview vs Production differ on Vercel).
+export async function GET() {
+  return NextResponse.json({
+    configured: Boolean(process.env.ANTHROPIC_API_KEY),
+    model: MODEL,
+  });
 }
