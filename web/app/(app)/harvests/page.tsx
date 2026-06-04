@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createServiceClient } from "@/utils/supabase/service";
 import { Kpi, Card } from "@/components/ui";
 import { must } from "@/lib/query";
@@ -7,9 +8,11 @@ export const dynamic = "force-dynamic";
 
 interface HarvestRow {
   harvest_id: number;
+  batch_id: number;
   lot_code: string | null;
   harvested_on: string;
   flush_number: number;
+  strain_id: number | null;
   strain: string | null;
   fresh_g: number | null;
   dry_g: number | null;
@@ -87,10 +90,29 @@ export default async function HarvestsPage() {
             </thead>
             <tbody>
               {rows.map((r) => (
-                <tr key={r.harvest_id} className={r.below_floor ? "flag-low" : ""}>
+                <tr
+                  key={r.harvest_id}
+                  className={`row-link ${r.below_floor ? "flag-low" : ""}`}
+                >
                   <td>{r.harvested_on}</td>
-                  <td>{r.strain ?? "?"}</td>
-                  <td>{r.lot_code ?? "-"}</td>
+                  <td>
+                    {r.strain_id ? (
+                      <Link href={`/strains/${r.strain_id}`} className="row-anchor">
+                        {r.strain ?? "?"}
+                      </Link>
+                    ) : (
+                      r.strain ?? "?"
+                    )}
+                  </td>
+                  <td>
+                    {r.batch_id ? (
+                      <Link href={`/batches/${r.batch_id}`} className="row-anchor">
+                        {r.lot_code ?? "-"}
+                      </Link>
+                    ) : (
+                      r.lot_code ?? "-"
+                    )}
+                  </td>
                   <td className="right">F{r.flush_number}</td>
                   <td className="right">{r.fresh_g}</td>
                   <td className="right">{r.dry_g}</td>

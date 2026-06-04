@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createServiceClient } from "@/utils/supabase/service";
 import { Badge, Card, stageTone } from "@/components/ui";
 import GenerateTasks from "@/components/GenerateTasks";
@@ -82,7 +83,11 @@ export default async function BatchesPage() {
                   <p className="muted" style={{ fontSize: 12, margin: 0 }}>-</p>
                 ) : (
                   items.map((b) => (
-                    <div className="chip" key={b.id}>
+                    <Link
+                      key={b.id}
+                      href={`/batches/${b.id}`}
+                      className="chip chip-link"
+                    >
                       <b>{b.container_id || b.lot_code}</b>{" "}
                       {b.contamination_flag && (
                         <Badge tone="red">
@@ -92,7 +97,7 @@ export default async function BatchesPage() {
                       <div className="meta">
                         {b.strains?.name ?? "?"} · {b.lot_code}
                       </div>
-                    </div>
+                    </Link>
                   ))
                 )}
               </div>
@@ -134,8 +139,12 @@ export default async function BatchesPage() {
             </thead>
             <tbody>
               {batches.map((b) => (
-                <tr key={b.id}>
-                  <td><b>{b.lot_code}</b></td>
+                <tr key={b.id} className="row-link">
+                  <td>
+                    <Link href={`/batches/${b.id}`} className="row-anchor">
+                      <b>{b.lot_code}</b>
+                    </Link>
+                  </td>
                   <td>
                     {b.container_id || "-"}
                     <span className="muted"> {b.container_type}</span>

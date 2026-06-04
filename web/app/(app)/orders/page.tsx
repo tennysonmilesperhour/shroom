@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createServiceClient } from "@/utils/supabase/service";
 import { Badge, Card, Kpi } from "@/components/ui";
 import { money } from "@/lib/format";
@@ -16,7 +17,7 @@ interface OrderRow {
   order_date: string;
   financial_status: string;
   fulfillment_status: string;
-  customers: { name: string } | null;
+  customers: { id: number; name: string } | null;
   order_lines: OrderLine[] | null;
 }
 
@@ -29,8 +30,9 @@ export default async function OrdersPage() {
   const orders = await must<OrderRow[]>(
     supabase
       .from("orders")
-      .select("*, customers(name), order_lines(quantity,unit_price)")
-      .order("order_date", { ascending: false }),
+      .select("*, customers(id,name), order_lines(quantity,unit_price)")
+      .order("order_date", { ascending: false })
+      .returns<OrderRow[]>(),
     "load orders",
   );
 
@@ -80,7 +82,15 @@ export default async function OrdersPage() {
               {orders.map((o) => (
                 <tr key={o.id}>
                   <td><b>{o.order_number}</b></td>
-                  <td>{o.customers?.name ?? "-"}</td>
+                  <td>
+                    {o.customers ? (
+                      <Link href={`/customers/${o.customers.id}`} className="row-anchor">
+                        {o.customers.name}
+                      </Link>
+                    ) : (
+                      "-"
+                    )}
+                  </td>
                   <td>
                     <Badge tone="muted">{o.channel}</Badge>
                   </td>

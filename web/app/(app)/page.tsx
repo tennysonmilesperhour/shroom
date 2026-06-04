@@ -1,7 +1,8 @@
+import Link from "next/link";
 import { createServiceClient } from "@/utils/supabase/service";
 import { Kpi, Card, Badge } from "@/components/ui";
 import { kgToG, money, DRY_FLOOR } from "@/lib/format";
-import { must } from "@/lib/query";
+import { must, maybe } from "@/lib/query";
 
 export const dynamic = "force-dynamic";
 
@@ -38,13 +39,26 @@ interface ValuationRow {
   distributor_low: number | null;
   distributor_high: number | null;
 }
+interface SpotlightHarvest {
+  harvest_id: number;
+  batch_id: number;
+  lot_code: string | null;
+  harvested_on: string;
+  flush_number: number;
+  strain_id: number | null;
+  strain: string | null;
+  fresh_g: number | null;
+  dry_g: number | null;
+  dry_ratio_pct: number | null;
+  below_floor: boolean | null;
+}
 
 const ACTIVE_STAGES = new Set(["colonization", "spawn_to_bulk", "fruiting", "harvesting"]);
 const RETIRED_STAGES = new Set(["spent", "contaminated"]);
 
 export default async function Dashboard() {
   const supabase = createServiceClient();
-  const [batches, dry, env, yields, tasks, inv, valuation] = await Promise.all([
+  const [batches, dry, env, yields, tasks, inv, valuation, spotlight] = await Promise.all([
     must<BatchRow[]>(supabase.from("batches").select("stage,block_count"), "load batches"),
     must<DryRatioRow[]>(supabase.from("v_dry_ratio").select("fresh_g,dry_g,below_floor"), "load dry ratios"),
     must<EnvStatusRow[]>(supabase.from("v_environment_status").select("room_id,room,in_spec"), "load environment status"),
@@ -63,6 +77,17 @@ export default async function Dashboard() {
     must<ValuationRow[]>(
       supabase.from("v_inventory_valuation").select("distributor_low,distributor_high"),
       "load valuation",
+    ),
+    maybe<SpotlightHarvest>(
+      supabase
+        .from("v_dry_ratio")
+        .select(
+          "harvest_id,batch_id,lot_code,harvested_on,flush_number,strain_id,strain,fresh_g,dry_g,dry_ratio_pct,below_floor",
+        )
+        .order("harvested_on", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      "load spotlight harvest",
     ),
   ]);
 
@@ -87,6 +112,52 @@ export default async function Dashboard() {
         <h1 className="section">Today&rsquo;s state of the mycelium</h1>
         <p className="lead">A live, persisted single source of truth, from spawn point to shelf.</p>
       </div>
+
+      {spotlight && (
+        <section className="spotlight" aria-labelledby="spotlight-title">
+          <div className="eyebrow">Latest harvest</div>
+          <h3 id="spotlight-title">
+            {spotlight.strain_id ? (
+              <Link href={`/strains/${spotlight.strain_id}`} className="row-anchor">
+                {spotlight.strain ?? "Unknown strain"}
+              </Link>
+            ) : (
+              spotlight.strain ?? "Unknown strain"
+            )}{" "}
+            <span className="muted">· F{spotlight.flush_number}</span>
+          </h3>
+          <p className="lead">
+            Lot{" "}
+            {spotlight.batch_id ? (
+              <Link href={`/batches/${spotlight.batch_id}`} className="row-anchor">
+                {spotlight.lot_code ?? "-"}
+              </Link>
+            ) : (
+              spotlight.lot_code ?? "-"
+            )}{" "}
+            pulled on {spotlight.harvested_on}.
+            {spotlight.below_floor && (
+              <>
+                {" "}<Badge tone="red">below {DRY_FLOOR}% dry floor</Badge>
+              </>
+            )}
+          </p>
+          <div className="spotlight-meta">
+            <div className="spotlight-stat">
+              <div className="label">Fresh</div>
+              <div className="value">{spotlight.fresh_g}<span className="muted" style={{ fontSize: "0.6em", marginLeft: 4 }}>g</span></div>
+            </div>
+            <div className="spotlight-stat">
+              <div className="label">Dry</div>
+              <div className="value">{spotlight.dry_g}<span className="muted" style={{ fontSize: "0.6em", marginLeft: 4 }}>g</span></div>
+            </div>
+            <div className="spotlight-stat">
+              <div className="label">Ratio</div>
+              <div className="value">{spotlight.dry_ratio_pct}<span className="muted" style={{ fontSize: "0.6em", marginLeft: 4 }}>%</span></div>
+            </div>
+          </div>
+        </section>
+      )}
 
       <div className="kpi-row">
         <Kpi label="Active batches" value={active} feature />
@@ -144,8 +215,12 @@ export default async function Dashboard() {
           </thead>
           <tbody>
             {yields.filter((y) => y.batches > 0).map((y) => (
-              <tr key={y.strain_id}>
-                <td>{y.strain}</td>
+              <tr key={y.strain_id} className="row-link">
+                <td>
+                  <Link href={`/strains/${y.strain_id}`} className="row-anchor">
+                    <b>{y.strain}</b>
+                  </Link>
+                </td>
                 <td>{y.batches}</td>
                 <td className="right">{kgToG(y.fresh_kg ?? 0)}</td>
                 <td className="right">{y.biological_efficiency_pct ?? "-"}%</td>

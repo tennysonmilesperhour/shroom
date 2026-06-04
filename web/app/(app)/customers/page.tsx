@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createServiceClient } from "@/utils/supabase/service";
 import { Badge, Card } from "@/components/ui";
 import { must } from "@/lib/query";
@@ -63,9 +64,11 @@ export default async function CustomersPage() {
             </thead>
             <tbody>
               {customers.map((c) => (
-                <tr key={c.id}>
+                <tr key={c.id} className="row-link">
                   <td>
-                    <b>{c.name}</b>
+                    <Link href={`/customers/${c.id}`} className="row-anchor">
+                      <b>{c.name}</b>
+                    </Link>
                     {c.notes && (
                       <div className="muted" style={{ fontSize: 11 }}>
                         {c.notes.slice(0, 80)}

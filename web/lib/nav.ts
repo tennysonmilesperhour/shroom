@@ -64,3 +64,16 @@ export const NAV_GROUPS: readonly NavGroup[] = [
 export function isActive(href: string, currentPath: string): boolean {
   return href === "/" ? currentPath === "/" : currentPath.startsWith(href);
 }
+
+/** Resolve the section key for a given pathname so the shell can tint
+    background gradients per IA group. */
+export function sectionForPath(path: string): NavGroup["key"] {
+  for (const group of NAV_GROUPS) {
+    for (const [href] of group.items) {
+      if (href === "/" ? path === "/" : path.startsWith(href)) {
+        return group.key;
+      }
+    }
+  }
+  return "grow";
+}
