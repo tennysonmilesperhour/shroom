@@ -3,7 +3,7 @@ import { Badge, Card } from "@/components/ui";
 import { money } from "@/lib/format";
 import { must } from "@/lib/query";
 
-export const revalidate = 300;
+export const dynamic = "force-dynamic";
 
 interface ProductRow {
   id: number;

@@ -4,7 +4,7 @@ import type { BadgeTone } from "@/components/ui";
 import { cToF, ease, stars } from "@/lib/format";
 import { must } from "@/lib/query";
 
-export const revalidate = 300;
+export const dynamic = "force-dynamic";
 
 interface StrainRow {
   id: number;

@@ -268,6 +268,9 @@ h3 { font-size: var(--text-h3); letter-spacing: -0.015em; line-height: 1.2; }
 @media (prefers-reduced-motion: reduce) {
   .qbg .hypha, .qbg .node, .qbg .spark, .qbg .trav { animation: none; }
 }
+/* Pause every animation in the background while the tab is hidden — no point
+   spinning the GPU when nobody is looking. */
+.qbg.paused * { animation-play-state: paused !important; }
 
 /* ── 5. App shell ───────────────────────────────────────────────────────── */
 .shell {

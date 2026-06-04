@@ -8,7 +8,7 @@ import QuantumBackground from "@/components/QuantumBackground";
 const fraunces = Fraunces({
   subsets: ["latin"],
   axes: ["opsz", "SOFT"],
-  weight: ["300", "400", "500", "600", "700"],
+  weight: "variable",
   display: "swap",
   variable: "--font-display",
   preload: true,

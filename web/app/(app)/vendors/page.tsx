@@ -2,7 +2,7 @@ import { createServiceClient } from "@/utils/supabase/service";
 import { Card } from "@/components/ui";
 import { must } from "@/lib/query";
 
-export const revalidate = 300;
+export const dynamic = "force-dynamic";
 
 interface VendorRow {
   id: number;
