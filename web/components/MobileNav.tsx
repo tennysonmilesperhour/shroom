@@ -37,6 +37,10 @@ export default function MobileNav() {
     const last = focusables?.[focusables.length - 1];
     first?.focus();
 
+    // Snapshot the toggle ref synchronously so the cleanup closure doesn't
+    // capture a stale `.current` if the component re-renders.
+    const toggle = toggleRef.current;
+
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") {
         e.preventDefault();
@@ -59,7 +63,7 @@ export default function MobileNav() {
       document.body.style.overflow = prevOverflow;
       window.removeEventListener("keydown", onKey);
       // Restore focus to the toggle on close.
-      toggleRef.current?.focus();
+      toggle?.focus();
     };
   }, [open]);
 

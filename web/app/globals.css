@@ -7,7 +7,8 @@
    forest floor; motion is slow and breathing, never decorative.
    ────────────────────────────────────────────────────────────────────────── */
 
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,300..700,0..100&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+/* Fonts are loaded via next/font in app/layout.tsx. CSS variables wired
+   below: --font-display, --font-sans, --font-mono. */
 
 /* ── 1. Tokens ──────────────────────────────────────────────────────────── */
 :root {
@@ -56,10 +57,9 @@
   --glow-soft:  0 0 18px oklch(82% 0.180 195 / 0.18);
   --shadow-lift: 0 1px 0 oklch(100% 0 0 / 0.04) inset, 0 24px 60px -28px oklch(0% 0 0 / 0.6), 0 1px 0 oklch(100% 0 0 / 0.02) inset;
 
-  /* Type system */
-  --font-display: 'Fraunces', 'Iowan Old Style', 'Georgia', serif;
-  --font-sans:    'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --font-mono:    'JetBrains Mono', ui-monospace, 'SF Mono', monospace;
+  /* --font-display / --font-sans / --font-mono are provided by next/font
+     in app/layout.tsx (Fraunces / Inter / JetBrains Mono with metric-matched
+     fallbacks generated automatically). */
 
   --text-xs:   clamp(0.70rem, 0.68rem + 0.05vw, 0.74rem);
   --text-sm:   clamp(0.80rem, 0.78rem + 0.10vw, 0.86rem);
@@ -114,12 +114,15 @@ body {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 
+  /* Note: NOT using background-attachment: fixed — it forces iOS Safari to
+     re-paint the gradient stack every scroll frame, defeating the compositor.
+     The radial layers are large enough that scroll keeps them visually fixed
+     without the attribute. */
   background:
     radial-gradient(1200px 700px at 82% -10%, oklch(64% 0.18 270 / 0.18), transparent 58%),
     radial-gradient(1000px 800px at 6% 12%, oklch(60% 0.21 295 / 0.10), transparent 56%),
     radial-gradient(800px 500px at 50% 110%, oklch(72% 0.13 155 / 0.08), transparent 60%),
     linear-gradient(180deg, var(--ink) 0%, var(--ink-deep) 65%, oklch(9% 0.025 245) 100%);
-  background-attachment: fixed;
 }
 
 /* Filmic grain — almost imperceptible, breaks up flat gradients */
@@ -490,13 +493,14 @@ p.lead {
 /* ── 8. Card surface ────────────────────────────────────────────────────── */
 .card {
   position: relative;
-  background: var(--panel);
+  /* Solid-ish ink-blue surface. backdrop-filter was previously applied here
+     but compounds across 10+ visible cards on dashboard/reports/harvests and
+     drops scroll fps to ~30 on iOS. The opaque mix below reads identical. */
+  background: color-mix(in oklch, var(--ink-2) 92%, transparent);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: var(--space-5) var(--space-5);
   margin-bottom: var(--space-4);
-  backdrop-filter: blur(10px) saturate(1.05);
-  -webkit-backdrop-filter: blur(10px) saturate(1.05);
   box-shadow: var(--shadow-lift);
   isolation: isolate;
   transition: border-color 240ms var(--ease-out), transform 240ms var(--ease-out);
@@ -714,8 +718,7 @@ details.acc {
   border-radius: var(--radius);
   padding: var(--space-4) var(--space-5);
   margin-bottom: var(--space-3);
-  background: var(--panel);
-  backdrop-filter: blur(8px);
+  background: color-mix(in oklch, var(--ink-2) 92%, transparent);
   transition: border-color 200ms var(--ease-out);
 }
 details.acc[open] { border-color: var(--line-warm); }

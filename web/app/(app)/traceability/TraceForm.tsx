@@ -28,10 +28,9 @@ export default function TraceForm({ lots, initial }: TraceFormProps) {
     });
   }
 
-  // Auto-trace on selection change.
+  // Auto-trace whenever lot selection changes.
   useEffect(() => {
     if (lot) run(lot);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lot]);
 
   const affected: TraceShipment[] = result?.data?.affected_orders ?? [];

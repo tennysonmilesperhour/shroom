@@ -1,5 +1,5 @@
 import { createServiceClient } from "@/utils/supabase/service";
-import { Badge, Card } from "@/components/ui";
+import { Card } from "@/components/ui";
 import { must } from "@/lib/query";
 
 export const revalidate = 300;
