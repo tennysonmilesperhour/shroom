@@ -50,7 +50,7 @@ export default async function HarvestsPage() {
     <>
       <div>
         <div className="eyebrow">Production</div>
-        <h1 className="section">Harvests &amp; <em>dry ratio</em></h1>
+        <h1 className="section">Harvests &amp; dry ratio</h1>
         <p className="lead">
           Flush-by-flush. Rows flagged when dry ratio falls below the {DRY_FLOOR}% floor.
         </p>
@@ -90,7 +90,7 @@ export default async function HarvestsPage() {
                 <tr key={r.harvest_id} className={r.below_floor ? "flag-low" : ""}>
                   <td>{r.harvested_on}</td>
                   <td>{r.strain ?? "?"}</td>
-                  <td>{r.lot_code ?? "—"}</td>
+                  <td>{r.lot_code ?? "-"}</td>
                   <td className="right">F{r.flush_number}</td>
                   <td className="right">{r.fresh_g}</td>
                   <td className="right">{r.dry_g}</td>
@@ -127,12 +127,12 @@ export default async function HarvestsPage() {
               {jars.map((j) => (
                 <tr key={j.id}>
                   <td><b>{j.jar_id}</b></td>
-                  <td>{j.strains?.name ?? "—"}</td>
-                  <td className="right">F{j.flush_number ?? "—"}</td>
+                  <td>{j.strains?.name ?? "-"}</td>
+                  <td className="right">F{j.flush_number ?? "-"}</td>
                   <td className="right">{j.dry_weight_g}</td>
                   <td className="right">{j.used_g}</td>
                   <td className="right">{j.remaining_g}</td>
-                  <td className="muted">{j.location ?? "—"}</td>
+                  <td className="muted">{j.location ?? "-"}</td>
                 </tr>
               ))}
             </tbody>

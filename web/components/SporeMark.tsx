@@ -1,6 +1,6 @@
 // Quantum Blue mark
 // A mushroom whose stem is a DNA double-helix rising from a mycelial base,
-// with an indole-ring spark floating beside the cap — a compact glyph for the
+// with an indole-ring spark floating beside the cap - a compact glyph for the
 // idea: fungi + biology + consciousness.
 
 interface SporeMarkProps {
@@ -36,7 +36,7 @@ export default function SporeMark({ size = 28, title = "Quantum Blue" }: SporeMa
         </filter>
       </defs>
 
-      {/* Cap — slightly asymmetric pebble silhouette */}
+      {/* Cap - slightly asymmetric pebble silhouette */}
       <path
         d="M5 13.5 C5 6.8 9.8 2.6 16 2.6 S27 6.6 27 13.3 C24 16 19.5 16.6 16 16.6 S8.4 15.8 5 13.5 Z"
         fill="url(#qbCap)"
@@ -85,7 +85,7 @@ export default function SporeMark({ size = 28, title = "Quantum Blue" }: SporeMa
         <path d="M16 35 C18 36, 21 36.5, 23 37.6" opacity="0.4" />
       </g>
 
-      {/* Indole ring + spark — psilocybin signature */}
+      {/* Indole ring + spark - psilocybin signature */}
       <g>
         <path
           d="M22.6 6.8 l2.1 -1.2 2.1 1.2 0 2.4 -2.1 1.2 -2.1 -1.2 Z"

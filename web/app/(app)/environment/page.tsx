@@ -31,7 +31,7 @@ export default async function EnvironmentPage() {
     <>
       <div>
         <div className="eyebrow">Production</div>
-        <h1 className="section">Environment <em>monitoring</em></h1>
+        <h1 className="section">Environment monitoring</h1>
         <p className="lead">
           Latest reading per room vs. target (temperature °F · relative humidity · CO₂ · fresh-air exchanges).
         </p>
@@ -73,19 +73,19 @@ export default async function EnvironmentPage() {
               }}
             >
               <span>
-                Temp <b style={{ color: "var(--text)" }}>{cToF(e.temp_c) ?? "—"}°F</b>
+                Temp <b style={{ color: "var(--text)" }}>{cToF(e.temp_c) ?? "-"}°F</b>
                 <span className="muted"> / {cToF(e.target_temp_c)}</span>
               </span>
               <span>
-                RH <b style={{ color: "var(--text)" }}>{e.humidity ?? "—"}%</b>
+                RH <b style={{ color: "var(--text)" }}>{e.humidity ?? "-"}%</b>
                 <span className="muted"> / {e.target_humidity}</span>
               </span>
               <span>
-                CO₂ <b style={{ color: "var(--text)" }}>{e.co2_ppm ?? "—"}ppm</b>
+                CO₂ <b style={{ color: "var(--text)" }}>{e.co2_ppm ?? "-"}ppm</b>
                 <span className="muted"> / {e.target_co2_ppm}</span>
               </span>
               <span>
-                FAE <b style={{ color: "var(--text)" }}>{e.fae_per_hr ?? "—"}/hr</b>
+                FAE <b style={{ color: "var(--text)" }}>{e.fae_per_hr ?? "-"}/hr</b>
                 <span className="muted"> / {e.target_fae_per_hr}</span>
               </span>
             </div>

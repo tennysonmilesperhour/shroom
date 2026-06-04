@@ -6,7 +6,7 @@
 //     "load batches"
 //   );
 //
-// If the query fails, throws — caught by app/(app)/error.tsx. If the data is
+// If the query fails, throws - caught by app/(app)/error.tsx. If the data is
 // null (shouldn't happen on success but PostgREST can return it), returns
 // an empty array of the inferred type.
 
@@ -23,7 +23,7 @@ export async function must<T>(
   if (error) {
     throw new Error(`Failed to ${label}: ${error.message}`);
   }
-  // Most table reads return [] when empty, not null — but views and .single()
+  // Most table reads return [] when empty, not null - but views and .single()
   // calls can return null. Callers that want non-null can narrow at the call site.
   return (data ?? ([] as unknown as T));
 }
@@ -35,7 +35,7 @@ export async function maybe<T>(
 ): Promise<T | null> {
   const { data, error } = await query;
   if (error) {
-    // PGRST116 = "no rows" from .single() — that's a legitimate null, not an error.
+    // PGRST116 = "no rows" from .single() - that's a legitimate null, not an error.
     if (error.message.includes("0 rows") || error.message.includes("PGRST116")) {
       return null;
     }

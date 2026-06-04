@@ -5,9 +5,9 @@ import { useEffect, useRef } from "react";
 // Quantum Blue ambient background.
 //
 // Three layered fields, slow and breathing:
-//   1. faint hex/molecular lattice — the "consciousness link" hint
-//   2. mycelial hyphae — long organic arcs forming the network
-//   3. bioluminescent particles — soft drifting nodes + travelling sparks
+//   1. faint hex/molecular lattice - the "consciousness link" hint
+//   2. mycelial hyphae - long organic arcs forming the network
+//   3. bioluminescent particles - soft drifting nodes + travelling sparks
 //
 // Mask fades from radial center so the network never crowds content edges.
 // Compositor-friendly (opacity / transform / offset-distance only).
@@ -37,7 +37,7 @@ const LATTICE_PATH =
   "M 420 100 L 500 60 L 580 100 L 580 180 L 500 220 L 420 180 " +
   "M 580 100 L 660 60 L 740 100 L 740 180 L 660 220 L 580 180 ";
 
-// Three sparks — one per `.trav` class variant. Originally 4; trimmed to 3
+// Three sparks - one per `.trav` class variant. Originally 4; trimmed to 3
 // because each extra spark adds a compositor layer with measurable GPU cost
 // on lower-end devices for a delta most users won't notice.
 const SPARK_INDICES = [0, 1, 2] as const;

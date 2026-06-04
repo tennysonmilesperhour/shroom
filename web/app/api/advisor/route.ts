@@ -5,7 +5,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 const MODEL = process.env.SHROOM_ADVISOR_MODEL || "claude-sonnet-4-6";
 const QUESTION_MAX = 500;
 
-// Simple in-memory IP rate limiter. Process-local, so single-instance only —
+// Simple in-memory IP rate limiter. Process-local, so single-instance only -
 // good enough for a small operation; swap for Upstash if the deployment scales.
 const RATE_WINDOW_MS = 60_000;
 const RATE_MAX = 12;
@@ -101,7 +101,7 @@ async function buildContext(supabase: SupabaseClient): Promise<string> {
   );
   lines.push("\nENVIRONMENT (latest per room, in spec?):");
   ((env.data as EnvSnapshot[] | null) ?? []).forEach((e) =>
-    lines.push(`  - ${e.room}: ${e.temp_c}C / ${e.humidity}% / ${e.co2_ppm}ppm / FAE ${e.fae_per_hr} — ${e.in_spec ? "OK" : "ALERT"}`),
+    lines.push(`  - ${e.room}: ${e.temp_c}C / ${e.humidity}% / ${e.co2_ppm}ppm / FAE ${e.fae_per_hr} - ${e.in_spec ? "OK" : "ALERT"}`),
   );
   const lowStock = ((low.data as InventoryRow[] | null) ?? [])
     .filter((i) => i.quantity_on_hand <= i.reorder_threshold)
@@ -120,7 +120,7 @@ const SYSTEM =
   "You are the grow advisor for a dual-track psychedelic + functional mushroom operation " +
   "running a grain-bag-to-tub workflow. Answer from the operation's OWN live data and lessons " +
   "provided below. Be concise, concrete, and cite the relevant prior lesson when applicable. " +
-  "Never repeat the LIVE OPERATION STATE block verbatim — synthesize from it. " +
+  "Never repeat the LIVE OPERATION STATE block verbatim - synthesize from it. " +
   "Recurring themes: CO2-driven flush stalls, low dry ratios from wet substrate, humidity loss from heater condensation.";
 
 function clientIp(request: Request): string {

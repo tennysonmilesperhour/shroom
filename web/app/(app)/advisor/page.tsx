@@ -3,7 +3,7 @@
 import { useEffect, useId, useState } from "react";
 
 const QUICK: readonly string[] = [
-  "My Stargazer dry ratio is low — what's driving it and how do I fix it?",
+  "My Stargazer dry ratio is low. What's driving it and how do I fix it?",
   "Fruiting Tent A CO₂ is high and FAE is low. What should I change?",
   "What should I prioritize today across my active batches?",
   "JMF has early trichoderma in one grain bag. What now?",
@@ -64,7 +64,7 @@ export default function AdvisorPage() {
     <>
       <div>
         <div className="eyebrow">Intelligence</div>
-        <h1 className="section">AI <em>Grow Advisor</em></h1>
+        <h1 className="section">AI Grow Advisor</h1>
         <p className="lead">
           Grounded in your live data and your own issue log + troubleshooting guides (RAG).
           The Anthropic key stays server-side.
@@ -79,7 +79,7 @@ export default function AdvisorPage() {
             <span className="badge green">AI connected · {status.model}</span>
           ) : (
             <span className="badge red">
-              No API key in this deployment — add ANTHROPIC_API_KEY in Vercel, then redeploy
+              No API key in this deployment. Add ANTHROPIC_API_KEY in Vercel, then redeploy.
             </span>
           )}
         </div>

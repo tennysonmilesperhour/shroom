@@ -1,4 +1,4 @@
-// Shared navigation structure — consumed by desktop Nav and MobileNav so
+// Shared navigation structure - consumed by desktop Nav and MobileNav so
 // both surfaces always reflect the same IA.
 
 export type NavItem = readonly [href: string, label: string];

@@ -51,9 +51,9 @@ export default async function StrainsPage() {
     <>
       <div>
         <div className="eyebrow">Genetics</div>
-        <h1 className="section">Strain <em>library</em></h1>
+        <h1 className="section">Strain library</h1>
         <p className="lead">
-          {strains.length} strains — vendor, genetics, potency, ease, grow-again, and spore stock.
+          {strains.length} strains tracked across vendor, genetics, potency, ease, grow-again status, and spore stock.
         </p>
       </div>
 
@@ -81,11 +81,11 @@ export default async function StrainsPage() {
               )}
             </summary>
             <div className="body">
-              <div>Species: <b>{s.species || "—"}</b></div>
-              <div>Code: <b>{s.strain_code || "—"}</b></div>
-              <div>Vendor: <b>{s.vendor || "—"}</b></div>
-              <div>Genetics: <b>{s.genetics || "—"}</b></div>
-              <div>Potency: <b>{s.potency || "—"}</b></div>
+              <div>Species: <b>{s.species || "-"}</b></div>
+              <div>Code: <b>{s.strain_code || "-"}</b></div>
+              <div>Vendor: <b>{s.vendor || "-"}</b></div>
+              <div>Genetics: <b>{s.genetics || "-"}</b></div>
+              <div>Potency: <b>{s.potency || "-"}</b></div>
               <div>Ease: <b>{ease(s.ease_rating)}</b></div>
               <div>Generation: <b>F{s.generation}</b></div>
               <div>Syringes on hand: <b>{s.syringes_on_hand ?? 0}</b></div>
@@ -107,7 +107,7 @@ export default async function StrainsPage() {
                 </b>
               </div>
               <div style={{ gridColumn: "1/3" }}>
-                Notes: <b>{s.notes || "—"}</b>
+                Notes: <b>{s.notes || "-"}</b>
               </div>
             </div>
           </details>

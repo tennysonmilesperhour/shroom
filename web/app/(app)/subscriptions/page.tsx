@@ -34,8 +34,8 @@ export default async function SubscriptionsPage() {
     <>
       <div>
         <div className="eyebrow">Commerce</div>
-        <h1 className="section">Subscriptions &amp; <em>recurring</em></h1>
-        <p className="lead">Recurring revenue — CSA boxes and standing wholesale/wellness orders.</p>
+        <h1 className="section">Subscriptions &amp; recurring</h1>
+        <p className="lead">Recurring revenue: CSA boxes and standing wholesale or wellness orders.</p>
       </div>
 
       <Card>
@@ -61,17 +61,17 @@ export default async function SubscriptionsPage() {
               {subs.map((s) => (
                 <tr key={s.id}>
                   <td><b>{s.plan_name}</b></td>
-                  <td>{s.customers?.name ?? "—"}</td>
+                  <td>{s.customers?.name ?? "-"}</td>
                   <td className="muted">{s.interval}</td>
                   <td className="muted">
                     {(s.subscription_items ?? [])
                       .map((i) => `${i.quantity}× ${i.products?.name ?? "?"}`)
-                      .join(", ") || "—"}
+                      .join(", ") || "-"}
                   </td>
                   <td>
                     <Badge tone={s.status === "active" ? "green" : "amber"}>{s.status}</Badge>
                   </td>
-                  <td className="muted">{s.next_renewal || "—"}</td>
+                  <td className="muted">{s.next_renewal || "-"}</td>
                   <td className="right">{money(s.price)}</td>
                 </tr>
               ))}

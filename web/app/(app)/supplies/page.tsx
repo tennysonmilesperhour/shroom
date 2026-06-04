@@ -42,7 +42,7 @@ export default async function SuppliesPage() {
     <>
       <div>
         <div className="eyebrow">Sourcing</div>
-        <h1 className="section">Supplies &amp; <em>equipment</em></h1>
+        <h1 className="section">Supplies &amp; equipment</h1>
         <p className="lead">
           Consumable stock with reorder thresholds, plus the grow-room equipment register.
           {lowCount > 0 && (
@@ -88,7 +88,7 @@ export default async function SuppliesPage() {
                       <Badge tone="green">ok</Badge>
                     )}
                   </td>
-                  <td className="muted">{i.supplier || "—"}</td>
+                  <td className="muted">{i.supplier || "-"}</td>
                 </tr>
               ))}
             </tbody>
@@ -115,12 +115,12 @@ export default async function SuppliesPage() {
                 <tr key={e.id}>
                   <td><b>{e.name}</b></td>
                   <td className="muted" style={{ fontSize: 12 }}>
-                    {e.spec_notes ?? "—"}
+                    {e.spec_notes ?? "-"}
                   </td>
                   <td>
                     <Badge tone={e.status === "active" ? "green" : "amber"}>{e.status}</Badge>
                   </td>
-                  <td className="muted">{e.last_checked || "—"}</td>
+                  <td className="muted">{e.last_checked || "-"}</td>
                 </tr>
               ))}
             </tbody>

@@ -41,9 +41,9 @@ export default async function OrdersPage() {
     <>
       <div>
         <div className="eyebrow">Commerce</div>
-        <h1 className="section">Orders &amp; <em>fulfillment</em></h1>
+        <h1 className="section">Orders &amp; fulfillment</h1>
         <p className="lead">
-          Sales across every channel — wholesale, distributor, retail, farmers market, online.
+          Sales across every channel: wholesale, distributor, retail, farmers market, and online.
         </p>
       </div>
 
@@ -80,7 +80,7 @@ export default async function OrdersPage() {
               {orders.map((o) => (
                 <tr key={o.id}>
                   <td><b>{o.order_number}</b></td>
-                  <td>{o.customers?.name ?? "—"}</td>
+                  <td>{o.customers?.name ?? "-"}</td>
                   <td>
                     <Badge tone="muted">{o.channel}</Badge>
                   </td>

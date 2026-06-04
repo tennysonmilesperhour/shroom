@@ -63,7 +63,7 @@ export default async function BatchesPage() {
     <>
       <div>
         <div className="eyebrow">Production</div>
-        <h1 className="section">Batches in <em>cycle</em></h1>
+        <h1 className="section">Batches in cycle</h1>
         <p className="lead">
           Each batch is a traceable lot moving container-by-container through the lifecycle.
         </p>
@@ -79,7 +79,7 @@ export default async function BatchesPage() {
                   {STAGE_LABEL[s]} <span className="muted">· {items.length}</span>
                 </h4>
                 {items.length === 0 ? (
-                  <p className="muted" style={{ fontSize: 12, margin: 0 }}>—</p>
+                  <p className="muted" style={{ fontSize: 12, margin: 0 }}>-</p>
                 ) : (
                   items.map((b) => (
                     <div className="chip" key={b.id}>
@@ -106,7 +106,7 @@ export default async function BatchesPage() {
           protocols={protocols}
           batches={batches.map((b) => ({
             id: b.id,
-            name: `${b.container_id || b.lot_code} — ${b.strains?.name ?? ""}`,
+            name: `${b.container_id || b.lot_code} - ${b.strains?.name ?? ""}`,
           }))}
         />
       </Card>
@@ -137,18 +137,18 @@ export default async function BatchesPage() {
                 <tr key={b.id}>
                   <td><b>{b.lot_code}</b></td>
                   <td>
-                    {b.container_id || "—"}
+                    {b.container_id || "-"}
                     <span className="muted"> {b.container_type}</span>
                   </td>
                   <td>{b.strains?.name ?? "?"}</td>
                   <td>
                     <Badge tone={stageTone(b.stage)}>{b.stage}</Badge>
                   </td>
-                  <td>{b.rooms?.name ?? "—"}</td>
+                  <td>{b.rooms?.name ?? "-"}</td>
                   <td className="right">{b.block_count}</td>
                   <td className="right">{b.substrate_weight_kg} kg</td>
-                  <td>{b.inoculated_on ?? "—"}</td>
-                  <td className="right">{b.rating ? `${b.rating}/10` : "—"}</td>
+                  <td>{b.inoculated_on ?? "-"}</td>
+                  <td className="right">{b.rating ? `${b.rating}/10` : "-"}</td>
                 </tr>
               ))}
             </tbody>

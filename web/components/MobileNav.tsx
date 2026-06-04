@@ -77,7 +77,7 @@ export default function MobileNav() {
         <Link
           href="/"
           className="topbar-brand"
-          aria-label="Quantum Blue — Dashboard"
+          aria-label="Quantum Blue dashboard"
         >
           <SporeMark size={22} />
           <span className="logo">Quantum Blue</span>

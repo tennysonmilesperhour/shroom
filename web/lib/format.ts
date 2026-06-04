@@ -17,6 +17,6 @@ export const stars = (n: number | null | undefined) =>
   "★".repeat(n ?? 0) + "☆".repeat(Math.max(0, 5 - (n ?? 0)));
 
 export const ease = (n: number | null | undefined) =>
-  n == null ? "—" : `${n}/10`;
+  n == null ? "-" : `${n}/10`;
 
 export const DRY_FLOOR = 7.5;

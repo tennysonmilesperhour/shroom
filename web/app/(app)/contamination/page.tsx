@@ -55,7 +55,7 @@ export default async function ContaminationPage() {
     <>
       <div>
         <div className="eyebrow">Safety</div>
-        <h1 className="section">Contamination <em>log</em></h1>
+        <h1 className="section">Contamination log</h1>
         <p className="lead">
           Record sightings with a photo and action taken. The reference guide hints adjust based on
           the type you select.
@@ -85,7 +85,7 @@ export default async function ContaminationPage() {
                 {logs.map((l) => (
                   <tr key={l.id}>
                     <td className="muted">{l.observed_on}</td>
-                    <td>{l.batches?.lot_code ?? "—"}</td>
+                    <td>{l.batches?.lot_code ?? "-"}</td>
                     <td>{l.contam_type}</td>
                     <td>
                       <Badge

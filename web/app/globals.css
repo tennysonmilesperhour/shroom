@@ -1,5 +1,5 @@
 /* ──────────────────────────────────────────────────────────────────────────
-   Quantum Blue — Bioluminescent Editorial
+   Quantum Blue - Bioluminescent Editorial
    ─────────────────────────────────────────
    A field-journal aesthetic for a mycology operation: editorial serif
    display, clean sans body, monospace data. Disciplined glow accents on a
@@ -18,7 +18,7 @@
   --ink-3:      oklch(23% 0.055 230);
   --ink-deep:   oklch(11% 0.030 245);
 
-  /* Surfaces — translucent paper over ink, lifted by bioluminescent edges */
+  /* Surfaces - translucent paper over ink, lifted by bioluminescent edges */
   --panel:      color-mix(in oklch, var(--ink-2) 80%, transparent);
   --panel-2:    color-mix(in oklch, var(--ink-3) 70%, transparent);
   --panel-edge: oklch(82% 0.18 195 / 0.14);
@@ -29,14 +29,14 @@
   --line-soft:  oklch(60% 0.04 220 / 0.08);
   --line-warm:  oklch(82% 0.18 195 / 0.22);
 
-  /* Text — high readability on deep ink */
+  /* Text - high readability on deep ink */
   --text:       oklch(95% 0.012 220);
   --text-2:     oklch(80% 0.025 220);
   /* WCAG AA: --muted hits ~5.4:1 on panels at this lightness. */
   --muted:      oklch(72% 0.030 220);
   --faint:      oklch(60% 0.025 220);
 
-  /* Bioluminescent accent family — restrained, used semantically */
+  /* Bioluminescent accent family - restrained, used semantically */
   --lumen:      oklch(82% 0.180 195);   /* signature glow-cyan */
   --lumen-2:    oklch(72% 0.155 205);
   --indigo:     oklch(66% 0.180 268);   /* deep indigo */
@@ -114,7 +114,7 @@ body {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 
-  /* Note: NOT using background-attachment: fixed — it forces iOS Safari to
+  /* Note: NOT using background-attachment: fixed - it forces iOS Safari to
      re-paint the gradient stack every scroll frame, defeating the compositor.
      The radial layers are large enough that scroll keeps them visually fixed
      without the attribute. */
@@ -125,7 +125,7 @@ body {
     linear-gradient(180deg, var(--ink) 0%, var(--ink-deep) 65%, oklch(9% 0.025 245) 100%);
 }
 
-/* Filmic grain — almost imperceptible, breaks up flat gradients */
+/* Filmic grain - almost imperceptible, breaks up flat gradients */
 body::before {
   content: '';
   position: fixed; inset: 0;
@@ -172,7 +172,7 @@ button { font: inherit; }
 }
 
 /* Global keyboard focus ring. :focus-visible only fires on keyboard or
-   programmatic focus, not mouse — so it doesn't pollute pointer interactions. */
+   programmatic focus, not mouse - so it doesn't pollute pointer interactions. */
 :focus-visible {
   outline: 2px solid var(--lumen);
   outline-offset: 2px;
@@ -268,7 +268,7 @@ h3 { font-size: var(--text-h3); letter-spacing: -0.015em; line-height: 1.2; }
 @media (prefers-reduced-motion: reduce) {
   .qbg .hypha, .qbg .node, .qbg .spark, .qbg .trav { animation: none; }
 }
-/* Pause every animation in the background while the tab is hidden — no point
+/* Pause every animation in the background while the tab is hidden - no point
    spinning the GPU when nobody is looking. */
 .qbg.paused * { animation-play-state: paused !important; }
 
@@ -448,12 +448,6 @@ h2.section {
   margin: 0 0 6px;
   color: var(--text);
 }
-h2.section em {
-  font-style: italic;
-  font-variation-settings: 'opsz' 144, 'SOFT' 100;
-  color: var(--lumen);
-  font-weight: 360;
-}
 
 p.lead {
   color: var(--text-2);
@@ -546,7 +540,7 @@ p.lead {
   border-color: var(--line-warm);
 }
 
-/* ── 9. KPI — editorial scale ───────────────────────────────────────────── */
+/* ── 9. KPI - editorial scale ───────────────────────────────────────────── */
 .kpi {
   padding: var(--space-5);
   display: flex; flex-direction: column; gap: 4px;
@@ -620,7 +614,7 @@ tbody tr:hover td { background: oklch(82% 0.18 195 / 0.04); }
 .right { text-align: right; font-variant-numeric: tabular-nums; }
 td.num, .num { font-feature-settings: 'tnum'; font-variant-numeric: tabular-nums; }
 
-/* ── 11. Badge — dot-prefix style ───────────────────────────────────────── */
+/* ── 11. Badge - dot-prefix style ───────────────────────────────────────── */
 .badge {
   display: inline-flex;
   align-items: center;

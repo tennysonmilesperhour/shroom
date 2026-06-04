@@ -64,7 +64,7 @@ export default function SightingForm({ batches, guides }: SightingFormProps) {
           <option value="">Select batch…</option>
           {batches.map((b) => (
             <option key={b.id} value={b.id}>
-              {b.container_id || b.lot_code} — {b.lot_code}
+              {b.container_id || b.lot_code} - {b.lot_code}
             </option>
           ))}
         </select>

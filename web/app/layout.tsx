@@ -31,7 +31,7 @@ const jetbrains = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Quantum Blue — Mycology OS",
+  title: "Quantum Blue · Mycology OS",
   description: "Quantum Blue: grow operation + business backend.",
 };
 

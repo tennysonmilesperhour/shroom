@@ -49,7 +49,7 @@ export default async function GuidesPage() {
     <>
       <div>
         <div className="eyebrow">Reference</div>
-        <h1 className="section">Standard <em>operating procedures</em></h1>
+        <h1 className="section">Standard operating procedures</h1>
         <p className="lead">
           SOPs, contamination &amp; troubleshooting references, and the lessons-learned log.
         </p>
@@ -149,10 +149,10 @@ export default async function GuidesPage() {
             <tbody>
               {issues.map((i) => (
                 <tr key={i.id}>
-                  <td className="muted">{i.log_date ?? "—"}</td>
+                  <td className="muted">{i.log_date ?? "-"}</td>
                   <td>{i.issue}</td>
-                  <td className="muted">{i.root_cause ?? "—"}</td>
-                  <td>{i.resolution ?? "—"}</td>
+                  <td className="muted">{i.root_cause ?? "-"}</td>
+                  <td>{i.resolution ?? "-"}</td>
                 </tr>
               ))}
             </tbody>

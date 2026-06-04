@@ -2,7 +2,7 @@ import Nav from "@/components/Nav";
 import MobileNav from "@/components/MobileNav";
 import SporeMark from "@/components/SporeMark";
 
-// Open access — no auth gate. SSR pages read with the service-role client
+// Open access - no auth gate. SSR pages read with the service-role client
 // (see utils/supabase/service.ts); the browser never holds a Supabase session.
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (

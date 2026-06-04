@@ -40,8 +40,8 @@ export default async function PurchaseOrdersPage() {
     <>
       <div>
         <div className="eyebrow">Sourcing</div>
-        <h1 className="section">Purchase <em>orders</em></h1>
-        <p className="lead">Supplier restock — spawn, grain, substrate, and lab supplies.</p>
+        <h1 className="section">Purchase orders</h1>
+        <p className="lead">Supplier restock for spawn, grain, substrate, and lab supplies.</p>
       </div>
 
       {pos.length === 0 ? (
@@ -62,7 +62,7 @@ export default async function PurchaseOrdersPage() {
             >
               <Badge tone={p.status === "received" ? "green" : "amber"}>{p.status}</Badge>
               <span className="muted">
-                Ordered {p.ordered_at || "—"} · Expected {p.expected_at || "—"}
+                Ordered {p.ordered_at || "-"} · Expected {p.expected_at || "-"}
               </span>
               <span className="muted">Total {money(p.total)}</span>
             </div>

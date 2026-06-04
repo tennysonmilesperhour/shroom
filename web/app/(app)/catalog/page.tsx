@@ -56,7 +56,7 @@ export default async function CatalogPage() {
     <>
       <div>
         <div className="eyebrow">Commerce</div>
-        <h1 className="section">Catalog &amp; <em>pricing</em></h1>
+        <h1 className="section">Catalog &amp; pricing</h1>
         <p className="lead">
           Products, variants, collections, pricing tiers, and live dried-inventory valuation.
         </p>
@@ -83,13 +83,13 @@ export default async function CatalogPage() {
                   <td>
                     <b>{p.name}</b>
                     <br />
-                    <span className="muted">{p.sku ?? "—"}</span>
+                    <span className="muted">{p.sku ?? "-"}</span>
                   </td>
                   <td>
                     <Badge tone={p.status === "active" ? "green" : "muted"}>{p.status}</Badge>
                   </td>
                   <td className="muted">
-                    {p.product_variants?.map((v) => v.title).join(", ") || "—"}
+                    {p.product_variants?.map((v) => v.title).join(", ") || "-"}
                   </td>
                   <td className="right">{money(p.price)}</td>
                   <td className="right">{p.inventory_quantity}</td>
@@ -120,7 +120,7 @@ export default async function CatalogPage() {
                 {valuation.map((v) => (
                   <tr key={v.jar_id}>
                     <td><b>{v.jar_id}</b></td>
-                    <td>{v.strain ?? "—"}</td>
+                    <td>{v.strain ?? "-"}</td>
                     <td className="right">{v.remaining_g}</td>
                     <td className="right">
                       {money(v.wholesale_low)}–{money(v.wholesale_high)}
@@ -152,10 +152,10 @@ export default async function CatalogPage() {
                   <td>{t.tier}</td>
                   <td className="muted">{t.product_class}</td>
                   <td className="right">
-                    {t.min_per_gram ? `$${t.min_per_gram}–${t.max_per_gram}` : "—"}
+                    {t.min_per_gram ? `$${t.min_per_gram}–${t.max_per_gram}` : "-"}
                   </td>
                   <td className="right">
-                    {t.min_per_lb ? `$${t.min_per_lb}–${t.max_per_lb}` : "—"}
+                    {t.min_per_lb ? `$${t.min_per_lb}–${t.max_per_lb}` : "-"}
                   </td>
                 </tr>
               ))}

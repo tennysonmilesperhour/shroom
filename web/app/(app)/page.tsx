@@ -84,8 +84,8 @@ export default async function Dashboard() {
     <>
       <div>
         <div className="eyebrow">Operation</div>
-        <h1 className="section">Today&rsquo;s <em>state of the mycelium</em></h1>
-        <p className="lead">A live, persisted single source of truth — from spawn point to shelf.</p>
+        <h1 className="section">Today&rsquo;s state of the mycelium</h1>
+        <p className="lead">A live, persisted single source of truth, from spawn point to shelf.</p>
       </div>
 
       <div className="kpi-row">
@@ -148,7 +148,7 @@ export default async function Dashboard() {
                 <td>{y.strain}</td>
                 <td>{y.batches}</td>
                 <td className="right">{kgToG(y.fresh_kg ?? 0)}</td>
-                <td className="right">{y.biological_efficiency_pct ?? "—"}%</td>
+                <td className="right">{y.biological_efficiency_pct ?? "-"}%</td>
               </tr>
             ))}
           </tbody>

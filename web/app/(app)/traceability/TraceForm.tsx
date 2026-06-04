@@ -55,7 +55,7 @@ export default function TraceForm({ lots, initial }: TraceFormProps) {
               ) : (
                 lots.map((l) => (
                   <option key={l.lot_code} value={l.lot_code}>
-                    {l.lot_code} — {l.stage}
+                    {l.lot_code} - {l.stage}
                   </option>
                 ))
               )}
@@ -81,7 +81,7 @@ export default function TraceForm({ lots, initial }: TraceFormProps) {
             <Kpi label="Orders hit" value={affected.length} feature />
             <Kpi label="Harvests" value={result.data.harvests ?? 0} />
             <Kpi label="Customers hit" value={customers} />
-            <Kpi label="Strain" value={result.data.strain ?? "—"} />
+            <Kpi label="Strain" value={result.data.strain ?? "-"} />
           </div>
 
           <Card title="Affected shipments">
@@ -110,7 +110,7 @@ export default function TraceForm({ lots, initial }: TraceFormProps) {
                       <td>{o.channel}</td>
                       <td>{o.product}</td>
                       <td className="right">{o.quantity}</td>
-                      <td>{o.fulfillment_date ?? "—"}</td>
+                      <td>{o.fulfillment_date ?? "-"}</td>
                     </tr>
                   ))}
                 </tbody>

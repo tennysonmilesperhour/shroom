@@ -38,9 +38,9 @@ export default async function CustomersPage() {
     <>
       <div>
         <div className="eyebrow">Commerce</div>
-        <h1 className="section">Customers &amp; <em>leads</em></h1>
+        <h1 className="section">Customers &amp; leads</h1>
         <p className="lead">
-          CRM pipeline — distributors, wholesale, retail, wellness, and market channels.
+          CRM pipeline across distributors, wholesale, retail, wellness, and market channels.
         </p>
       </div>
 
@@ -75,12 +75,12 @@ export default async function CustomersPage() {
                   <td>
                     <Badge tone="muted">{c.channel}</Badge>
                   </td>
-                  <td className="muted">{c.role || "—"}</td>
-                  <td>{c.price_tier || "—"}</td>
+                  <td className="muted">{c.role || "-"}</td>
+                  <td>{c.price_tier || "-"}</td>
                   <td>
                     <Badge tone={statusTone(c.status)}>{c.status}</Badge>
                   </td>
-                  <td className="muted">{c.follow_up_date || "—"}</td>
+                  <td className="muted">{c.follow_up_date || "-"}</td>
                   <td className="right">
                     <span className="stars" aria-label={`Priority ${c.priority ?? 0} of 5`}>
                       {"★".repeat(c.priority ?? 0)}

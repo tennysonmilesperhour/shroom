@@ -24,7 +24,7 @@ export default async function TraceabilityPage() {
     <>
       <div>
         <div className="eyebrow">Compliance</div>
-        <h1 className="section">Lot traceability &amp; <em>recall</em></h1>
+        <h1 className="section">Lot traceability &amp; recall</h1>
         <p className="lead">
           FSMA-204 one-click trace: pick a lot to see every affected customer &amp; shipment.
         </p>

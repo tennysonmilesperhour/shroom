@@ -58,7 +58,7 @@ export default async function MarketingPage() {
     <>
       <div>
         <div className="eyebrow">Commerce</div>
-        <h1 className="section">Marketing &amp; <em>recovery</em></h1>
+        <h1 className="section">Marketing &amp; recovery</h1>
         <p className="lead">Discount codes, gift cards, campaigns, and cart recovery.</p>
       </div>
 
@@ -87,7 +87,7 @@ export default async function MarketingPage() {
                         ? `${d.value}%`
                         : d.discount_type === "fixed"
                           ? money(d.value)
-                          : "—"}
+                          : "-"}
                     </td>
                     <td>
                       <Badge tone={d.active ? "green" : "muted"}>
@@ -177,7 +177,7 @@ export default async function MarketingPage() {
               <tbody>
                 {carts.map((c) => (
                   <tr key={c.id}>
-                    <td>{c.email || "—"}</td>
+                    <td>{c.email || "-"}</td>
                     <td className="right">{money(c.subtotal)}</td>
                     <td>
                       <Badge tone={c.recovered ? "green" : "amber"}>

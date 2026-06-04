@@ -86,9 +86,9 @@ export default async function ReportsPage() {
     <>
       <div>
         <div className="eyebrow">Intelligence</div>
-        <h1 className="section">Reports &amp; <em>analytics</em></h1>
+        <h1 className="section">Reports &amp; analytics</h1>
         <p className="lead">
-          Production, quality, sales, and sustainability — all on one page.
+          Production, quality, sales, and sustainability, all on one page.
         </p>
       </div>
 
@@ -124,7 +124,7 @@ export default async function ReportsPage() {
                     <td>{y.strain}</td>
                     <td className="right">{y.batches}</td>
                     <td className="right">{kgToG(y.fresh_kg ?? 0)}</td>
-                    <td className="right">{y.biological_efficiency_pct ?? "—"}%</td>
+                    <td className="right">{y.biological_efficiency_pct ?? "-"}%</td>
                   </tr>
                 ))}
             </tbody>
@@ -148,9 +148,9 @@ export default async function ReportsPage() {
                 .map((s) => (
                   <tr key={s.id}>
                     <td>{s.name}</td>
-                    <td className="right">{s.biological_efficiency_pct ?? "—"}</td>
-                    <td className="right">{s.avg_dry_ratio ?? "—"}</td>
-                    <td className="right">{s.ease_rating ?? "—"}/10</td>
+                    <td className="right">{s.biological_efficiency_pct ?? "-"}</td>
+                    <td className="right">{s.avg_dry_ratio ?? "-"}</td>
+                    <td className="right">{s.ease_rating ?? "-"}/10</td>
                   </tr>
                 ))}
             </tbody>

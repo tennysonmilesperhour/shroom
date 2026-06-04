@@ -25,9 +25,9 @@ export default async function FoodSafetyPage() {
     <>
       <div>
         <div className="eyebrow">Safety</div>
-        <h1 className="section">Food safety &amp; <em>GAP audit trail</em></h1>
+        <h1 className="section">Food safety &amp; GAP audit trail</h1>
         <p className="lead">
-          Sanitation, hygiene, water, temperature, and pest logs — the audit trail wholesale buyers ask for.
+          Sanitation, hygiene, water, temperature, and pest logs. The audit trail wholesale buyers ask for.
         </p>
       </div>
 
@@ -63,7 +63,7 @@ export default async function FoodSafetyPage() {
                       </div>
                     )}
                   </td>
-                  <td className="muted">{l.performed_by ?? "—"}</td>
+                  <td className="muted">{l.performed_by ?? "-"}</td>
                   <td>
                     <Badge tone={l.passed ? "green" : "red"}>
                       {l.passed ? "pass" : "fail"}

@@ -9,7 +9,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 // session, so PostgREST stays inaccessible to the visitor.
 //
 // MUST be used only from server components, route handlers, and server actions.
-// The service-role key bypasses RLS — exposing it client-side would expose
+// The service-role key bypasses RLS - exposing it client-side would expose
 // every row in every table.
 
 function requireEnv(name: "NEXT_PUBLIC_SUPABASE_URL" | "SUPABASE_SERVICE_ROLE_KEY"): string {

@@ -33,7 +33,7 @@ export default async function VendorsPage() {
     <>
       <div>
         <div className="eyebrow">Sourcing</div>
-        <h1 className="section">Trusted <em>vendors</em></h1>
+        <h1 className="section">Trusted vendors</h1>
         <p className="lead">
           Spore &amp; genetics, functional spawn, supplies, and wild-harvest sourcing partners.
         </p>
@@ -66,7 +66,7 @@ export default async function VendorsPage() {
                         </div>
                       )}
                     </td>
-                    <td className="muted">{v.products ?? "—"}</td>
+                    <td className="muted">{v.products ?? "-"}</td>
                     <td>
                       <span
                         className="stars"
@@ -75,9 +75,9 @@ export default async function VendorsPage() {
                         {"★".repeat(v.rating ?? 0)}
                       </span>
                     </td>
-                    <td className="muted">{v.contact_priority || "—"}</td>
+                    <td className="muted">{v.contact_priority || "-"}</td>
                     <td className="muted" style={{ fontSize: 12 }}>
-                      {v.notes ?? "—"}
+                      {v.notes ?? "-"}
                     </td>
                   </tr>
                 ))}
