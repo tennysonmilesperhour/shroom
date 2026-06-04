@@ -1,35 +1,74 @@
-import { createClient } from "@/utils/supabase/server";
+import { createServiceClient } from "@/utils/supabase/service";
 import { Badge, Card } from "@/components/ui";
+import { must } from "@/lib/query";
 
 export const dynamic = "force-dynamic";
 
-export default async function FoodSafetyPage() {
-  const supabase = await createClient();
-  const { data: logs } = await supabase
-    .from("food_safety_logs")
-    .select("*")
-    .order("log_date", { ascending: false });
+interface SafetyLog {
+  id: number;
+  log_date: string;
+  category: string;
+  description: string;
+  performed_by: string | null;
+  passed: boolean;
+  corrective_action: string | null;
+}
 
-  const rows = logs ?? [];
+export default async function FoodSafetyPage() {
+  const supabase = createServiceClient();
+  const logs = await must<SafetyLog[]>(
+    supabase.from("food_safety_logs").select("*").order("log_date", { ascending: false }),
+    "load food safety logs",
+  );
 
   return (
     <>
-      <h2 className="section">Food Safety / GAP</h2>
-      <p className="lead">Sanitation, hygiene, water, temperature, and pest logs — the audit trail wholesale buyers ask for.</p>
+      <div>
+        <div className="eyebrow">Safety</div>
+        <h1 className="section">Food safety &amp; <em>GAP audit trail</em></h1>
+        <p className="lead">
+          Sanitation, hygiene, water, temperature, and pest logs — the audit trail wholesale buyers ask for.
+        </p>
+      </div>
+
       <Card>
-        {rows.length === 0 ? (
-          <div className="muted">No logs yet. Record sanitation, worker-hygiene, and temperature checks here.</div>
+        {logs.length === 0 ? (
+          <p className="muted" style={{ margin: 0 }}>
+            No logs yet. Record sanitation, worker-hygiene, and temperature checks here.
+          </p>
         ) : (
           <table>
-            <thead><tr><th>Date</th><th>Category</th><th>Description</th><th>By</th><th>Result</th></tr></thead>
+            <caption className="sr-only">Food safety logs</caption>
+            <thead>
+              <tr>
+                <th scope="col">Date</th>
+                <th scope="col">Category</th>
+                <th scope="col">Description</th>
+                <th scope="col">By</th>
+                <th scope="col">Result</th>
+              </tr>
+            </thead>
             <tbody>
-              {rows.map((l) => (
+              {logs.map((l) => (
                 <tr key={l.id}>
                   <td className="muted">{l.log_date}</td>
-                  <td><Badge tone="muted">{l.category}</Badge></td>
-                  <td>{l.description}{l.corrective_action && <div className="muted" style={{ fontSize: 11 }}>↳ {l.corrective_action}</div>}</td>
-                  <td className="muted">{l.performed_by}</td>
-                  <td><Badge tone={l.passed ? "green" : "red"}>{l.passed ? "pass" : "fail"}</Badge></td>
+                  <td>
+                    <Badge tone="muted">{l.category}</Badge>
+                  </td>
+                  <td>
+                    {l.description}
+                    {l.corrective_action && (
+                      <div className="muted" style={{ fontSize: 11 }}>
+                        ↳ {l.corrective_action}
+                      </div>
+                    )}
+                  </td>
+                  <td className="muted">{l.performed_by ?? "—"}</td>
+                  <td>
+                    <Badge tone={l.passed ? "green" : "red"}>
+                      {l.passed ? "pass" : "fail"}
+                    </Badge>
+                  </td>
                 </tr>
               ))}
             </tbody>

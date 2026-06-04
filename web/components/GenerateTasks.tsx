@@ -1,44 +1,91 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/utils/supabase/client";
+import { generateProtocolTasks } from "@/app/(app)/batches/actions";
 
-type Opt = { id: number; name: string };
+interface Option {
+  id: number;
+  name: string;
+}
 
-// Innovation #7: turn an SOP checklist into batch-scoped tasks via the
-// generate_protocol_tasks RPC.
-export default function GenerateTasks({ protocols, batches }: { protocols: Opt[]; batches: Opt[] }) {
-  const supabase = createClient();
+interface GenerateTasksProps {
+  protocols: Option[];
+  batches: Option[];
+}
+
+// Materializes an SOP checklist into batch-scoped tasks. The actual insert
+// happens server-side via the `generate_protocol_tasks` RPC, called through a
+// server action so the browser never holds a Supabase client.
+export default function GenerateTasks({ protocols, batches }: GenerateTasksProps) {
   const router = useRouter();
-  const [protocol, setProtocol] = useState(protocols[0]?.id ?? 0);
+  const protocolId = useId();
+  const batchId = useId();
+
+  const [protocol, setProtocol] = useState<number>(protocols[0]?.id ?? 0);
   const [batch, setBatch] = useState<number | "">("");
   const [msg, setMsg] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [pending, startTransition] = useTransition();
 
-  async function run() {
-    setBusy(true);
+  function run() {
     setMsg("");
-    const { data, error } = await supabase.rpc("generate_protocol_tasks", {
-      p_protocol_id: protocol,
-      p_batch_id: batch === "" ? null : batch,
+    startTransition(async () => {
+      const res = await generateProtocolTasks(
+        protocol,
+        batch === "" ? null : batch,
+      );
+      if (res.ok) {
+        setMsg(`Created ${res.created} tasks ✓`);
+        router.refresh();
+      } else {
+        setMsg(res.message);
+      }
     });
-    setBusy(false);
-    setMsg(error ? error.message : `Created ${data} tasks ✓`);
-    if (!error) router.refresh();
   }
 
   return (
-    <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-      <select value={protocol} onChange={(e) => setProtocol(Number(e.target.value))} style={{ width: "auto" }}>
-        {protocols.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-      </select>
-      <select value={batch} onChange={(e) => setBatch(e.target.value === "" ? "" : Number(e.target.value))} style={{ width: "auto" }}>
-        <option value="">(no batch)</option>
-        {batches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-      </select>
-      <button className="primary" onClick={run} disabled={busy}>Generate SOP tasks</button>
-      {msg && <span className="muted">{msg}</span>}
+    <div style={{ display: "flex", gap: 10, alignItems: "flex-end", flexWrap: "wrap" }}>
+      <div>
+        <label htmlFor={protocolId} className="eyebrow" style={{ display: "block", marginBottom: 4 }}>
+          Protocol
+        </label>
+        <select
+          id={protocolId}
+          value={protocol}
+          onChange={(e) => setProtocol(Number(e.target.value))}
+          style={{ width: "auto" }}
+        >
+          {protocols.map((p) => (
+            <option key={p.id} value={p.id}>{p.name}</option>
+          ))}
+        </select>
+      </div>
+
+      <div>
+        <label htmlFor={batchId} className="eyebrow" style={{ display: "block", marginBottom: 4 }}>
+          Batch
+        </label>
+        <select
+          id={batchId}
+          value={batch}
+          onChange={(e) => setBatch(e.target.value === "" ? "" : Number(e.target.value))}
+          style={{ width: "auto" }}
+        >
+          <option value="">(no batch)</option>
+          {batches.map((b) => (
+            <option key={b.id} value={b.id}>{b.name}</option>
+          ))}
+        </select>
+      </div>
+
+      <button type="button" className="primary" onClick={run} disabled={pending || protocols.length === 0}>
+        {pending ? "Creating…" : "Spawn tasks"}
+      </button>
+      {msg && (
+        <span className="muted" role="status">
+          {msg}
+        </span>
+      )}
     </div>
   );
 }

@@ -1,39 +1,101 @@
-import { createClient } from "@/utils/supabase/server";
-import { Badge, Card } from "@/components/ui";
+import { createServiceClient } from "@/utils/supabase/service";
+import { Badge, Card, Kpi } from "@/components/ui";
 import { money } from "@/lib/format";
+import { must } from "@/lib/query";
 
 export const dynamic = "force-dynamic";
 
-export default async function OrdersPage() {
-  const supabase = await createClient();
-  const { data: orders } = await supabase
-    .from("orders")
-    .select("*, customers(name), order_lines(quantity,unit_price)")
-    .order("order_date", { ascending: false });
+interface OrderLine {
+  quantity: number;
+  unit_price: number;
+}
+interface OrderRow {
+  id: number;
+  order_number: string;
+  channel: string;
+  order_date: string;
+  financial_status: string;
+  fulfillment_status: string;
+  customers: { name: string } | null;
+  order_lines: OrderLine[] | null;
+}
 
-  const total = (o: any) => (o.order_lines ?? []).reduce((s: number, l: any) => s + l.quantity * l.unit_price, 0);
-  const rows = orders ?? [];
+function lineTotal(lines: OrderLine[] | null): number {
+  return (lines ?? []).reduce((s, l) => s + l.quantity * l.unit_price, 0);
+}
+
+export default async function OrdersPage() {
+  const supabase = createServiceClient();
+  const orders = await must<OrderRow[]>(
+    supabase
+      .from("orders")
+      .select("*, customers(name), order_lines(quantity,unit_price)")
+      .order("order_date", { ascending: false }),
+    "load orders",
+  );
+
+  const grossYtd = orders.reduce((s, o) => s + lineTotal(o.order_lines), 0);
+  const avg = orders.length > 0 ? grossYtd / orders.length : 0;
 
   return (
     <>
-      <h2 className="section">Orders</h2>
-      <p className="lead">Sales across every channel — wholesale, distributor, retail, farmers market, online.</p>
+      <div>
+        <div className="eyebrow">Commerce</div>
+        <h1 className="section">Orders &amp; <em>fulfillment</em></h1>
+        <p className="lead">
+          Sales across every channel — wholesale, distributor, retail, farmers market, online.
+        </p>
+      </div>
+
+      <div className="kpi-row">
+        <Kpi label="Gross (all time)" value={money(grossYtd)} feature />
+        <Kpi label="Orders" value={orders.length} />
+        <Kpi label="Avg order value" value={money(avg)} />
+        <Kpi
+          label="Unfulfilled"
+          value={orders.filter((o) => o.fulfillment_status !== "fulfilled").length}
+        />
+      </div>
+
       <Card>
-        {rows.length === 0 ? (
-          <div className="muted">No orders yet. They'll appear here as you record sales (or once checkout is wired up).</div>
+        {orders.length === 0 ? (
+          <p className="muted" style={{ margin: 0 }}>
+            No orders yet. They&rsquo;ll appear here as you record sales (or once checkout is wired up).
+          </p>
         ) : (
           <table>
-            <thead><tr><th>Order</th><th>Customer</th><th>Channel</th><th>Date</th><th>Payment</th><th>Fulfillment</th><th className="right">Total</th></tr></thead>
+            <caption className="sr-only">All orders</caption>
+            <thead>
+              <tr>
+                <th scope="col">Order</th>
+                <th scope="col">Customer</th>
+                <th scope="col">Channel</th>
+                <th scope="col">Date</th>
+                <th scope="col">Payment</th>
+                <th scope="col">Fulfillment</th>
+                <th scope="col" className="right">Total</th>
+              </tr>
+            </thead>
             <tbody>
-              {rows.map((o: any) => (
+              {orders.map((o) => (
                 <tr key={o.id}>
                   <td><b>{o.order_number}</b></td>
-                  <td>{o.customers?.name}</td>
-                  <td><Badge tone="muted">{o.channel}</Badge></td>
+                  <td>{o.customers?.name ?? "—"}</td>
+                  <td>
+                    <Badge tone="muted">{o.channel}</Badge>
+                  </td>
                   <td>{o.order_date}</td>
-                  <td><Badge tone={o.financial_status === "paid" ? "green" : "amber"}>{o.financial_status}</Badge></td>
-                  <td><Badge tone={o.fulfillment_status === "fulfilled" ? "green" : "muted"}>{o.fulfillment_status}</Badge></td>
-                  <td className="right">{money(total(o))}</td>
+                  <td>
+                    <Badge tone={o.financial_status === "paid" ? "green" : "amber"}>
+                      {o.financial_status}
+                    </Badge>
+                  </td>
+                  <td>
+                    <Badge tone={o.fulfillment_status === "fulfilled" ? "green" : "muted"}>
+                      {o.fulfillment_status}
+                    </Badge>
+                  </td>
+                  <td className="right">{money(lineTotal(o.order_lines))}</td>
                 </tr>
               ))}
             </tbody>

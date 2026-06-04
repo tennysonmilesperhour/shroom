@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
 
-type BadgeTone = "green" | "amber" | "red" | "blue" | "violet" | "muted";
-type CardVariant = "default" | "quiet" | "featured";
+export type BadgeTone = "green" | "amber" | "red" | "blue" | "violet" | "muted";
+export type CardVariant = "default" | "quiet" | "featured";
 
 interface BadgeProps {
   tone?: BadgeTone;
