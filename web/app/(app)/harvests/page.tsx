@@ -3,6 +3,8 @@ import { createServiceClient } from "@/utils/supabase/service";
 import { Kpi, Card } from "@/components/ui";
 import { must } from "@/lib/query";
 import { DRY_FLOOR } from "@/lib/format";
+import AddPanel from "@/components/AddPanel";
+import AddHarvestForm from "./AddHarvestForm";
 
 export const dynamic = "force-dynamic";
 
@@ -31,9 +33,15 @@ interface JarRow {
   strains: { name: string } | null;
 }
 
+interface BatchOptionRow {
+  id: number;
+  lot_code: string;
+  strains: { name: string } | null;
+}
+
 export default async function HarvestsPage() {
   const supabase = createServiceClient();
-  const [rows, jars] = await Promise.all([
+  const [rows, jars, batchOpts] = await Promise.all([
     must<HarvestRow[]>(
       supabase.from("v_dry_ratio").select("*").order("harvested_on", { ascending: false }),
       "load harvests",
@@ -42,7 +50,21 @@ export default async function HarvestsPage() {
       supabase.from("dry_inventory").select("*, strains(name)").order("jar_id"),
       "load dried inventory",
     ),
+    must<BatchOptionRow[]>(
+      supabase
+        .from("batches")
+        .select("id,lot_code,strains(name)")
+        .order("created_at", { ascending: false })
+        .returns<BatchOptionRow[]>(),
+      "load batch options",
+    ),
   ]);
+
+  const batchOptions = batchOpts.map((b) => ({
+    id: b.id,
+    lot_code: b.lot_code,
+    strain: b.strains?.name ?? null,
+  }));
 
   const fresh = rows.reduce((s, r) => s + (r.fresh_g ?? 0), 0);
   const dry = rows.reduce((s, r) => s + (r.dry_g ?? 0), 0);
@@ -65,6 +87,10 @@ export default async function HarvestsPage() {
         <Kpi label="Total dry" value={Math.round(dry * 10) / 10} unit="g" />
         <Kpi label="Below floor" value={`${flagged} / ${rows.length}`} />
       </div>
+
+      <AddPanel label="Log harvest" buttonLabel="Log harvest">
+        <AddHarvestForm batches={batchOptions} />
+      </AddPanel>
 
       {rows.length === 0 ? (
         <Card variant="quiet">

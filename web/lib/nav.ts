@@ -57,6 +57,7 @@ export const NAV_GROUPS: readonly NavGroup[] = [
     items: [
       ["/advisor", "Advisor"],
       ["/reports", "Reports"],
+      ["/sync", "Sheet sync"],
     ],
   },
 ];

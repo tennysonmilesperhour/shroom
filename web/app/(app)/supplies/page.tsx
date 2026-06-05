@@ -1,6 +1,10 @@
 import { createServiceClient } from "@/utils/supabase/service";
 import { Badge, Card } from "@/components/ui";
 import { must } from "@/lib/query";
+import AddPanel from "@/components/AddPanel";
+import AddSupplyForm from "./AddSupplyForm";
+import AddEquipmentForm from "./AddEquipmentForm";
+import QuickAdjust from "./QuickAdjust";
 
 export const dynamic = "force-dynamic";
 
@@ -56,6 +60,10 @@ export default async function SuppliesPage() {
         </p>
       </div>
 
+      <AddPanel label="New supply">
+        <AddSupplyForm />
+      </AddPanel>
+
       <Card title="Consumables">
         {items.length === 0 ? (
           <p className="muted" style={{ margin: 0 }}>No inventory tracked.</p>
@@ -79,6 +87,7 @@ export default async function SuppliesPage() {
                   <td className="muted">{i.category}</td>
                   <td className="right">
                     {i.quantity_on_hand} {i.unit}
+                    <QuickAdjust itemId={i.id} />
                   </td>
                   <td className="right">{i.reorder_threshold}</td>
                   <td>
@@ -95,6 +104,10 @@ export default async function SuppliesPage() {
           </table>
         )}
       </Card>
+
+      <AddPanel label="New equipment" buttonLabel="Add equipment">
+        <AddEquipmentForm />
+      </AddPanel>
 
       <Card title="Equipment">
         {equipment.length === 0 ? (

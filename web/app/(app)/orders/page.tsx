@@ -3,6 +3,8 @@ import { createServiceClient } from "@/utils/supabase/service";
 import { Badge, Card, Kpi } from "@/components/ui";
 import { money } from "@/lib/format";
 import { must } from "@/lib/query";
+import AddPanel from "@/components/AddPanel";
+import AddOrderForm from "./AddOrderForm";
 
 export const dynamic = "force-dynamic";
 
@@ -25,16 +27,27 @@ function lineTotal(lines: OrderLine[] | null): number {
   return (lines ?? []).reduce((s, l) => s + l.quantity * l.unit_price, 0);
 }
 
+interface CustomerOpt {
+  id: number;
+  name: string;
+}
+
 export default async function OrdersPage() {
   const supabase = createServiceClient();
-  const orders = await must<OrderRow[]>(
-    supabase
-      .from("orders")
-      .select("*, customers(id,name), order_lines(quantity,unit_price)")
-      .order("order_date", { ascending: false })
-      .returns<OrderRow[]>(),
-    "load orders",
-  );
+  const [orders, customerOpts] = await Promise.all([
+    must<OrderRow[]>(
+      supabase
+        .from("orders")
+        .select("*, customers(id,name), order_lines(quantity,unit_price)")
+        .order("order_date", { ascending: false })
+        .returns<OrderRow[]>(),
+      "load orders",
+    ),
+    must<CustomerOpt[]>(
+      supabase.from("customers").select("id,name").order("name"),
+      "load customers",
+    ),
+  ]);
 
   const grossYtd = orders.reduce((s, o) => s + lineTotal(o.order_lines), 0);
   const avg = orders.length > 0 ? grossYtd / orders.length : 0;
@@ -58,6 +71,10 @@ export default async function OrdersPage() {
           value={orders.filter((o) => o.fulfillment_status !== "fulfilled").length}
         />
       </div>
+
+      <AddPanel label="New order">
+        <AddOrderForm customers={customerOpts} />
+      </AddPanel>
 
       <Card>
         {orders.length === 0 ? (

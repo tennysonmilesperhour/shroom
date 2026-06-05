@@ -1,6 +1,9 @@
 import { createServiceClient } from "@/utils/supabase/service";
 import { Card } from "@/components/ui";
 import { must } from "@/lib/query";
+import { displayUrl, normalizeUrl } from "@/lib/external";
+import AddPanel from "@/components/AddPanel";
+import AddVendorForm from "./AddVendorForm";
 
 export const dynamic = "force-dynamic";
 
@@ -39,6 +42,10 @@ export default async function VendorsPage() {
         </p>
       </div>
 
+      <AddPanel label="New vendor">
+        <AddVendorForm />
+      </AddPanel>
+
       {GROUPS.map((g) => {
         const inGroup = vendors.filter((v) => v.category === g.key);
         if (inGroup.length === 0) return null;
@@ -56,13 +63,26 @@ export default async function VendorsPage() {
                 </tr>
               </thead>
               <tbody>
-                {inGroup.map((v) => (
+                {inGroup.map((v) => {
+                  const href = normalizeUrl(v.url);
+                  return (
                   <tr key={v.id}>
                     <td>
-                      <b>{v.name}</b>
-                      {v.url && (
+                      {href ? (
+                        <a
+                          href={href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="row-anchor"
+                        >
+                          <b>{v.name}</b>
+                        </a>
+                      ) : (
+                        <b>{v.name}</b>
+                      )}
+                      {href && (
                         <div className="muted" style={{ fontSize: 11 }}>
-                          {v.url}
+                          {displayUrl(v.url)} ↗
                         </div>
                       )}
                     </td>
@@ -80,7 +100,8 @@ export default async function VendorsPage() {
                       {v.notes ?? "-"}
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </Card>

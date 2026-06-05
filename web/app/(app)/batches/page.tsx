@@ -3,6 +3,8 @@ import { createServiceClient } from "@/utils/supabase/service";
 import { Badge, Card, stageTone } from "@/components/ui";
 import GenerateTasks from "@/components/GenerateTasks";
 import { must } from "@/lib/query";
+import AddPanel from "@/components/AddPanel";
+import AddBatchForm from "./AddBatchForm";
 
 export const dynamic = "force-dynamic";
 
@@ -45,9 +47,18 @@ interface ProtocolRow {
   name: string;
 }
 
+interface StrainOpt {
+  id: number;
+  name: string;
+}
+interface RoomOpt {
+  id: number;
+  name: string;
+}
+
 export default async function BatchesPage() {
   const supabase = createServiceClient();
-  const [batches, protocols] = await Promise.all([
+  const [batches, protocols, strainOpts, roomOpts] = await Promise.all([
     must<BatchRow[]>(
       supabase
         .from("batches")
@@ -56,6 +67,8 @@ export default async function BatchesPage() {
       "load batches",
     ),
     must<ProtocolRow[]>(supabase.from("protocols").select("id,name").order("name"), "load protocols"),
+    must<StrainOpt[]>(supabase.from("strains").select("id,name").order("name"), "load strains"),
+    must<RoomOpt[]>(supabase.from("rooms").select("id,name").order("name"), "load rooms"),
   ]);
 
   const byStage = (s: Stage) => batches.filter((b) => b.stage === s);
@@ -69,6 +82,10 @@ export default async function BatchesPage() {
           Each batch is a traceable lot moving container-by-container through the lifecycle.
         </p>
       </div>
+
+      <AddPanel label="New batch" buttonLabel="Inoculate new batch">
+        <AddBatchForm strains={strainOpts} rooms={roomOpts} />
+      </AddPanel>
 
       <Card title="Tub / bag board" variant="featured">
         <div className="kanban">

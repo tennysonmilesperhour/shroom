@@ -5,6 +5,9 @@ import { createServiceClient } from "@/utils/supabase/service";
 import { must } from "@/lib/query";
 import { stageTone } from "@/components/ui";
 import LifecycleRing from "@/components/LifecycleRing";
+import AddPanel from "@/components/AddPanel";
+import AddHarvestForm from "../../harvests/AddHarvestForm";
+import AdvanceStage from "./AdvanceStage";
 
 export const dynamic = "force-dynamic";
 
@@ -195,7 +198,21 @@ export default async function BatchDetailPage({
           <dt>Container</dt><dd>{batch.container_type ?? "—"}</dd>
           <dt>Rating</dt><dd>{batch.rating ? `${batch.rating}/10` : "—"}</dd>
         </dl>
+        <div style={{ marginTop: "var(--space-3)" }}>
+          <AdvanceStage batchId={batch.id} currentStage={effectiveStage} />
+        </div>
       </Card>
+
+      <AddPanel label="Log harvest from this batch" buttonLabel="Log harvest from this batch">
+        <AddHarvestForm
+          batches={[{
+            id: batch.id,
+            lot_code: batch.lot_code,
+            strain: batch.strains?.name ?? null,
+          }]}
+          defaultBatchId={batch.id}
+        />
+      </AddPanel>
 
       <Card title="Harvests">
         {harvests.length === 0 ? (

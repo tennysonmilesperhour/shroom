@@ -4,6 +4,8 @@ import { Badge } from "@/components/ui";
 import type { BadgeTone } from "@/components/ui";
 import { ease, stars } from "@/lib/format";
 import { must } from "@/lib/query";
+import AddPanel from "@/components/AddPanel";
+import AddStrainForm from "./AddStrainForm";
 
 export const dynamic = "force-dynamic";
 
@@ -50,6 +52,10 @@ export default async function StrainsPage() {
           {strains.length} strains tracked across vendor, genetics, potency, ease, grow-again status, and spore stock.
         </p>
       </div>
+
+      <AddPanel label="New strain">
+        <AddStrainForm />
+      </AddPanel>
 
       {strains.length === 0 ? (
         <div className="card quiet">

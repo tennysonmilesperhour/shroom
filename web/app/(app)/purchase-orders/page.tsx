@@ -2,6 +2,8 @@ import { createServiceClient } from "@/utils/supabase/service";
 import { Badge, Card } from "@/components/ui";
 import { money } from "@/lib/format";
 import { must } from "@/lib/query";
+import AddPanel from "@/components/AddPanel";
+import AddPurchaseOrderForm from "./AddPurchaseOrderForm";
 
 export const dynamic = "force-dynamic";
 
@@ -24,17 +26,28 @@ interface PORow {
   purchase_order_items: POItem[] | null;
 }
 
+interface VendorOpt {
+  id: number;
+  name: string;
+}
+
 export default async function PurchaseOrdersPage() {
   const supabase = createServiceClient();
-  const pos = await must<PORow[]>(
-    supabase
-      .from("purchase_orders")
-      .select(
-        "*, vendors(name), purchase_order_items(id,name,quantity,received_quantity,unit_cost)",
-      )
-      .order("ordered_at", { ascending: false, nullsFirst: false }),
-    "load purchase orders",
-  );
+  const [pos, vendorOpts] = await Promise.all([
+    must<PORow[]>(
+      supabase
+        .from("purchase_orders")
+        .select(
+          "*, vendors(name), purchase_order_items(id,name,quantity,received_quantity,unit_cost)",
+        )
+        .order("ordered_at", { ascending: false, nullsFirst: false }),
+      "load purchase orders",
+    ),
+    must<VendorOpt[]>(
+      supabase.from("vendors").select("id,name").order("name"),
+      "load vendor options",
+    ),
+  ]);
 
   return (
     <>
@@ -43,6 +56,10 @@ export default async function PurchaseOrdersPage() {
         <h1 className="section">Purchase orders</h1>
         <p className="lead">Supplier restock for spawn, grain, substrate, and lab supplies.</p>
       </div>
+
+      <AddPanel label="New purchase order">
+        <AddPurchaseOrderForm vendors={vendorOpts} />
+      </AddPanel>
 
       {pos.length === 0 ? (
         <Card variant="quiet">

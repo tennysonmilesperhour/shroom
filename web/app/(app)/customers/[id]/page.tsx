@@ -5,6 +5,7 @@ import type { BadgeTone } from "@/components/ui";
 import { createServiceClient } from "@/utils/supabase/service";
 import { must, maybe } from "@/lib/query";
 import { money } from "@/lib/format";
+import { mailto, telLink } from "@/lib/external";
 
 export const dynamic = "force-dynamic";
 
@@ -130,8 +131,32 @@ export default async function CustomerDetailPage({
       <div className="grid two">
         <Card title="Contact">
           <dl className="kv">
-            <dt>Email</dt><dd>{customer.contact_email || "—"}</dd>
-            <dt>Phone</dt><dd>{customer.phone || "—"}</dd>
+            <dt>Email</dt>
+            <dd>
+              {(() => {
+                const href = mailto(customer.contact_email);
+                return href ? (
+                  <a href={href} className="row-anchor">
+                    {customer.contact_email}
+                  </a>
+                ) : (
+                  customer.contact_email || "—"
+                );
+              })()}
+            </dd>
+            <dt>Phone</dt>
+            <dd>
+              {(() => {
+                const href = telLink(customer.phone);
+                return href ? (
+                  <a href={href} className="row-anchor">
+                    {customer.phone}
+                  </a>
+                ) : (
+                  customer.phone || "—"
+                );
+              })()}
+            </dd>
             <dt>Address</dt><dd>{customer.address || "—"}</dd>
             <dt>Role</dt><dd>{customer.role || "—"}</dd>
             <dt>Volume est.</dt><dd>{customer.volume_est || "—"}</dd>

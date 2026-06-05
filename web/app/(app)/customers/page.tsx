@@ -3,6 +3,8 @@ import { createServiceClient } from "@/utils/supabase/service";
 import { Badge, Card } from "@/components/ui";
 import { must } from "@/lib/query";
 import type { BadgeTone } from "@/components/ui";
+import AddPanel from "@/components/AddPanel";
+import AddCustomerForm from "./AddCustomerForm";
 
 export const dynamic = "force-dynamic";
 
@@ -44,6 +46,10 @@ export default async function CustomersPage() {
           CRM pipeline across distributors, wholesale, retail, wellness, and market channels.
         </p>
       </div>
+
+      <AddPanel label="New customer">
+        <AddCustomerForm />
+      </AddPanel>
 
       <Card>
         {customers.length === 0 ? (
