@@ -110,7 +110,6 @@ export default async function Dashboard() {
       <div>
         <div className="eyebrow">Operation</div>
         <h1 className="section">Today&rsquo;s state of the mycelium</h1>
-        <p className="lead">A live, persisted single source of truth, from spawn point to shelf.</p>
       </div>
 
       {spotlight && (
