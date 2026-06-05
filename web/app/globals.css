@@ -1542,6 +1542,65 @@ tbody tr.row-link:hover td { background: oklch(82% 0.18 195 / 0.05); }
 }
 
 /* ── 19b. Command palette (⌘K) ──────────────────────────────────────────── */
+/* Toast (bottom-right, non-blocking).
+   Used by VersionWatcher today; reusable for other transient alerts. */
+.toast {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 80;
+  max-width: 380px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 16px;
+  background:
+    linear-gradient(180deg, oklch(82% 0.18 195 / 0.06), transparent 60%),
+    color-mix(in oklch, var(--ink-2) 96%, transparent);
+  border: 1px solid var(--line-warm);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lift), 0 0 60px -20px oklch(82% 0.18 195 / 0.32);
+  animation: toast-rise 280ms var(--ease-out);
+}
+.toast-body-text { flex: 1; min-width: 0; }
+.toast-title {
+  font-family: var(--font-display);
+  font-variation-settings: 'opsz' 36, 'SOFT' 25;
+  font-weight: 400;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  line-height: 1.2;
+}
+.toast-body {
+  color: var(--text-2);
+  font-size: 12.5px;
+  margin-top: 2px;
+}
+.toast-dismiss {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--text-2);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  font-family: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: border-color 160ms var(--ease-out), color 160ms var(--ease-out);
+}
+.toast-dismiss:hover { border-color: var(--line-warm); color: var(--text); }
+.version-toast .primary { padding: 8px 14px; font-size: 12.5px; }
+@keyframes toast-rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@media (max-width: 880px) {
+  .toast { left: 14px; right: 14px; bottom: 14px; max-width: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .toast { animation: none; }
+}
+
 .cmdk-backdrop {
   position: fixed; inset: 0;
   z-index: 70;

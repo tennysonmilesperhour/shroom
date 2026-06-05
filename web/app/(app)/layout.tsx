@@ -3,6 +3,7 @@ import MobileNav from "@/components/MobileNav";
 import SporeMark from "@/components/SporeMark";
 import SectionTint from "@/components/SectionTint";
 import CommandPalette from "@/components/CommandPalette";
+import VersionWatcher from "@/components/VersionWatcher";
 import { createServiceClient } from "@/utils/supabase/service";
 
 // Open access - no auth gate. SSR pages read with the service-role client
@@ -19,9 +20,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     /* ignore - palette still renders with empty results */
   }
 
+  const buildId = process.env.VERCEL_GIT_COMMIT_SHA ?? "dev";
+
   return (
     <div className="shell">
       <SectionTint />
+      <VersionWatcher buildId={buildId} />
       <a href="#main" className="skip-link">
         Skip to main content
       </a>
