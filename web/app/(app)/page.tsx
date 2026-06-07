@@ -1,8 +1,12 @@
 import Link from "next/link";
 import { createServiceClient } from "@/utils/supabase/service";
 import { Kpi, Card, Badge } from "@/components/ui";
+import CountUp from "@/components/anim/CountUp";
+import RadialGauge from "@/components/anim/RadialGauge";
+import Meter from "@/components/anim/Meter";
+import QuickLog, { type QuickLogBatch } from "@/components/QuickLog";
 import { kgToG, money, DRY_FLOOR } from "@/lib/format";
-import { must, maybe } from "@/lib/query";
+import { must, maybe, soft } from "@/lib/query";
 
 export const dynamic = "force-dynamic";
 
@@ -52,6 +56,26 @@ interface SpotlightHarvest {
   dry_ratio_pct: number | null;
   below_floor: boolean | null;
 }
+
+// Weekly sparkline series (optional; backed by the dashboard-weekly views).
+interface HarvestWeeklyRow {
+  fresh_g: number | string | null;
+  dry_ratio_pct: number | string | null;
+}
+interface ActiveBatchesWeeklyRow {
+  started: number | string | null;
+}
+interface OpenTasksWeeklyRow {
+  opened: number | string | null;
+}
+interface ActiveBatchPick {
+  id: number;
+  lot_code: string;
+  stage: string;
+  strains: { name: string } | null;
+}
+
+const num = (v: number | string | null): number => (v == null ? 0 : Number(v));
 
 const ACTIVE_STAGES = new Set(["colonization", "spawn_to_bulk", "fruiting", "harvesting"]);
 const RETIRED_STAGES = new Set(["spent", "contaminated"]);
@@ -105,6 +129,37 @@ export default async function Dashboard() {
   const invLow = valuation.reduce((s, r) => s + (r.distributor_low ?? 0), 0);
   const invHigh = valuation.reduce((s, r) => s + (r.distributor_high ?? 0), 0);
 
+  // Optional trend series. soft() so a not-yet-applied migration degrades to
+  // empty rather than breaking the dashboard. (Views aren't in the generated
+  // types, so these are loosely typed by the row interfaces above.)
+  const [harvestWeekly, batchesWeekly, tasksWeekly, batchPickRes] = await Promise.all([
+    soft<HarvestWeeklyRow>(
+      supabase.from("v_harvest_weekly").select("fresh_g,dry_ratio_pct").order("week"),
+    ),
+    soft<ActiveBatchesWeeklyRow>(
+      supabase.from("v_active_batches_weekly").select("started").order("week"),
+    ),
+    soft<OpenTasksWeeklyRow>(
+      supabase.from("v_open_tasks_weekly").select("opened").order("week"),
+    ),
+    // batches always exists; embedded strains is typed as an array by supabase-js
+    // (same as loadCommandIndex in the layout), so we cast the row shape.
+    supabase
+      .from("batches")
+      .select("id,lot_code,stage,strains(name)")
+      .order("created_at", { ascending: false }),
+  ]);
+
+  const freshSeries = harvestWeekly.map((w) => num(w.fresh_g));
+  const ratioSeries = harvestWeekly.map((w) => num(w.dry_ratio_pct));
+  const startedSeries = batchesWeekly.map((w) => num(w.started));
+  const tasksSeries = tasksWeekly.map((w) => num(w.opened));
+
+  const activeBatches: QuickLogBatch[] = ((batchPickRes.data as ActiveBatchPick[] | null) ?? [])
+    .filter((b) => ACTIVE_STAGES.has(b.stage))
+    .slice(0, 60)
+    .map((b) => ({ id: b.id, lot_code: b.lot_code, stage: b.stage, strain: b.strains?.name ?? null }));
+
   return (
     <>
       <div>
@@ -113,62 +168,75 @@ export default async function Dashboard() {
       </div>
 
       {spotlight && (
-        <section className="spotlight" aria-labelledby="spotlight-title">
-          <div className="eyebrow">Latest harvest</div>
-          <h3 id="spotlight-title">
-            {spotlight.strain_id ? (
-              <Link href={`/strains/${spotlight.strain_id}`} className="row-anchor">
-                {spotlight.strain ?? "Unknown strain"}
-              </Link>
-            ) : (
-              spotlight.strain ?? "Unknown strain"
-            )}{" "}
-            <span className="muted">· F{spotlight.flush_number}</span>
-          </h3>
-          <p className="lead">
-            Lot{" "}
-            {spotlight.batch_id ? (
-              <Link href={`/batches/${spotlight.batch_id}`} className="row-anchor">
-                {spotlight.lot_code ?? "-"}
-              </Link>
-            ) : (
-              spotlight.lot_code ?? "-"
-            )}{" "}
-            pulled on {spotlight.harvested_on}.
-            {spotlight.below_floor && (
-              <>
-                {" "}<Badge tone="red">below {DRY_FLOOR}% dry floor</Badge>
-              </>
-            )}
-          </p>
-          <div className="spotlight-meta">
-            <div className="spotlight-stat">
-              <div className="label">Fresh</div>
-              <div className="value">{spotlight.fresh_g}<span className="muted" style={{ fontSize: "0.6em", marginLeft: 4 }}>g</span></div>
-            </div>
-            <div className="spotlight-stat">
-              <div className="label">Dry</div>
-              <div className="value">{spotlight.dry_g}<span className="muted" style={{ fontSize: "0.6em", marginLeft: 4 }}>g</span></div>
-            </div>
-            <div className="spotlight-stat">
-              <div className="label">Ratio</div>
-              <div className="value">{spotlight.dry_ratio_pct}<span className="muted" style={{ fontSize: "0.6em", marginLeft: 4 }}>%</span></div>
+        <section className="spotlight has-gauge" aria-labelledby="spotlight-title">
+          <div className="spotlight-main">
+            <div className="eyebrow">Latest harvest</div>
+            <h3 id="spotlight-title">
+              {spotlight.strain_id ? (
+                <Link href={`/strains/${spotlight.strain_id}`} className="row-anchor">
+                  {spotlight.strain ?? "Unknown strain"}
+                </Link>
+              ) : (
+                spotlight.strain ?? "Unknown strain"
+              )}{" "}
+              <span className="muted">· F{spotlight.flush_number}</span>
+            </h3>
+            <p className="lead">
+              Lot{" "}
+              {spotlight.batch_id ? (
+                <Link href={`/batches/${spotlight.batch_id}`} className="row-anchor">
+                  {spotlight.lot_code ?? "-"}
+                </Link>
+              ) : (
+                spotlight.lot_code ?? "-"
+              )}{" "}
+              pulled on {spotlight.harvested_on}.
+              {spotlight.below_floor && (
+                <>
+                  {" "}<Badge tone="red">below {DRY_FLOOR}% dry floor</Badge>
+                </>
+              )}
+            </p>
+            <div className="spotlight-meta">
+              <div className="spotlight-stat">
+                <div className="label">Fresh</div>
+                <div className="value"><CountUp value={spotlight.fresh_g ?? 0} /><span className="muted" style={{ fontSize: "0.6em", marginLeft: 4 }}>g</span></div>
+              </div>
+              <div className="spotlight-stat">
+                <div className="label">Dry</div>
+                <div className="value"><CountUp value={spotlight.dry_g ?? 0} /><span className="muted" style={{ fontSize: "0.6em", marginLeft: 4 }}>g</span></div>
+              </div>
+              <div className="spotlight-stat">
+                <div className="label">Ratio</div>
+                <div className="value"><CountUp value={spotlight.dry_ratio_pct ?? 0} decimals={1} /><span className="muted" style={{ fontSize: "0.6em", marginLeft: 4 }}>%</span></div>
+              </div>
             </div>
           </div>
+          <RadialGauge
+            value={Math.min(1, (spotlight.dry_ratio_pct ?? 0) / 12)}
+            tone={spotlight.below_floor ? "ember" : "lumen"}
+            centerValue={<><CountUp value={spotlight.dry_ratio_pct ?? 0} decimals={1} />%</>}
+            centerLabel="dry yield"
+            ariaLabel={`Dry ratio ${spotlight.dry_ratio_pct ?? 0} percent`}
+          />
         </section>
       )}
 
       <div className="kpi-row">
-        <Kpi label="Active batches" value={active} feature />
-        <Kpi label="Blocks in production" value={blocks} />
-        <Kpi label="Harvested (fresh)" value={freshG} unit="g" />
-        <Kpi label="Overall dry ratio" value={overallRatio} unit="%" />
+        <Kpi label="Active batches" countTo={active} series={startedSeries} feature tilt />
+        <Kpi label="Blocks in production" countTo={blocks} tilt />
+        <Kpi label="Harvested (fresh)" countTo={freshG} unit="g" series={freshSeries} tilt />
+        <Kpi label="Overall dry ratio" countTo={overallRatio} decimals={1} unit="%" series={ratioSeries} tilt />
       </div>
 
       <div className="grid kpis" style={{ marginTop: "var(--space-3)" }}>
-        <Kpi label="Dried on-hand (distrib.)" value={`${money(invLow)}–${money(invHigh)}`} />
-        <Kpi label="Open tasks" value={openTasks} />
+        <Kpi label="Dried on-hand (distrib.)" value={`${money(invLow)}–${money(invHigh)}`} tilt />
+        <Kpi label="Open tasks" countTo={openTasks} series={tasksSeries} tilt />
       </div>
+
+      <Card title="Quick log" className="quicklog-card">
+        <QuickLog batches={activeBatches} />
+      </Card>
 
       <div className="grid two" style={{ marginTop: 6 }}>
         <Card title="Environment alerts">
@@ -222,7 +290,19 @@ export default async function Dashboard() {
                 </td>
                 <td>{y.batches}</td>
                 <td className="right">{kgToG(y.fresh_kg ?? 0)}</td>
-                <td className="right">{y.biological_efficiency_pct ?? "-"}%</td>
+                <td className="right">
+                  {y.biological_efficiency_pct == null ? (
+                    "-"
+                  ) : (
+                    <span className="be-cell">
+                      <Meter
+                        value={Math.min(1, y.biological_efficiency_pct / 100)}
+                        ariaLabel={`Bio-efficiency ${y.biological_efficiency_pct} percent`}
+                      />
+                      <span className="be-num">{y.biological_efficiency_pct}%</span>
+                    </span>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>

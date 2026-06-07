@@ -122,9 +122,9 @@ export default async function CustomerDetailPage({
       </div>
 
       <div className="kpi-row">
-        <Kpi label="Lifetime value" value={money(lifetimeValue)} feature />
-        <Kpi label="Orders" value={orders.length} />
-        <Kpi label="Avg order" value={money(avgOrderValue)} />
+        <Kpi label="Lifetime value" countTo={lifetimeValue ?? 0} prefix="$" feature />
+        <Kpi label="Orders" countTo={orders.length} />
+        <Kpi label="Avg order" countTo={avgOrderValue ?? 0} prefix="$" />
         <Kpi label="Last order" value={lastOrder ?? "—"} />
       </div>
 

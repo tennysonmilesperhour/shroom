@@ -82,9 +82,9 @@ export default async function HarvestsPage() {
       </div>
 
       <div className="kpi-row">
-        <Kpi label="Overall ratio" value={overall} unit="%" feature />
-        <Kpi label="Total fresh" value={Math.round(fresh)} unit="g" />
-        <Kpi label="Total dry" value={Math.round(dry * 10) / 10} unit="g" />
+        <Kpi label="Overall ratio" countTo={overall} decimals={1} unit="%" feature />
+        <Kpi label="Total fresh" countTo={Math.round(fresh)} unit="g" />
+        <Kpi label="Total dry" countTo={Math.round(dry * 10) / 10} decimals={1} unit="g" />
         <Kpi label="Below floor" value={`${flagged} / ${rows.length}`} />
       </div>
 

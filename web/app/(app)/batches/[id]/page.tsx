@@ -175,16 +175,16 @@ export default async function BatchDetailPage({
           centerValue={elapsedInStage != null ? elapsedInStage : undefined}
         />
         <div className="batch-hero-stats">
-          <Kpi label="Units" value={batch.block_count} />
-          <Kpi label="Substrate" value={batch.substrate_weight_kg} unit="kg" />
+          <Kpi label="Units" countTo={batch.block_count} />
+          <Kpi label="Substrate" countTo={batch.substrate_weight_kg ?? 0} decimals={1} unit="kg" />
           <Kpi
             label="Fresh harvested"
-            value={Math.round(totalFresh * 1000)}
+            countTo={Math.round(totalFresh * 1000)}
             unit="g"
             feature
           />
-          <Kpi label="Dry ratio" value={overallRatio} unit="%" />
-          <Kpi label="Bio-efficiency" value={overallBe} unit="%" />
+          <Kpi label="Dry ratio" countTo={overallRatio} decimals={1} unit="%" />
+          <Kpi label="Bio-efficiency" countTo={overallBe} decimals={1} unit="%" />
           <Kpi label="Elapsed" value={elapsedSinceInoc ?? "—"} unit="d" />
         </div>
       </div>

@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="en" data-option="cleanroom">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Shroom OS — Option A · Cleanroom Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+/* ──────────────────────────────────────────────────────────────────────────
+   OPTION A — "Cleanroom Console"
+   Daytime instrument software for the grow-room floor. Light, true-neutral,
+   Swiss-precise. One spruce signal accent; state colour does the rest. Mono
+   for every datum. The tool disappears into the task. No glow, no grain, no
+   serif — the opposite axis from the current bioluminescent dark build.
+   ────────────────────────────────────────────────────────────────────────── */
+:root{
+  --bg:        oklch(98.6% 0.002 250);
+  --surface:   oklch(100% 0 0);
+  --rail:      oklch(96.4% 0.004 255);
+  --rail-2:    oklch(94.2% 0.005 255);
+  --ink:       oklch(24% 0.012 260);
+  --ink-2:     oklch(38% 0.012 260);
+  --muted:     oklch(50% 0.012 260);
+  --line:      oklch(91% 0.005 260);
+  --line-2:    oklch(86% 0.006 260);
+
+  --accent:    oklch(52% 0.115 205);     /* spruce — interactive + selected only */
+  --accent-ink:oklch(40% 0.12 205);
+  --accent-wash:oklch(96% 0.03 205);
+
+  --good:      oklch(56% 0.13 158);
+  --good-wash: oklch(95% 0.05 158);
+  --warn:      oklch(64% 0.13 70);
+  --warn-wash: oklch(95% 0.06 78);
+  --bad:       oklch(56% 0.20 25);
+  --bad-wash:  oklch(96% 0.04 25);
+
+  --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px;
+  --space-5:22px; --space-6:32px; --space-7:48px;
+  --radius:10px; --radius-sm:7px;
+  --rail-w:212px;
+  --ease:cubic-bezier(.22,1,.36,1);
+
+  --z-rail:20; --z-bar:30; --z-pop:40;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:Inter,system-ui,sans-serif;
+  font-size:14px;
+  line-height:1.5;
+  letter-spacing:-0.006em;
+  -webkit-font-smoothing:antialiased;
+  font-feature-settings:'cv05','ss03';
+}
+.num,.mono{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums;}
+a{color:inherit;text-decoration:none;}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px;}
+
+/* ── Shell ─────────────────────────────────────────────────────────────── */
+.shell{display:grid;grid-template-columns:var(--rail-w) 1fr;min-height:100vh;}
+
+.rail{
+  position:sticky;top:0;align-self:start;height:100vh;
+  background:var(--rail);
+  border-right:1px solid var(--line);
+  display:flex;flex-direction:column;
+  padding:var(--space-4) var(--space-3);
+  z-index:var(--z-rail);
+}
+.brand{display:flex;align-items:center;gap:10px;padding:4px 8px var(--space-4);}
+.brand .mark{
+  width:30px;height:30px;border-radius:8px;flex:none;
+  background:var(--ink);color:var(--bg);
+  display:grid;place-items:center;font-weight:700;font-size:15px;
+}
+.brand .name{font-weight:650;letter-spacing:-0.02em;font-size:15px;line-height:1.05;}
+.brand .sub{font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-top:1px;}
+
+.nav{display:flex;flex-direction:column;gap:1px;margin-top:var(--space-2);}
+.nav a{
+  display:flex;align-items:center;gap:10px;
+  padding:7px 10px;border-radius:var(--radius-sm);
+  color:var(--ink-2);font-weight:500;font-size:13.5px;
+  transition:background 120ms var(--ease),color 120ms var(--ease);
+}
+.nav a .dot{width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.55;flex:none;}
+.nav a:hover{background:var(--rail-2);color:var(--ink);}
+.nav a[aria-current="page"]{background:var(--surface);color:var(--ink);box-shadow:inset 0 0 0 1px var(--line-2);font-weight:600;}
+.nav a[aria-current="page"] .dot{opacity:1;}
+.nav .c-grow{color:var(--good);} .nav .c-sell{color:var(--accent);}
+.nav .c-source{color:oklch(52% 0.14 280);} .nav .c-comply{color:var(--warn);}
+.nav .c-intel{color:oklch(52% 0.18 320);}
+.nav .grp{font-size:10px;letter-spacing:0.13em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:14px 10px 4px;}
+
+.rail .foot{margin-top:auto;padding:10px;border-top:1px solid var(--line);display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px;}
+.live{width:7px;height:7px;border-radius:50%;background:var(--good);box-shadow:0 0 0 3px var(--good-wash);animation:live 2.4s var(--ease) infinite;}
+@keyframes live{0%,100%{opacity:1;}50%{opacity:.4;}}
+
+/* ── Top bar ───────────────────────────────────────────────────────────── */
+.bar{
+  position:sticky;top:0;z-index:var(--z-bar);
+  display:flex;align-items:center;gap:var(--space-4);
+  height:54px;padding:0 var(--space-6);
+  background:color-mix(in oklch,var(--bg) 86%,transparent);
+  backdrop-filter:saturate(1.4) blur(8px);
+  border-bottom:1px solid var(--line);
+}
+.crumbs{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:13px;}
+.crumbs b{color:var(--ink);font-weight:600;}
+.search{
+  margin-left:auto;display:flex;align-items:center;gap:8px;
+  background:var(--surface);border:1px solid var(--line-2);border-radius:8px;
+  padding:6px 10px;color:var(--muted);font-size:13px;min-width:230px;
+  transition:border-color 120ms var(--ease),box-shadow 120ms var(--ease);
+}
+.search:hover{border-color:var(--ink-2);}
+.search kbd{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:11px;background:var(--rail-2);border:1px solid var(--line-2);border-radius:5px;padding:1px 6px;color:var(--ink-2);}
+.btn{
+  display:inline-flex;align-items:center;gap:7px;
+  background:var(--accent);color:#fff;font-weight:600;font-size:13px;
+  padding:7px 13px;border-radius:8px;
+  box-shadow:0 1px 1.5px oklch(40% 0.12 205 / .35);
+  transition:transform 100ms var(--ease),filter 120ms var(--ease);
+}
+.btn:hover{filter:brightness(1.06);}
+.btn:active{transform:translateY(1px);}
+
+/* ── Page ──────────────────────────────────────────────────────────────── */
+.page{padding:var(--space-6);max-width:1180px;}
+.head{display:flex;align-items:flex-end;justify-content:space-between;gap:var(--space-4);margin-bottom:var(--space-5);}
+.head h1{font-size:21px;font-weight:650;letter-spacing:-0.025em;margin:0 0 2px;}
+.head .when{color:var(--muted);font-size:13px;}
+.head .pulse{display:flex;gap:var(--space-2);}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:4px 9px;border-radius:999px;border:1px solid var(--line-2);}
+.pill .d{width:7px;height:7px;border-radius:50%;}
+.pill.ok{color:var(--good);background:var(--good-wash);border-color:transparent;}
+.pill.ok .d{background:var(--good);}
+.pill.warn{color:oklch(48% 0.12 70);background:var(--warn-wash);border-color:transparent;}
+.pill.warn .d{background:var(--warn);}
+
+/* KPI strip */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--space-3);margin-bottom:var(--space-3);}
+.kpi{
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+  padding:var(--space-4);display:flex;flex-direction:column;gap:6px;
+  transition:border-color 140ms var(--ease),transform 140ms var(--ease);
+}
+.kpi:hover{border-color:var(--line-2);}
+.kpi .l{font-size:11.5px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--muted);}
+.kpi .v{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:30px;font-weight:600;letter-spacing:-0.02em;line-height:1;}
+.kpi .v small{font-size:14px;color:var(--muted);font-weight:500;margin-left:3px;}
+.kpi .t{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:5px;}
+.kpi .t .up{color:var(--good);font-weight:600;}
+.kpi .t .dn{color:var(--bad);font-weight:600;}
+.kpi.feature{background:var(--ink);color:var(--bg);border-color:var(--ink);}
+.kpi.feature .l{color:oklch(75% 0.01 260);}
+.kpi.feature .t{color:oklch(72% 0.01 260);}
+
+/* spark */
+.spark{display:flex;align-items:flex-end;gap:2px;height:22px;margin-top:2px;}
+.spark i{flex:1;background:var(--accent-wash);border-radius:1.5px;}
+.kpi.feature .spark i{background:oklch(40% 0.06 205);}
+
+/* two-up row */
+.row2{display:grid;grid-template-columns:1.35fr 1fr;gap:var(--space-3);margin-top:var(--space-3);}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;}
+.panel > header{display:flex;align-items:center;justify-content:space-between;padding:13px var(--space-4);border-bottom:1px solid var(--line);}
+.panel > header h2{font-size:13px;font-weight:650;letter-spacing:-0.01em;margin:0;}
+.panel > header .meta{font-size:12px;color:var(--muted);}
+.panel .body{padding:6px var(--space-4) var(--space-4);}
+
+/* spotlight (latest harvest) */
+.spot{display:grid;grid-template-columns:1fr auto;gap:var(--space-4);align-items:center;padding:var(--space-4);}
+.spot .name{font-size:17px;font-weight:650;letter-spacing:-0.02em;}
+.spot .name a{color:var(--accent-ink);}
+.spot .name a:hover{text-decoration:underline;}
+.spot .sub{color:var(--muted);font-size:13px;margin-top:2px;}
+.spot .sub .lot{font-family:'JetBrains Mono',monospace;color:var(--ink-2);}
+.spot .reads{display:flex;gap:var(--space-5);}
+.read{text-align:right;}
+.read .rl{font-size:10.5px;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);font-weight:600;}
+.read .rv{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:22px;font-weight:600;letter-spacing:-0.02em;}
+.read .rv small{font-size:12px;color:var(--muted);}
+
+/* status rows */
+.srow{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--line);}
+.srow:last-child{border-bottom:0;}
+.srow .lbl{display:flex;align-items:center;gap:9px;font-weight:500;}
+.srow .lbl .ic{width:8px;height:8px;border-radius:2px;}
+.tag{font-size:11.5px;font-weight:600;padding:3px 8px;border-radius:6px;letter-spacing:0.01em;}
+.tag.good{color:var(--good);background:var(--good-wash);}
+.tag.warn{color:oklch(46% 0.12 70);background:var(--warn-wash);}
+.tag.bad{color:var(--bad);background:var(--bad-wash);}
+.tag.muted{color:var(--muted);background:var(--rail-2);}
+
+/* table */
+table{width:100%;border-collapse:collapse;font-size:13.5px;}
+thead th{
+  text-align:left;font-size:10.5px;letter-spacing:0.06em;text-transform:uppercase;
+  color:var(--muted);font-weight:600;padding:8px var(--space-3);border-bottom:1px solid var(--line-2);
+}
+thead th.r{text-align:right;}
+tbody td{padding:11px var(--space-3);border-bottom:1px solid var(--line);}
+tbody td.r{text-align:right;font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;}
+tbody tr{transition:background 100ms var(--ease);}
+tbody tr:hover{background:var(--rail);}
+tbody tr:last-child td{border-bottom:0;}
+.strain{display:flex;align-items:center;gap:9px;font-weight:600;}
+.swatch{width:9px;height:9px;border-radius:50%;flex:none;}
+.kind{font-size:11px;font-weight:600;padding:1px 7px;border-radius:5px;letter-spacing:0.02em;}
+.kind.psy{color:oklch(48% 0.16 300);background:oklch(96% 0.04 300);}
+.kind.gourmet{color:var(--good);background:var(--good-wash);}
+/* bio-efficiency meter */
+.be{display:inline-flex;align-items:center;gap:8px;justify-content:flex-end;}
+.be .track{width:54px;height:5px;border-radius:3px;background:var(--rail-2);overflow:hidden;}
+.be .fill{height:100%;border-radius:3px;background:var(--accent);}
+
+footer.note{color:var(--muted);font-size:12px;padding:var(--space-6);max-width:1180px;}
+
+/* responsive */
+@media (max-width:1080px){ .kpis{grid-template-columns:repeat(2,1fr);} .row2{grid-template-columns:1fr;} }
+@media (max-width:760px){
+  .shell{grid-template-columns:1fr;}
+  .rail{display:none;}
+  .spot{grid-template-columns:1fr;} .spot .reads{justify-content:space-between;}
+  .search{display:none;}
+}
+@media (prefers-reduced-motion:reduce){ *{animation:none!important;transition:none!important;} }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- Rail -->
+  <aside class="rail" aria-label="Sidebar">
+    <div class="brand">
+      <div class="mark">S</div>
+      <div>
+        <div class="name">Shroom OS</div>
+        <div class="sub">Cleanroom</div>
+      </div>
+    </div>
+    <nav class="nav" aria-label="Primary">
+      <a href="#" aria-current="page"><span class="dot"></span>Dashboard</a>
+      <div class="grp">Operate</div>
+      <a href="#" class="c-grow"><span class="dot"></span>Grow</a>
+      <a href="#" class="c-sell"><span class="dot"></span>Sell</a>
+      <a href="#" class="c-source"><span class="dot"></span>Source</a>
+      <div class="grp">Govern</div>
+      <a href="#" class="c-comply"><span class="dot"></span>Comply</a>
+      <a href="#" class="c-intel"><span class="dot"></span>Intelligence</a>
+    </nav>
+    <div class="foot"><span class="live" aria-hidden="true"></span>Live · in-house</div>
+  </aside>
+
+  <!-- Content -->
+  <div>
+    <div class="bar">
+      <div class="crumbs"><span>Operation</span> / <b>Dashboard</b></div>
+      <div class="search">Search batches, strains, lots… <kbd>⌘K</kbd></div>
+      <button class="btn">+ New batch</button>
+    </div>
+
+    <main class="page">
+      <div class="head">
+        <div>
+          <h1>State of the mycelium</h1>
+          <div class="when num">Thu, Jun 5 2026 · 09:14 MDT · last sync 41s ago</div>
+        </div>
+        <div class="pulse">
+          <span class="pill warn"><span class="d"></span>1 room out of spec</span>
+          <span class="pill ok"><span class="d"></span>11 / 12 in spec</span>
+        </div>
+      </div>
+
+      <!-- KPI strip -->
+      <section class="kpis" aria-label="Key metrics">
+        <div class="kpi feature">
+          <div class="l">Active batches</div>
+          <div class="v">14</div>
+          <div class="spark" aria-hidden="true"><i style="height:40%"></i><i style="height:55%"></i><i style="height:50%"></i><i style="height:70%"></i><i style="height:65%"></i><i style="height:90%"></i><i style="height:100%"></i></div>
+          <div class="t"><span class="up">▲ 2</span> vs. last week</div>
+        </div>
+        <div class="kpi">
+          <div class="l">Blocks in production</div>
+          <div class="v">612</div>
+          <div class="t">across 9 rooms</div>
+        </div>
+        <div class="kpi">
+          <div class="l">Harvested · fresh</div>
+          <div class="v">48,250<small>g</small></div>
+          <div class="t"><span class="up">▲ 6.1%</span> 30-day</div>
+        </div>
+        <div class="kpi">
+          <div class="l">Overall dry ratio</div>
+          <div class="v">9.4<small>%</small></div>
+          <div class="t">floor 8.0% · <span class="up">clear</span></div>
+        </div>
+      </section>
+      <section class="kpis" aria-label="Secondary metrics" style="grid-template-columns:repeat(4,1fr);">
+        <div class="kpi" style="grid-column:span 2;">
+          <div class="l">Dried on-hand · distributor value</div>
+          <div class="v">$18,400<small>–</small>$24,900</div>
+          <div class="t">142 units across 5 strains</div>
+        </div>
+        <div class="kpi"><div class="l">Open tasks</div><div class="v">23</div><div class="t">5 due today</div></div>
+        <div class="kpi"><div class="l">Low-stock items</div><div class="v">3</div><div class="t"><span class="dn">needs reorder</span></div></div>
+      </section>
+
+      <!-- Spotlight -->
+      <section class="panel" style="margin-top:var(--space-3);" aria-label="Latest harvest">
+        <header><h2>Latest harvest</h2><span class="meta num">harvest #2 411 · logged 2026-06-03</span></header>
+        <div class="spot">
+          <div>
+            <div class="name"><a href="#">Golden Teacher</a> <span style="color:var(--muted);font-weight:500;">· flush 2</span></div>
+            <div class="sub">Lot <span class="lot">QB-0412</span> · pulled Jun 3 · <span class="tag good" style="font-size:11px;">9.3% dry · clears floor</span></div>
+          </div>
+          <div class="reads">
+            <div class="read"><div class="rl">Fresh</div><div class="rv">2,140<small>g</small></div></div>
+            <div class="read"><div class="rl">Dry</div><div class="rv">198<small>g</small></div></div>
+            <div class="read"><div class="rl">Ratio</div><div class="rv">9.3<small>%</small></div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- two-up: environment + attention -->
+      <div class="row2">
+        <section class="panel" aria-label="Environment">
+          <header><h2>Environment</h2><span class="meta">12 rooms monitored</span></header>
+          <div class="body">
+            <div class="srow"><span class="lbl"><span class="ic" style="background:var(--bad)"></span>Fruiting Room B</span><span class="tag bad">CO₂ 1,420 ppm · out of spec</span></div>
+            <div class="srow"><span class="lbl"><span class="ic" style="background:var(--warn)"></span>Incubation A</span><span class="tag warn">RH 82% · drifting</span></div>
+            <div class="srow"><span class="lbl"><span class="ic" style="background:var(--good)"></span>Fruiting Room A</span><span class="tag good">in spec</span></div>
+            <div class="srow"><span class="lbl"><span class="ic" style="background:var(--good)"></span>Spawn lab</span><span class="tag good">in spec</span></div>
+          </div>
+        </section>
+        <section class="panel" aria-label="Attention">
+          <header><h2>Needs attention</h2></header>
+          <div class="body">
+            <div class="srow"><span class="lbl">Harvests below 8% dry floor</span><span class="tag warn">2</span></div>
+            <div class="srow"><span class="lbl">Low-stock items</span><span class="tag bad">3</span></div>
+            <div class="srow" style="border:0;padding-top:12px;"><span class="lbl" style="color:var(--muted);font-weight:500;font-size:13px;">Gypsum · Micropore tape · Spawn bags</span></div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Yield table -->
+      <section class="panel" style="margin-top:var(--space-3);" aria-label="Yield by strain">
+        <header><h2>Yield by strain</h2><span class="meta">this cycle · fresh weight</span></header>
+        <div class="body" style="padding:0 var(--space-2) var(--space-2);">
+          <table>
+            <thead><tr><th>Strain</th><th>Track</th><th class="r">Batches</th><th class="r">Fresh</th><th class="r">Bio-efficiency</th></tr></thead>
+            <tbody>
+              <tr><td><span class="strain"><span class="swatch" style="background:oklch(72% 0.15 75)"></span>Golden Teacher</span></td><td><span class="kind psy">psychedelic</span></td><td class="r">6</td><td class="r">18,400 g</td><td class="r"><span class="be"><span class="track"><span class="fill" style="width:64%"></span></span>64%</span></td></tr>
+              <tr><td><span class="strain"><span class="swatch" style="background:oklch(56% 0.13 158)"></span>Blue Oyster</span></td><td><span class="kind gourmet">gourmet</span></td><td class="r">4</td><td class="r">12,900 g</td><td class="r"><span class="be"><span class="track"><span class="fill" style="width:88%"></span></span>88%</span></td></tr>
+              <tr><td><span class="strain"><span class="swatch" style="background:oklch(60% 0.12 60)"></span>Lion’s Mane</span></td><td><span class="kind gourmet">gourmet</span></td><td class="r">3</td><td class="r">8,200 g</td><td class="r"><span class="be"><span class="track"><span class="fill" style="width:71%"></span></span>71%</span></td></tr>
+              <tr><td><span class="strain"><span class="swatch" style="background:oklch(58% 0.16 300)"></span>B+</span></td><td><span class="kind psy">psychedelic</span></td><td class="r">2</td><td class="r">5,100 g</td><td class="r"><span class="be"><span class="track"><span class="fill" style="width:58%"></span></span>58%</span></td></tr>
+              <tr><td><span class="strain"><span class="swatch" style="background:oklch(52% 0.18 320)"></span>Penis Envy</span></td><td><span class="kind psy">psychedelic</span></td><td class="r">1</td><td class="r">3,650 g</td><td class="r"><span class="be"><span class="track"><span class="fill" style="width:52%"></span></span>52%</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+    <footer class="note">Preview · Option A “Cleanroom Console”. Static mock data. Light instrument-grade direction — the daytime counterpart to the current dark build.</footer>
+  </div>
+</div>
+</body>
+</html>

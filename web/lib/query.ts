@@ -28,6 +28,23 @@ export async function must<T>(
   return (data ?? ([] as unknown as T));
 }
 
+// Soft read: never throws. Returns `fallback` on any error (including a view
+// that doesn't exist yet) so non-critical extras — e.g. sparkline trend series
+// gated behind a not-yet-applied migration — degrade to empty instead of
+// taking down the page. Use only for genuinely optional data.
+export async function soft<T>(
+  query: PromiseLike<SupabaseLike<T[]>>,
+  fallback: T[] = [],
+): Promise<T[]> {
+  try {
+    const { data, error } = await query;
+    if (error) return fallback;
+    return data ?? fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 // For .single() calls that genuinely allow null (e.g., "no row found").
 export async function maybe<T>(
   query: PromiseLike<SupabaseLike<T>>,

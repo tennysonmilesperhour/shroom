@@ -1,0 +1,1071 @@
+<!doctype html>
+<html lang="en" data-section="grow">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Shroom OS — Quantum Blue · Pro (interactive)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,360;9..144,400;9..144,500&family=Inter:wght@400;450;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+/* ──────────────────────────────────────────────────────────────────────────
+   QUANTUM BLUE · PRO — a maxed-out, interactive build of the current theme.
+   Bioluminescent editorial on deep ink. Living mycelium that tracks the
+   cursor, magnetic KPI cards, count-up data, drawing sparklines, a working
+   quick-log form, animated gauges, expandable rows, ⌘K palette, ripple, toasts.
+   Everything degrades to a calm static page under prefers-reduced-motion.
+   ────────────────────────────────────────────────────────────────────────── */
+:root{
+  --ink:        oklch(15% 0.035 240);
+  --ink-2:      oklch(19% 0.045 235);
+  --ink-3:      oklch(23% 0.055 230);
+  --ink-deep:   oklch(11% 0.030 245);
+
+  --panel:      color-mix(in oklch, var(--ink-2) 80%, transparent);
+  --panel-2:    color-mix(in oklch, var(--ink-3) 70%, transparent);
+  --panel-edge: oklch(82% 0.18 195 / 0.14);
+
+  --line:       oklch(60% 0.04 220 / 0.14);
+  --line-soft:  oklch(60% 0.04 220 / 0.08);
+  --line-warm:  oklch(82% 0.18 195 / 0.22);
+
+  --text:       oklch(95% 0.012 220);
+  --text-2:     oklch(80% 0.025 220);
+  --muted:      oklch(72% 0.030 220);
+  --faint:      oklch(60% 0.025 220);
+
+  --lumen:      oklch(82% 0.180 195);
+  --lumen-2:    oklch(72% 0.155 205);
+  --indigo:     oklch(66% 0.180 268);
+  --bruise:     oklch(60% 0.210 295);
+  --moss:       oklch(72% 0.130 155);
+  --spore:      oklch(80% 0.150 75);
+  --ember:      oklch(68% 0.220 25);
+
+  --c-grow:var(--moss); --c-sell:var(--lumen); --c-source:var(--indigo);
+  --c-comply:var(--spore); --c-intel:var(--bruise);
+
+  --glow:       0 0 32px oklch(82% 0.18 195 / 0.28);
+  --glow-soft:  0 0 18px oklch(82% 0.18 195 / 0.18);
+  --shadow-lift:0 1px 0 oklch(100% 0 0 / .04) inset, 0 24px 60px -28px oklch(0% 0 0 / .6);
+
+  --text-kpi:  clamp(2rem,1.6rem+1.8vw,2.9rem);
+  --space-2:8px; --space-3:12px; --space-4:16px; --space-5:22px; --space-6:32px; --space-7:48px;
+  --radius-sm:8px; --radius:14px; --radius-lg:20px;
+  --sidebar-w:224px; --topbar-h:58px;
+  --ease:cubic-bezier(.22,1,.36,1);
+  --ease-quint:cubic-bezier(.22,1,.36,1);
+  --spring:cubic-bezier(.34,1.56,.64,1);
+
+  --z-bg:-1; --z-base:1; --z-bar:30; --z-pop:60; --z-modal:80; --z-toast:90;
+
+  --mx:50%; --my:0%;
+}
+*{box-sizing:border-box;}
+*::selection{background:oklch(82% 0.18 195 / .30);color:var(--text);}
+html,body{margin:0;padding:0;}
+html{background:var(--ink-deep);color-scheme:dark;}
+body{
+  min-height:100vh;color:var(--text);
+  font-family:Inter,system-ui,sans-serif;font-size:15px;line-height:1.55;
+  letter-spacing:-0.005em;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  font-feature-settings:'ss01','cv11';
+  background:
+    radial-gradient(1200px 700px at 82% -10%, oklch(64% 0.18 270 / .18), transparent 58%),
+    radial-gradient(1000px 800px at 6% 12%, oklch(60% 0.21 295 / .10), transparent 56%),
+    radial-gradient(800px 500px at 50% 110%, oklch(72% 0.13 155 / .08), transparent 60%),
+    linear-gradient(180deg, var(--ink) 0%, var(--ink-deep) 65%, oklch(9% 0.025 245) 100%);
+}
+/* cursor-reactive aurora — follows the pointer, lazily */
+body::after{
+  content:'';position:fixed;inset:0;z-index:var(--z-bg);pointer-events:none;
+  background:radial-gradient(420px 420px at var(--mx) var(--my), oklch(82% 0.18 195 / .10), transparent 70%);
+  transition:background 240ms linear;
+}
+/* filmic grain */
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.45;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.06 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+a{color:inherit;text-decoration:none;} button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;}
+.serif{font-family:Fraunces,Georgia,serif;}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace;font-feature-settings:'tnum';}
+.num{font-variant-numeric:tabular-nums;}
+h1,h2,h3{font-family:Fraunces,Georgia,serif;font-weight:360;letter-spacing:-0.02em;line-height:1.05;margin:0;
+  font-variation-settings:'opsz' 96,'SOFT' 30;}
+.eyebrow{font-size:10.5px;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);}
+:focus-visible{outline:2px solid var(--lumen);outline-offset:2px;border-radius:var(--radius-sm);}
+
+/* ── Mycelium background ─────────────────────────────────────────────────── */
+.qbg{position:fixed;inset:0;z-index:var(--z-bg);overflow:hidden;pointer-events:none;
+  mask-image:radial-gradient(ellipse at 50% 35%, #000 60%, transparent 100%);}
+.qbg svg{width:100%;height:100%;}
+.qbg .hypha{fill:none;stroke:url(#mg);stroke-width:.6;stroke-linecap:round;opacity:.18;animation:breathe 14s ease-in-out infinite;}
+.qbg .hypha.b{animation-delay:-5s;opacity:.12;} .qbg .hypha.c{animation-delay:-9s;opacity:.08;stroke-width:.4;}
+.qbg .node{fill:var(--lumen);opacity:.22;animation:twinkle 7s ease-in-out infinite;filter:drop-shadow(0 0 4px oklch(82% 0.18 195 / .6));}
+.qbg .spark{fill:oklch(94% 0.05 195);filter:drop-shadow(0 0 8px var(--lumen));animation:pulse 4.2s ease-in-out infinite;}
+.qbg .trav{offset-rotate:0deg;animation:travel 22s linear infinite;} .qbg .trav.b{animation-duration:17s;animation-delay:-6s;} .qbg .trav.c{animation-duration:28s;animation-delay:-12s;}
+@keyframes breathe{0%,100%{opacity:.08;}50%{opacity:.24;}}
+@keyframes twinkle{0%,100%{opacity:.10;transform:scale(.9);}50%{opacity:.55;transform:scale(1.15);}}
+@keyframes pulse{0%,100%{opacity:.35;}50%{opacity:1;}}
+@keyframes travel{from{offset-distance:0%;}to{offset-distance:100%;}}
+
+/* ── Shell ───────────────────────────────────────────────────────────────── */
+.shell{display:flex;min-height:100vh;position:relative;z-index:var(--z-base);}
+.sidebar{
+  width:var(--sidebar-w);flex-shrink:0;position:sticky;top:0;align-self:flex-start;height:100vh;
+  display:flex;flex-direction:column;gap:var(--space-2);padding:var(--space-5) var(--space-3);
+  border-right:1px solid var(--line);
+  background:linear-gradient(180deg, oklch(15% 0.035 240 / .7), oklch(11% 0.03 245 / .55)),
+            radial-gradient(400px 200px at 0% 0%, oklch(82% 0.18 195 / .06), transparent 70%);
+  backdrop-filter:blur(14px) saturate(1.1);
+}
+.brand{display:flex;align-items:center;gap:11px;padding:6px 8px 18px;border-bottom:1px solid var(--line-soft);margin-bottom:var(--space-3);}
+.brand .name{font-family:Fraunces,serif;font-weight:400;font-size:19px;letter-spacing:-0.025em;
+  font-variation-settings:'opsz' 144,'SOFT' 50;color:oklch(96% 0.04 200);text-shadow:0 0 18px oklch(82% 0.18 195 / .35);}
+.brand .sub{font-size:9.5px;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-top:2px;}
+/* animated spore mark */
+.sporemark{width:28px;height:28px;flex:none;}
+.sporemark .core{fill:var(--lumen);filter:drop-shadow(0 0 6px var(--lumen));animation:corepulse 3.4s var(--ease) infinite;}
+.sporemark .orb{fill:oklch(90% 0.06 200);transform-origin:14px 14px;animation:orbit 9s linear infinite;}
+.sporemark .orb.b{animation-duration:13s;animation-direction:reverse;opacity:.7;}
+.sporemark .ring{fill:none;stroke:var(--line-warm);stroke-width:.8;opacity:.5;}
+@keyframes corepulse{0%,100%{opacity:.85;}50%{opacity:1;transform:scale(1.08);}}
+@keyframes orbit{to{transform:rotate(360deg);}}
+
+.nav{display:flex;flex-direction:column;gap:1px;}
+.nav .grp{font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--faint);font-weight:600;padding:14px 10px 4px;}
+.nav a{position:relative;display:flex;align-items:center;gap:10px;padding:8px 11px;border-radius:var(--radius-sm);
+  color:var(--text-2);font-weight:500;font-size:13.5px;overflow:hidden;
+  transition:color 160ms var(--ease),background 160ms var(--ease);}
+.nav a .dot{width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.5;flex:none;transition:box-shadow 200ms var(--ease),opacity 200ms;}
+.nav a.grow .dot{color:var(--c-grow);} .nav a.sell .dot{color:var(--c-sell);} .nav a.source .dot{color:var(--c-source);}
+.nav a.comply .dot{color:var(--c-comply);} .nav a.intel .dot{color:var(--c-intel);}
+.nav a:hover{color:var(--text);background:oklch(82% 0.18 195 / .05);}
+.nav a:hover .dot{opacity:1;box-shadow:0 0 10px 1px currentColor;}
+.nav a[aria-current="page"]{color:var(--text);background:linear-gradient(90deg, oklch(82% 0.18 195 / .12), transparent);}
+.nav a[aria-current="page"] .dot{opacity:1;box-shadow:0 0 10px 1px var(--lumen);}
+.nav a[aria-current="page"]::before{content:'';position:absolute;left:0;top:14%;bottom:14%;width:2px;border-radius:2px;background:var(--lumen);box-shadow:0 0 8px var(--lumen);}
+.sidebar .foot{margin-top:auto;display:flex;align-items:center;gap:8px;padding:10px;border-top:1px solid var(--line-soft);color:var(--muted);font-size:11.5px;}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--moss);box-shadow:0 0 0 0 oklch(72% 0.13 155 / .5);animation:livedot 2.6s var(--ease) infinite;}
+@keyframes livedot{0%{box-shadow:0 0 0 0 oklch(72% 0.13 155 / .45);}70%{box-shadow:0 0 0 7px oklch(72% 0.13 155 / 0);}100%{box-shadow:0 0 0 0 oklch(72% 0.13 155 / 0);}}
+
+/* ── Topbar ──────────────────────────────────────────────────────────────── */
+.content{flex:1;min-width:0;}
+.topbar{position:sticky;top:0;z-index:var(--z-bar);height:var(--topbar-h);display:flex;align-items:center;gap:var(--space-4);
+  padding:0 var(--space-6);border-bottom:1px solid var(--line);
+  background:color-mix(in oklch, var(--ink) 72%, transparent);backdrop-filter:blur(16px) saturate(1.2);}
+.crumbs{display:flex;align-items:center;gap:9px;color:var(--muted);font-size:13px;}
+.crumbs b{color:var(--text);font-weight:500;}
+.crumbs .clock{margin-left:4px;color:var(--faint);font-size:12px;}
+.kbar{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.kdq{display:flex;align-items:center;gap:9px;padding:7px 12px;border-radius:9px;border:1px solid var(--line);
+  background:oklch(19% 0.045 235 / .5);color:var(--muted);font-size:13px;min-width:210px;
+  transition:border-color 180ms var(--ease),box-shadow 180ms var(--ease);}
+.kdq:hover{border-color:var(--line-warm);box-shadow:var(--glow-soft);color:var(--text-2);}
+.kdq kbd{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:11px;background:oklch(23% 0.055 230 / .8);border:1px solid var(--line);border-radius:5px;padding:1px 6px;}
+.btn{position:relative;display:inline-flex;align-items:center;gap:7px;overflow:hidden;
+  padding:8px 15px;border-radius:10px;font-weight:600;font-size:13px;color:var(--ink-deep);
+  background:linear-gradient(180deg, oklch(86% 0.16 195), var(--lumen));
+  box-shadow:0 1px 0 oklch(100% 0 0 / .4) inset, var(--glow-soft);
+  transition:transform 120ms var(--ease),box-shadow 200ms var(--ease),filter 160ms;}
+.btn:hover{box-shadow:0 1px 0 oklch(100% 0 0 / .4) inset, var(--glow);filter:brightness(1.05);}
+.btn:active{transform:translateY(1px) scale(.99);}
+.btn.ghost{background:oklch(23% 0.055 230 / .5);color:var(--text);box-shadow:none;border:1px solid var(--line-warm);}
+.btn.ghost:hover{background:oklch(82% 0.18 195 / .08);box-shadow:var(--glow-soft);}
+/* ripple */
+.ripple{position:absolute;border-radius:50%;transform:scale(0);pointer-events:none;
+  background:oklch(100% 0 0 / .45);animation:ripple 620ms var(--ease) forwards;mix-blend-mode:overlay;}
+@keyframes ripple{to{transform:scale(2.6);opacity:0;}}
+
+/* ── Page scaffold ───────────────────────────────────────────────────────── */
+.page{padding:var(--space-6);max-width:1200px;}
+.reveal{opacity:1;}
+.js .reveal{opacity:0;transform:translateY(14px);}
+.js .reveal.in{opacity:1;transform:none;transition:opacity 620ms var(--ease),transform 620ms var(--ease);}
+
+footer.note{padding:var(--space-7) var(--space-6);color:var(--faint);font-size:12px;max-width:1200px;}
+
+/* ── Mobile ──────────────────────────────────────────────────────────────── */
+@media (max-width:840px){ .sidebar{display:none;} .kdq{display:none;} .page{padding:var(--space-4);} }
+
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;}
+  body::after{transition:none;}
+  .js .reveal{opacity:1!important;transform:none!important;}
+}
+/* ── Page header ─────────────────────────────────────────────────────────── */
+.phead{display:flex;align-items:flex-end;justify-content:space-between;gap:var(--space-4);margin-bottom:var(--space-5);}
+.phead h1{font-size:clamp(1.8rem,1.3rem+2vw,2.7rem);margin-top:4px;text-wrap:balance;}
+.pulse-row{display:flex;gap:var(--space-2);flex-wrap:wrap;}
+.pill{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:600;padding:5px 11px;border-radius:999px;border:1px solid var(--line);background:oklch(19% 0.045 235 / .5);}
+.pill .d{width:7px;height:7px;border-radius:50%;}
+.pill.ok{color:var(--moss);} .pill.ok .d{background:var(--moss);box-shadow:0 0 8px var(--moss);}
+.pill.warn{color:var(--spore);} .pill.warn .d{background:var(--spore);box-shadow:0 0 8px var(--spore);animation:beat 1.8s var(--ease) infinite;}
+@keyframes beat{0%,100%{opacity:1;}50%{opacity:.4;}}
+
+/* ── KPI grid ────────────────────────────────────────────────────────────── */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--space-3);perspective:1000px;}
+.kpi{position:relative;border:1px solid var(--line);border-radius:var(--radius);padding:var(--space-4);
+  background:var(--panel);backdrop-filter:blur(8px);overflow:hidden;transform-style:preserve-3d;
+  transform:perspective(900px) rotateX(var(--rx,0)) rotateY(var(--ry,0));
+  transition:transform 260ms var(--ease),box-shadow 260ms var(--ease),border-color 260ms;}
+.kpi::after{content:'';position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity 260ms;
+  background:radial-gradient(240px 240px at var(--gx,50%) var(--gy,0%), oklch(82% 0.18 195 / .14), transparent 70%);}
+.kpi:hover{border-color:var(--line-warm);box-shadow:var(--shadow-lift),var(--glow-soft);}
+.kpi:hover::after{opacity:1;}
+.kpi .l{font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--muted);}
+.kpi .v{font-family:Fraunces,serif;font-size:var(--text-kpi);font-weight:400;letter-spacing:-0.02em;line-height:1;margin-top:8px;
+  font-variation-settings:'opsz' 144;}
+.kpi .v small{font-family:Inter,sans-serif;font-size:.42em;color:var(--muted);font-weight:500;margin-left:3px;}
+.kpi .t{font-size:12px;color:var(--muted);margin-top:8px;display:flex;align-items:center;gap:6px;}
+.kpi .t .up{color:var(--moss);font-weight:600;} .kpi .t .dn{color:var(--ember);font-weight:600;}
+.kpi.feature{border-color:var(--line-warm);background:
+  linear-gradient(180deg, oklch(82% 0.18 195 / .08), transparent 60%), var(--panel-2);box-shadow:var(--glow-soft);}
+.kpi.feature .v{color:oklch(96% 0.04 200);text-shadow:0 0 22px oklch(82% 0.18 195 / .3);}
+.kpi .spark{margin-top:10px;width:100%;height:30px;display:block;overflow:visible;}
+.kpi .spark path.line{fill:none;stroke:var(--lumen);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;
+  filter:drop-shadow(0 0 5px oklch(82% 0.18 195 / .5));
+  stroke-dasharray:var(--len);stroke-dashoffset:var(--len);}
+.kpi.in .spark path.line{transition:stroke-dashoffset 1200ms var(--ease) 120ms;stroke-dashoffset:0;}
+.kpi .spark path.area{fill:url(#sparkfill);opacity:0;}
+.kpi.in .spark path.area{transition:opacity 700ms ease 700ms;opacity:.5;}
+.kpi .spark .pt{fill:oklch(94% 0.05 195);filter:drop-shadow(0 0 6px var(--lumen));opacity:0;}
+.kpi.in .spark .pt{transition:opacity 300ms ease 1200ms;opacity:1;}
+.kpi.span2{grid-column:span 2;}
+
+@media (max-width:1040px){ .kpis{grid-template-columns:repeat(2,1fr);} .kpi.span2{grid-column:span 2;} }
+@media (max-width:560px){ .kpis{grid-template-columns:1fr;} .kpi.span2{grid-column:span 1;} }
+/* ── Cards / panels ──────────────────────────────────────────────────────── */
+.panel{position:relative;border:1px solid var(--line);border-radius:var(--radius);background:var(--panel);backdrop-filter:blur(8px);overflow:hidden;}
+.panel > header{display:flex;align-items:center;justify-content:space-between;padding:14px var(--space-5);border-bottom:1px solid var(--line-soft);}
+.panel > header h3{font-size:1.05rem;letter-spacing:-0.015em;line-height:1.2;}
+.panel > header .meta{font-size:12px;color:var(--faint);}
+.panel .pbody{padding:var(--space-5);}
+
+/* ── Spotlight ───────────────────────────────────────────────────────────── */
+.spotlight{margin-top:var(--space-5);display:grid;grid-template-columns:1fr auto;gap:var(--space-6);align-items:center;
+  padding:var(--space-6);border:1px solid var(--line-warm);border-radius:var(--radius-lg);
+  background:linear-gradient(120deg, oklch(82% 0.18 195 / .08), transparent 45%), var(--panel-2);
+  backdrop-filter:blur(10px);box-shadow:var(--shadow-lift),var(--glow-soft);}
+.spotlight .stitle{font-size:clamp(1.4rem,1.1rem+1.2vw,2rem);}
+.spotlight .stitle a{color:var(--lumen);transition:text-shadow 200ms;} .spotlight .stitle a:hover{text-shadow:0 0 16px oklch(82% 0.18 195 / .6);}
+.spotlight .lead{color:var(--text-2);margin-top:8px;max-width:52ch;}
+.spotlight .lead .lot{font-family:'JetBrains Mono',monospace;color:var(--text);}
+.spotlight .reads{display:flex;gap:var(--space-6);margin-top:var(--space-5);}
+.sread .rl{font-size:10.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);font-weight:600;}
+.sread .rv{font-family:Fraunces,serif;font-size:1.9rem;font-weight:400;letter-spacing:-0.02em;font-variation-settings:'opsz' 144;}
+.sread .rv small{font-family:Inter,sans-serif;font-size:.5em;color:var(--muted);}
+.tag{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:6px;}
+.tag.good{color:var(--moss);background:oklch(72% 0.13 155 / .14);}
+.tag.bad{color:var(--ember);background:oklch(68% 0.22 25 / .14);}
+.tag.warn{color:var(--spore);background:oklch(80% 0.15 75 / .14);}
+
+/* radial dry-ratio gauge */
+.gauge{position:relative;width:148px;height:148px;flex:none;display:grid;place-items:center;}
+.gauge svg{transform:rotate(-90deg);}
+.gauge .track{fill:none;stroke:oklch(60% 0.04 220 / .16);stroke-width:10;}
+.gauge .prog{fill:none;stroke:var(--lumen);stroke-width:10;stroke-linecap:round;
+  filter:drop-shadow(0 0 8px oklch(82% 0.18 195 / .55));
+  stroke-dasharray:var(--circ);stroke-dashoffset:var(--circ);}
+.gauge.in .prog{transition:stroke-dashoffset 1400ms var(--ease) 200ms;stroke-dashoffset:var(--off);}
+.gauge .gv{position:absolute;display:flex;flex-direction:column;align-items:center;}
+.gauge .gv b{font-family:Fraunces,serif;font-size:1.9rem;font-weight:400;line-height:1;}
+.gauge .gv span{font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-top:4px;}
+
+@media (max-width:680px){ .spotlight{grid-template-columns:1fr;} .spotlight .reads{flex-wrap:wrap;gap:var(--space-4);} }
+/* ── Section grid + quick-log form ───────────────────────────────────────── */
+.cols2{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);margin-top:var(--space-5);}
+.cols-32{display:grid;grid-template-columns:1.25fr 1fr;gap:var(--space-3);margin-top:var(--space-3);}
+
+.qlog{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4) var(--space-5);}
+.field{position:relative;display:flex;flex-direction:column;gap:7px;}
+.field.full{grid-column:1/-1;}
+.field label{font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--muted);}
+.control{position:relative;}
+.control input{width:100%;background:oklch(11% 0.03 245 / .5);border:1px solid var(--line);border-radius:10px;
+  padding:11px 13px;color:var(--text);font:inherit;font-variant-numeric:tabular-nums;
+  transition:border-color 180ms var(--ease),box-shadow 200ms var(--ease),background 180ms;}
+.control input::placeholder{color:var(--faint);}
+.control input:hover{border-color:var(--line-warm);}
+.control input:focus{outline:none;border-color:var(--lumen);background:oklch(11% 0.03 245 / .8);box-shadow:0 0 0 4px oklch(82% 0.18 195 / .14),var(--glow-soft);}
+.control .unit{position:absolute;right:13px;top:50%;transform:translateY(-50%);color:var(--faint);font-size:13px;pointer-events:none;}
+.control .uline{position:absolute;left:11px;right:11px;bottom:0;height:2px;border-radius:2px;background:var(--lumen);transform:scaleX(0);transform-origin:left;box-shadow:0 0 8px var(--lumen);transition:transform 320ms var(--ease);}
+.control input:focus ~ .uline{transform:scaleX(1);}
+
+/* custom select */
+.sel{position:relative;}
+.sel .selbtn{width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;
+  background:oklch(11% 0.03 245 / .5);border:1px solid var(--line);border-radius:10px;padding:11px 13px;color:var(--text);
+  transition:border-color 180ms var(--ease),box-shadow 200ms;}
+.sel .selbtn:hover{border-color:var(--line-warm);}
+.sel.open .selbtn{border-color:var(--lumen);box-shadow:0 0 0 4px oklch(82% 0.18 195 / .14);}
+.sel .selbtn .chev{transition:transform 240ms var(--ease);color:var(--muted);}
+.sel.open .selbtn .chev{transform:rotate(180deg);}
+.sel .selbtn .lead{display:flex;align-items:center;gap:9px;}
+.sel .swt{width:9px;height:9px;border-radius:50%;}
+.sel .selmenu{position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:var(--z-pop);
+  background:var(--ink-2);border:1px solid var(--line-warm);border-radius:12px;padding:6px;
+  box-shadow:var(--shadow-lift),var(--glow-soft);
+  opacity:0;transform:translateY(-6px) scale(.98);pointer-events:none;transform-origin:top;
+  transition:opacity 200ms var(--ease),transform 240ms var(--ease);}
+.sel.open .selmenu{opacity:1;transform:none;pointer-events:auto;}
+.sel .selmenu button{width:100%;display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:8px;color:var(--text-2);font-size:14px;
+  transition:background 140ms,color 140ms;}
+.sel .selmenu button:hover,.sel .selmenu button[aria-selected="true"]{background:oklch(82% 0.18 195 / .1);color:var(--text);}
+.sel .selmenu .kind{margin-left:auto;font-size:10px;letter-spacing:0.06em;text-transform:uppercase;color:var(--faint);}
+
+/* live ratio readout */
+.ratio-out{display:flex;align-items:center;gap:var(--space-4);padding:var(--space-4);border:1px dashed var(--line-warm);border-radius:12px;
+  background:oklch(82% 0.18 195 / .04);grid-column:1/-1;}
+.ratio-out .big{font-family:Fraunces,serif;font-size:2.2rem;line-height:1;letter-spacing:-0.02em;min-width:118px;
+  transition:color 280ms var(--ease);font-variation-settings:'opsz' 144;}
+.ratio-out .big small{font-family:Inter;font-size:.4em;color:var(--muted);}
+.ratio-out .meta{flex:1;}
+.ratio-out .bar{height:8px;border-radius:6px;background:oklch(60% 0.04 220 / .18);overflow:hidden;margin-top:8px;position:relative;}
+.ratio-out .bar i{position:absolute;inset:0 auto 0 0;border-radius:6px;width:0;transition:width 400ms var(--ease),background 280ms;}
+.ratio-out .bar .floor{position:absolute;top:-3px;bottom:-3px;left:53.3%;width:2px;background:var(--text-2);opacity:.5;}
+.ratio-out .note{font-size:12px;color:var(--muted);margin-top:8px;}
+.is-good{color:var(--moss);} .is-bad{color:var(--ember);} .is-idle{color:var(--text-2);}
+
+.btn.wide{justify-content:center;width:100%;padding:12px;font-size:14px;}
+.btn[data-state]{transition:transform 120ms var(--ease),box-shadow 200ms,filter 160ms,background 240ms;}
+.btn .spin{width:15px;height:15px;border-radius:50%;border:2px solid oklch(15% 0.03 245 / .4);border-top-color:var(--ink-deep);animation:spin .7s linear infinite;display:none;}
+.btn[data-state="loading"] .spin{display:inline-block;} .btn[data-state="loading"] .lbl{opacity:.7;}
+.btn[data-state="done"]{background:linear-gradient(180deg, oklch(80% 0.14 155), var(--moss));}
+.btn .check{display:none;} .btn[data-state="done"] .check{display:inline-block;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* toasts */
+.toasts{position:fixed;right:18px;bottom:18px;z-index:var(--z-toast);display:flex;flex-direction:column;gap:10px;}
+.toast{display:flex;gap:11px;align-items:flex-start;min-width:260px;max-width:340px;padding:13px 15px;border-radius:12px;
+  background:var(--ink-2);border:1px solid var(--line-warm);box-shadow:var(--shadow-lift),var(--glow-soft);
+  opacity:0;transform:translateY(14px) scale(.96);transition:opacity 280ms var(--ease),transform 320ms var(--spring);}
+.toast.show{opacity:1;transform:none;}
+.toast .tk{width:9px;height:9px;border-radius:50%;margin-top:6px;flex:none;background:var(--lumen);box-shadow:0 0 10px var(--lumen);}
+.toast.moss .tk{background:var(--moss);box-shadow:0 0 10px var(--moss);}
+.toast.ember .tk{background:var(--ember);box-shadow:0 0 10px var(--ember);}
+.toast b{font-weight:600;font-size:14px;} .toast .tb{font-size:12.5px;color:var(--muted);margin-top:2px;}
+
+@media (max-width:840px){ .cols2,.cols-32{grid-template-columns:1fr;} .qlog{grid-template-columns:1fr;} }
+/* ── Segmented tabs ──────────────────────────────────────────────────────── */
+.seg{position:relative;display:inline-flex;gap:2px;padding:4px;border-radius:11px;border:1px solid var(--line);background:oklch(11% 0.03 245 / .5);}
+.seg .ind{position:absolute;top:4px;bottom:4px;border-radius:8px;background:oklch(82% 0.18 195 / .14);border:1px solid var(--line-warm);
+  box-shadow:var(--glow-soft);transition:transform 360ms var(--spring),width 360ms var(--spring);z-index:0;}
+.seg button{position:relative;z-index:1;padding:7px 14px;border-radius:8px;font-size:13px;font-weight:600;color:var(--muted);
+  transition:color 220ms var(--ease);}
+.seg button[aria-selected="true"]{color:var(--text);}
+.tabpanes{margin-top:var(--space-4);position:relative;}
+.tabpane{display:none;}
+.tabpane.active{display:block;animation:fadeUp 420ms var(--ease);}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+
+/* ── Environment gauges ──────────────────────────────────────────────────── */
+.envgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-4);}
+.envcell{border:1px solid var(--line);border-radius:var(--radius);padding:var(--space-4);background:oklch(11% 0.03 245 / .35);position:relative;overflow:hidden;
+  transition:border-color 240ms,box-shadow 240ms;}
+.envcell.bad{border-color:oklch(68% 0.22 25 / .4);box-shadow:inset 0 0 30px oklch(68% 0.22 25 / .08);}
+.envcell .room{font-weight:600;font-size:14px;display:flex;align-items:center;gap:8px;}
+.envcell .room .led{width:8px;height:8px;border-radius:50%;}
+.envcell.ok .room .led{background:var(--moss);box-shadow:0 0 8px var(--moss);}
+.envcell.warn .room .led{background:var(--spore);box-shadow:0 0 8px var(--spore);}
+.envcell.bad .room .led{background:var(--ember);box-shadow:0 0 8px var(--ember);animation:beat 1.4s var(--ease) infinite;}
+.envcell .read{margin-top:14px;display:flex;align-items:baseline;gap:6px;}
+.envcell .read b{font-family:Fraunces,serif;font-size:1.7rem;font-weight:400;font-variation-settings:'opsz' 144;}
+.envcell .read .u{color:var(--muted);font-size:13px;}
+.envcell .read .metric{margin-left:auto;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--faint);}
+.envcell .meter{margin-top:12px;height:7px;border-radius:5px;background:oklch(60% 0.04 220 / .16);overflow:hidden;position:relative;}
+.envcell .meter i{position:absolute;inset:0 auto 0 0;width:0;border-radius:5px;transition:width 900ms var(--ease);}
+.envcell.ok .meter i{background:linear-gradient(90deg,var(--lumen-2),var(--moss));}
+.envcell.warn .meter i{background:linear-gradient(90deg,var(--spore),oklch(82% 0.16 100));}
+.envcell.bad .meter i{background:linear-gradient(90deg,var(--ember),var(--spore));}
+.envcell .spec{margin-top:8px;font-size:11.5px;color:var(--muted);}
+.envcell .band{position:absolute;top:0;bottom:0;width:2px;background:var(--text-2);opacity:.3;}
+
+@media (max-width:840px){ .envgrid{grid-template-columns:1fr;} }
+/* ── Yield table ─────────────────────────────────────────────────────────── */
+.ytable{width:100%;border-collapse:separate;border-spacing:0;}
+.ytable thead th{text-align:left;font-size:10.5px;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);font-weight:600;
+  padding:6px 14px 12px;border-bottom:1px solid var(--line);}
+.ytable thead th.r{text-align:right;}
+.ytable .yrow{cursor:pointer;}
+.ytable .yrow > td{padding:14px;border-bottom:1px solid var(--line-soft);transition:background 160ms var(--ease),box-shadow 160ms;vertical-align:middle;}
+.ytable .yrow:hover > td{background:oklch(82% 0.18 195 / .05);}
+.ytable .yrow:hover > td:first-child{box-shadow:inset 2px 0 0 var(--lumen);}
+.ytable .yrow > td.r{text-align:right;font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;}
+.ytable .sname{display:flex;align-items:center;gap:10px;font-weight:600;}
+.ytable .sname .chev{color:var(--faint);transition:transform 280ms var(--ease);font-size:12px;}
+.ytable .yrow[aria-expanded="true"] .chev{transform:rotate(90deg);color:var(--lumen);}
+.swatch{width:10px;height:10px;border-radius:50%;flex:none;box-shadow:0 0 8px currentColor;}
+.kind{font-size:10.5px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;padding:2px 8px;border-radius:5px;}
+.kind.psy{color:var(--bruise);background:oklch(60% 0.21 295 / .14);}
+.kind.gourmet{color:var(--moss);background:oklch(72% 0.13 155 / .14);}
+.be{display:inline-flex;align-items:center;gap:9px;justify-content:flex-end;}
+.be .track{width:64px;height:6px;border-radius:4px;background:oklch(60% 0.04 220 / .18);overflow:hidden;}
+.be .track i{display:block;height:100%;width:0;border-radius:4px;background:linear-gradient(90deg,var(--lumen-2),var(--lumen));
+  box-shadow:0 0 8px oklch(82% 0.18 195 / .5);transition:width 1000ms var(--ease);}
+/* expandable detail row */
+.ytable .ydetail > td{padding:0;border:0;}
+.ydetail .wrap{display:grid;grid-template-rows:0fr;transition:grid-template-rows 360ms var(--ease);}
+.ytable .yrow[aria-expanded="true"] + .ydetail .wrap{grid-template-rows:1fr;}
+.ydetail .inner{overflow:hidden;}
+.ydetail .pad{padding:0 14px 18px;display:grid;grid-template-columns:repeat(4,1fr);gap:var(--space-3);}
+.ydetail .flush{border:1px solid var(--line);border-radius:10px;padding:11px 13px;background:oklch(11% 0.03 245 / .4);}
+.ydetail .flush .fl{font-size:10.5px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);font-weight:600;}
+.ydetail .flush .fv{font-family:Fraunces,serif;font-size:1.3rem;margin-top:4px;font-variation-settings:'opsz' 144;}
+.ydetail .flush .fm{font-size:11px;color:var(--faint);margin-top:2px;}
+@media (max-width:680px){ .ydetail .pad{grid-template-columns:repeat(2,1fr);} .ytable thead th.hide,.ytable td.hide{display:none;} }
+/* ── Command palette ─────────────────────────────────────────────────────── */
+.cmdk{position:fixed;inset:0;z-index:var(--z-modal);display:grid;place-items:start center;padding-top:12vh;
+  background:oklch(8% 0.02 245 / .5);backdrop-filter:blur(6px);opacity:0;pointer-events:none;transition:opacity 220ms var(--ease);}
+.cmdk.open{opacity:1;pointer-events:auto;}
+.cmdk .box{width:min(620px,92vw);border:1px solid var(--line-warm);border-radius:16px;overflow:hidden;
+  background:var(--ink-2);box-shadow:var(--shadow-lift),0 0 60px oklch(82% 0.18 195 / .12);
+  transform:translateY(-12px) scale(.97);opacity:0;transition:transform 300ms var(--spring),opacity 220ms var(--ease);}
+.cmdk.open .box{transform:none;opacity:1;}
+.cmdk .cin{display:flex;align-items:center;gap:11px;padding:16px 18px;border-bottom:1px solid var(--line);}
+.cmdk .cin svg{flex:none;color:var(--lumen);}
+.cmdk .cin input{flex:1;background:none;border:0;outline:none;color:var(--text);font:inherit;font-size:16px;}
+.cmdk .cin input::placeholder{color:var(--faint);}
+.cmdk .cin kbd{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:5px;padding:2px 7px;}
+.cmdk .clist{max-height:48vh;overflow:auto;padding:8px;}
+.cmdk .cgrp{font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--faint);font-weight:600;padding:10px 12px 4px;}
+.cmdk .citem{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:9px;cursor:pointer;color:var(--text-2);}
+.cmdk .citem .ic{width:24px;height:24px;border-radius:6px;display:grid;place-items:center;font-size:12px;flex:none;
+  background:oklch(82% 0.18 195 / .1);color:var(--lumen);}
+.cmdk .citem .ttl{color:var(--text);font-weight:500;} .cmdk .citem .meta2{margin-left:auto;font-size:12px;color:var(--faint);font-family:'JetBrains Mono',monospace;}
+.cmdk .citem[aria-selected="true"]{background:oklch(82% 0.18 195 / .12);color:var(--text);box-shadow:inset 0 0 0 1px var(--line-warm);}
+.cmdk .cempty{padding:28px 14px;text-align:center;color:var(--muted);}
+.cmdk .cfoot{display:flex;gap:16px;padding:10px 16px;border-top:1px solid var(--line);font-size:11.5px;color:var(--faint);}
+.cmdk .cfoot kbd{font-family:'JetBrains Mono',monospace;background:oklch(23% 0.055 230 / .8);border:1px solid var(--line);border-radius:4px;padding:1px 5px;}
+/* @STYLES */
+</style>
+</head>
+<body>
+<div class="qbg" aria-hidden="true">
+  <svg viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">
+    <defs>
+      <linearGradient id="mg" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="oklch(82% 0.18 195)"/><stop offset=".5" stop-color="oklch(66% 0.18 268)"/><stop offset="1" stop-color="oklch(60% 0.21 295)"/>
+      </linearGradient>
+      <path id="p1" d="M120 760 C 360 620, 420 460, 700 440 S 1080 360, 1320 180"/>
+      <path id="p2" d="M80 200 C 320 300, 520 280, 720 420 S 1100 560, 1380 520"/>
+      <path id="p3" d="M200 880 C 380 700, 700 720, 860 540 S 1180 300, 1300 320"/>
+    </defs>
+    <use class="hypha" href="#p1"/><use class="hypha b" href="#p2"/><use class="hypha c" href="#p3"/>
+    <use class="hypha b" href="#p2" transform="translate(0,120)"/>
+    <g class="nodes">
+      <circle class="node" cx="700" cy="440" r="3.2"/><circle class="node" cx="720" cy="420" r="2.6" style="animation-delay:-2s"/>
+      <circle class="node" cx="860" cy="540" r="3" style="animation-delay:-4s"/><circle class="node" cx="420" cy="470" r="2.4" style="animation-delay:-1s"/>
+      <circle class="node" cx="1080" cy="360" r="2.8" style="animation-delay:-3s"/><circle class="node" cx="320" cy="300" r="2.2" style="animation-delay:-5s"/>
+    </g>
+    <circle class="spark trav" r="2.6"><animateMotion dur="22s" repeatCount="indefinite"><mpath href="#p1"/></animateMotion></circle>
+    <circle class="spark trav b" r="2.2"><animateMotion dur="17s" repeatCount="indefinite"><mpath href="#p2"/></animateMotion></circle>
+    <circle class="spark trav c" r="2" ><animateMotion dur="28s" repeatCount="indefinite"><mpath href="#p3"/></animateMotion></circle>
+  </svg>
+</div>
+
+<div class="shell">
+  <aside class="sidebar" aria-label="Sidebar">
+    <div class="brand">
+      <svg class="sporemark" viewBox="0 0 28 28" aria-hidden="true">
+        <circle class="ring" cx="14" cy="14" r="11"/>
+        <circle class="core" cx="14" cy="14" r="3.4"/>
+        <g class="orb"><circle cx="14" cy="3.5" r="1.7"/><circle cx="24.5" cy="14" r="1.3"/></g>
+        <g class="orb b"><circle cx="14" cy="24.5" r="1.5"/><circle cx="3.5" cy="14" r="1.1"/></g>
+      </svg>
+      <div>
+        <div class="name">Quantum Blue</div>
+        <div class="sub">Mycology OS</div>
+      </div>
+    </div>
+    <nav class="nav" aria-label="Primary">
+      <a href="#" aria-current="page"><span class="dot"></span>Dashboard</a>
+      <div class="grp">Operate</div>
+      <a href="#" class="grow"><span class="dot"></span>Grow</a>
+      <a href="#" class="sell"><span class="dot"></span>Sell</a>
+      <a href="#" class="source"><span class="dot"></span>Source</a>
+      <div class="grp">Govern</div>
+      <a href="#" class="comply"><span class="dot"></span>Comply</a>
+      <a href="#" class="intel"><span class="dot"></span>Intelligence</a>
+    </nav>
+    <div class="foot"><span class="live-dot" aria-hidden="true"></span>Live · in-house</div>
+  </aside>
+
+  <div class="content">
+    <div class="topbar">
+      <div class="crumbs"><span>Operation</span> / <b>Dashboard</b><span class="clock mono num" id="clock">—</span></div>
+      <div class="kbar">
+        <button class="kdq" id="kopen" aria-label="Open command palette">Search batches, strains, lots… <kbd>⌘K</kbd></button>
+        <button class="btn" data-ripple id="rec-open">+ Record harvest</button>
+      </div>
+    </div>
+
+    <main class="page" id="main" tabindex="-1">
+      <svg width="0" height="0" aria-hidden="true" style="position:absolute"><defs>
+        <linearGradient id="sparkfill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="oklch(82% 0.18 195 / .35)"/><stop offset="1" stop-color="oklch(82% 0.18 195 / 0)"/>
+        </linearGradient></defs></svg>
+
+      <div class="phead reveal">
+        <div>
+          <div class="eyebrow">Operation</div>
+          <h1 class="serif">Today&rsquo;s state of the mycelium</h1>
+        </div>
+        <div class="pulse-row">
+          <span class="pill warn"><span class="d"></span>1 room out of spec</span>
+          <span class="pill ok"><span class="d"></span>11 / 12 in spec</span>
+        </div>
+      </div>
+
+      <section class="kpis" aria-label="Key metrics">
+        <div class="kpi feature reveal" data-tilt>
+          <div class="l">Active batches</div>
+          <div class="v"><span data-count="14">0</span></div>
+          <svg class="spark" viewBox="0 0 100 30" preserveAspectRatio="none">
+            <path class="area" d="M0,24 L14,21 L29,22 L43,15 L57,17 L71,9 L86,11 L100,4 L100,30 L0,30 Z"/>
+            <path class="line" d="M0,24 L14,21 L29,22 L43,15 L57,17 L71,9 L86,11 L100,4"/>
+            <circle class="pt" cx="100" cy="4" r="2.4"/>
+          </svg>
+          <div class="t"><span class="up">▲ 2</span> vs. last week</div>
+        </div>
+        <div class="kpi reveal" data-tilt>
+          <div class="l">Blocks in production</div>
+          <div class="v"><span data-count="612">0</span></div>
+          <svg class="spark" viewBox="0 0 100 30" preserveAspectRatio="none">
+            <path class="area" d="M0,12 L16,14 L32,10 L48,13 L64,11 L80,15 L100,12 L100,30 L0,30 Z"/>
+            <path class="line" d="M0,12 L16,14 L32,10 L48,13 L64,11 L80,15 L100,12"/>
+            <circle class="pt" cx="100" cy="12" r="2.4"/>
+          </svg>
+          <div class="t">across 9 rooms</div>
+        </div>
+        <div class="kpi reveal" data-tilt>
+          <div class="l">Harvested · fresh</div>
+          <div class="v"><span data-count="48250">0</span><small>g</small></div>
+          <svg class="spark" viewBox="0 0 100 30" preserveAspectRatio="none">
+            <path class="area" d="M0,26 L16,22 L32,23 L48,16 L64,14 L80,10 L100,6 L100,30 L0,30 Z"/>
+            <path class="line" d="M0,26 L16,22 L32,23 L48,16 L64,14 L80,10 L100,6"/>
+            <circle class="pt" cx="100" cy="6" r="2.4"/>
+          </svg>
+          <div class="t"><span class="up">▲ 6.1%</span> 30-day</div>
+        </div>
+        <div class="kpi reveal" data-tilt>
+          <div class="l">Overall dry ratio</div>
+          <div class="v"><span data-count="9.4" data-dec="1">0</span><small>%</small></div>
+          <svg class="spark" viewBox="0 0 100 30" preserveAspectRatio="none">
+            <path class="area" d="M0,14 L16,12 L32,15 L48,11 L64,13 L80,10 L100,12 L100,30 L0,30 Z"/>
+            <path class="line" d="M0,14 L16,12 L32,15 L48,11 L64,13 L80,10 L100,12"/>
+            <circle class="pt" cx="100" cy="12" r="2.4"/>
+          </svg>
+          <div class="t">floor 8.0% · <span class="up">clear</span></div>
+        </div>
+      </section>
+
+      <section class="kpis" aria-label="Secondary metrics" style="margin-top:var(--space-3);">
+        <div class="kpi span2 reveal" data-tilt>
+          <div class="l">Dried on-hand · distributor value</div>
+          <div class="v"><span data-count="18400" data-pre="$">$0</span><small>–</small><span data-count="24900" data-pre="$" style="font-family:Fraunces,serif;font-size:1em;color:inherit;margin:0">$0</span></div>
+          <div class="t">142 units across 5 strains</div>
+        </div>
+        <div class="kpi reveal" data-tilt>
+          <div class="l">Open tasks</div>
+          <div class="v"><span data-count="23">0</span></div>
+          <div class="t">5 due today</div>
+        </div>
+        <div class="kpi reveal" data-tilt>
+          <div class="l">Low-stock items</div>
+          <div class="v"><span data-count="3">0</span></div>
+          <div class="t"><span class="dn">needs reorder</span></div>
+        </div>
+      </section>
+
+      <section class="spotlight reveal" aria-labelledby="spot-t">
+        <div>
+          <div class="eyebrow">Latest harvest</div>
+          <h3 class="stitle serif" id="spot-t"><a href="#">Golden Teacher</a> <span style="color:var(--muted)">· flush 2</span></h3>
+          <p class="lead">Lot <span class="lot">QB-0412</span> pulled on Jun 3. <span class="tag good">9.3% dry · clears floor</span></p>
+          <div class="reads">
+            <div class="sread"><div class="rl">Fresh</div><div class="rv"><span data-count="2140">0</span><small>g</small></div></div>
+            <div class="sread"><div class="rl">Dry</div><div class="rv"><span data-count="198">0</span><small>g</small></div></div>
+            <div class="sread"><div class="rl">Ratio</div><div class="rv"><span data-count="9.3" data-dec="1">0</span><small>%</small></div></div>
+          </div>
+        </div>
+        <div class="gauge" data-pct="0.775" aria-label="Dry ratio 9.3 percent">
+          <svg width="148" height="148" viewBox="0 0 148 148">
+            <circle class="track" cx="74" cy="74" r="64"/>
+            <circle class="prog" cx="74" cy="74" r="64"/>
+          </svg>
+          <div class="gv"><b class="num"><span data-count="9.3" data-dec="1">0</span>%</b><span>dry yield</span></div>
+        </div>
+      </section>
+
+      <div class="cols-32">
+        <section class="panel reveal" aria-labelledby="ql-t">
+          <header><h3 id="ql-t">Quick log</h3><span class="meta">record a flush — ratio computes live</span></header>
+          <div class="pbody">
+            <form class="qlog" id="qlog" autocomplete="off">
+              <div class="field">
+                <label id="strain-lbl">Strain</label>
+                <div class="sel" id="strain" data-value="Golden Teacher" data-kind="psychedelic">
+                  <button type="button" class="selbtn" aria-haspopup="listbox" aria-labelledby="strain-lbl" aria-expanded="false">
+                    <span class="lead"><span class="swt" style="background:var(--spore)"></span><span class="selval">Golden Teacher</span></span>
+                    <span class="chev" aria-hidden="true">▾</span>
+                  </button>
+                  <div class="selmenu" role="listbox" aria-labelledby="strain-lbl">
+                    <button type="button" role="option" aria-selected="true" data-v="Golden Teacher" data-k="psychedelic" data-c="var(--spore)"><span class="swt" style="background:var(--spore)"></span>Golden Teacher<span class="kind">psychedelic</span></button>
+                    <button type="button" role="option" data-v="Blue Oyster" data-k="gourmet" data-c="var(--lumen)"><span class="swt" style="background:var(--lumen)"></span>Blue Oyster<span class="kind">gourmet</span></button>
+                    <button type="button" role="option" data-v="Lion’s Mane" data-k="gourmet" data-c="var(--moss)"><span class="swt" style="background:var(--moss)"></span>Lion’s Mane<span class="kind">gourmet</span></button>
+                    <button type="button" role="option" data-v="B+" data-k="psychedelic" data-c="var(--indigo)"><span class="swt" style="background:var(--indigo)"></span>B+<span class="kind">psychedelic</span></button>
+                    <button type="button" role="option" data-v="Penis Envy" data-k="psychedelic" data-c="var(--bruise)"><span class="swt" style="background:var(--bruise)"></span>Penis Envy<span class="kind">psychedelic</span></button>
+                  </div>
+                </div>
+              </div>
+              <div class="field">
+                <label for="flush">Flush #</label>
+                <div class="control"><input id="flush" type="number" min="1" max="6" value="3" inputmode="numeric"><span class="uline"></span></div>
+              </div>
+              <div class="field">
+                <label for="fresh">Fresh weight</label>
+                <div class="control"><input id="fresh" type="number" min="0" placeholder="2140" inputmode="decimal"><span class="unit">g</span><span class="uline"></span></div>
+              </div>
+              <div class="field">
+                <label for="dry">Dry weight</label>
+                <div class="control"><input id="dry" type="number" min="0" placeholder="198" inputmode="decimal"><span class="unit">g</span><span class="uline"></span></div>
+              </div>
+
+              <div class="ratio-out" aria-live="polite">
+                <div class="big is-idle" id="ratioBig">—<small>%</small></div>
+                <div class="meta">
+                  <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted)">
+                    <span>dry ratio</span><span id="ratioState">enter fresh + dry weight</span>
+                  </div>
+                  <div class="bar"><i id="ratioBar"></i><span class="floor" title="8% dry floor"></span></div>
+                  <div class="note">Floor marker = 8.0% minimum dry ratio. Bars over the line clear it.</div>
+                </div>
+              </div>
+
+              <div class="field full">
+                <button type="submit" class="btn wide" data-ripple data-state="idle" id="qlogBtn">
+                  <span class="spin" aria-hidden="true"></span>
+                  <span class="check" aria-hidden="true">✓</span>
+                  <span class="lbl">Log harvest</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </section>
+
+        <section class="panel reveal" aria-labelledby="att-t">
+          <header><h3 id="att-t">Needs attention</h3></header>
+          <div class="pbody" style="display:flex;flex-direction:column;gap:2px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line-soft);">
+              <span>Harvests below 8% dry floor</span><span class="tag warn">2</span></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line-soft);">
+              <span>Low-stock items</span><span class="tag bad">3</span></div>
+            <div style="color:var(--muted);font-size:13px;margin-top:8px;">Gypsum · Micropore tape · Spawn bags are under their reorder threshold.</div>
+            <div style="margin-top:auto;padding-top:14px;display:flex;gap:8px;flex-wrap:wrap;">
+              <button class="btn ghost" data-ripple style="font-size:12px;padding:7px 12px;">Generate reorder</button>
+              <button class="btn ghost" data-ripple style="font-size:12px;padding:7px 12px;">Open tasks</button>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <section class="panel reveal" aria-labelledby="env-t" style="margin-top:var(--space-5);">
+        <header>
+          <h3 id="env-t">Environment</h3>
+          <div class="seg" role="tablist" aria-label="Environment zones" id="envseg">
+            <span class="ind" aria-hidden="true"></span>
+            <button role="tab" aria-selected="true" data-pane="all">All rooms</button>
+            <button role="tab" aria-selected="false" data-pane="fruit">Fruiting</button>
+            <button role="tab" aria-selected="false" data-pane="lab">Lab &amp; store</button>
+          </div>
+        </header>
+        <div class="pbody">
+          <div class="tabpanes">
+            <div class="tabpane active" data-pane="all" role="tabpanel">
+              <div class="envgrid">
+                <div class="envcell bad">
+                  <div class="room"><span class="led"></span>Fruiting Room B <span class="tag bad" style="margin-left:auto">out of spec</span></div>
+                  <div class="read"><b class="num">1,420</b><span class="u">ppm</span><span class="metric">CO₂</span></div>
+                  <div class="meter"><i data-pct="0.89"></i></div>
+                  <div class="spec">Target &lt; 1,000 ppm · ventilation lagging</div>
+                </div>
+                <div class="envcell warn">
+                  <div class="room"><span class="led"></span>Incubation A <span class="tag warn" style="margin-left:auto">drifting</span></div>
+                  <div class="read"><b class="num">82</b><span class="u">%RH</span><span class="metric">humidity</span></div>
+                  <div class="meter"><i data-pct="0.82"></i></div>
+                  <div class="spec">Target 60–75% · trending up</div>
+                </div>
+                <div class="envcell ok">
+                  <div class="room"><span class="led"></span>Fruiting Room A <span class="tag good" style="margin-left:auto">in spec</span></div>
+                  <div class="read"><b class="num">22.1</b><span class="u">°C</span><span class="metric">temp</span></div>
+                  <div class="meter"><i data-pct="0.55"></i></div>
+                  <div class="spec">Target 20–23 °C · holding</div>
+                </div>
+              </div>
+            </div>
+            <div class="tabpane" data-pane="fruit" role="tabpanel">
+              <div class="envgrid">
+                <div class="envcell ok"><div class="room"><span class="led"></span>Fruiting A<span class="tag good" style="margin-left:auto">in spec</span></div><div class="read"><b class="num">920</b><span class="u">ppm</span><span class="metric">CO₂</span></div><div class="meter"><i data-pct="0.57"></i></div><div class="spec">Target &lt; 1,000 ppm</div></div>
+                <div class="envcell bad"><div class="room"><span class="led"></span>Fruiting B<span class="tag bad" style="margin-left:auto">out of spec</span></div><div class="read"><b class="num">1,420</b><span class="u">ppm</span><span class="metric">CO₂</span></div><div class="meter"><i data-pct="0.89"></i></div><div class="spec">Target &lt; 1,000 ppm</div></div>
+                <div class="envcell ok"><div class="room"><span class="led"></span>Fruiting C<span class="tag good" style="margin-left:auto">in spec</span></div><div class="read"><b class="num">88</b><span class="u">%RH</span><span class="metric">humidity</span></div><div class="meter"><i data-pct="0.7"></i></div><div class="spec">Target 85–92%</div></div>
+              </div>
+            </div>
+            <div class="tabpane" data-pane="lab" role="tabpanel">
+              <div class="envgrid">
+                <div class="envcell ok"><div class="room"><span class="led"></span>Spawn lab<span class="tag good" style="margin-left:auto">in spec</span></div><div class="read"><b class="num">+12</b><span class="u">Pa</span><span class="metric">pressure</span></div><div class="meter"><i data-pct="0.6"></i></div><div class="spec">Positive · filtered</div></div>
+                <div class="envcell ok"><div class="room"><span class="led"></span>Cold store<span class="tag good" style="margin-left:auto">in spec</span></div><div class="read"><b class="num">3.4</b><span class="u">°C</span><span class="metric">temp</span></div><div class="meter"><i data-pct="0.34"></i></div><div class="spec">Target 2–5 °C</div></div>
+                <div class="envcell ok"><div class="room"><span class="led"></span>Drying room<span class="tag good" style="margin-left:auto">in spec</span></div><div class="read"><b class="num">28</b><span class="u">%RH</span><span class="metric">humidity</span></div><div class="meter"><i data-pct="0.28"></i></div><div class="spec">Target &lt; 35%</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel reveal" id="yield" aria-labelledby="y-t" style="margin-top:var(--space-5);">
+        <header><h3 id="y-t">Yield by strain</h3><span class="meta">this cycle · fresh weight · tap a row for flush detail</span></header>
+        <div class="pbody" style="padding-top:var(--space-3);">
+          <table class="ytable">
+            <thead><tr><th>Strain</th><th class="hide">Track</th><th class="r">Batches</th><th class="r">Fresh</th><th class="r">Bio-efficiency</th></tr></thead>
+            <tbody>
+              <tr class="yrow" aria-expanded="false" tabindex="0" role="button" aria-controls="d-gt">
+                <td><span class="sname"><span class="chev">▶</span><span class="swatch" style="color:var(--spore);background:var(--spore)"></span>Golden Teacher</span></td>
+                <td class="hide"><span class="kind psy">psychedelic</span></td>
+                <td class="r">6</td><td class="r">18,400 g</td>
+                <td class="r"><span class="be"><span class="track"><i data-pct="0.64"></i></span>64%</span></td>
+              </tr>
+              <tr class="ydetail" id="d-gt"><td colspan="5"><div class="wrap"><div class="inner"><div class="pad">
+                <div class="flush"><div class="fl">Flush 1</div><div class="fv">11,200 g</div><div class="fm">9.1% dry · clears floor</div></div>
+                <div class="flush"><div class="fl">Flush 2</div><div class="fv">4,900 g</div><div class="fm">9.3% dry · clears floor</div></div>
+                <div class="flush"><div class="fl">Flush 3</div><div class="fv">2,300 g</div><div class="fm">8.4% dry · clears floor</div></div>
+                <div class="flush"><div class="fl">Senescence</div><div class="fv">Gen 4</div><div class="fm">re-clone recommended</div></div>
+              </div></div></div></td></tr>
+
+              <tr class="yrow" aria-expanded="false" tabindex="0" role="button" aria-controls="d-bo">
+                <td><span class="sname"><span class="chev">▶</span><span class="swatch" style="color:var(--lumen);background:var(--lumen)"></span>Blue Oyster</span></td>
+                <td class="hide"><span class="kind gourmet">gourmet</span></td>
+                <td class="r">4</td><td class="r">12,900 g</td>
+                <td class="r"><span class="be"><span class="track"><i data-pct="0.88"></i></span>88%</span></td>
+              </tr>
+              <tr class="ydetail" id="d-bo"><td colspan="5"><div class="wrap"><div class="inner"><div class="pad">
+                <div class="flush"><div class="fl">Flush 1</div><div class="fv">7,400 g</div><div class="fm">fast colonizer</div></div>
+                <div class="flush"><div class="fl">Flush 2</div><div class="fv">3,800 g</div><div class="fm">strong pins</div></div>
+                <div class="flush"><div class="fl">Flush 3</div><div class="fv">1,700 g</div><div class="fm">tapering</div></div>
+                <div class="flush"><div class="fl">BE</div><div class="fv">88%</div><div class="fm">top performer</div></div>
+              </div></div></div></td></tr>
+
+              <tr class="yrow" aria-expanded="false" tabindex="0" role="button" aria-controls="d-lm">
+                <td><span class="sname"><span class="chev">▶</span><span class="swatch" style="color:var(--moss);background:var(--moss)"></span>Lion&rsquo;s Mane</span></td>
+                <td class="hide"><span class="kind gourmet">gourmet</span></td>
+                <td class="r">3</td><td class="r">8,200 g</td>
+                <td class="r"><span class="be"><span class="track"><i data-pct="0.71"></i></span>71%</span></td>
+              </tr>
+              <tr class="ydetail" id="d-lm"><td colspan="5"><div class="wrap"><div class="inner"><div class="pad">
+                <div class="flush"><div class="fl">Flush 1</div><div class="fv">5,100 g</div><div class="fm">slow start</div></div>
+                <div class="flush"><div class="fl">Flush 2</div><div class="fv">2,300 g</div><div class="fm">even fruiting</div></div>
+                <div class="flush"><div class="fl">Flush 3</div><div class="fv">800 g</div><div class="fm">final pull</div></div>
+                <div class="flush"><div class="fl">BE</div><div class="fv">71%</div><div class="fm">steady</div></div>
+              </div></div></div></td></tr>
+
+              <tr class="yrow" aria-expanded="false" tabindex="0" role="button" aria-controls="d-bp">
+                <td><span class="sname"><span class="chev">▶</span><span class="swatch" style="color:var(--indigo);background:var(--indigo)"></span>B+</span></td>
+                <td class="hide"><span class="kind psy">psychedelic</span></td>
+                <td class="r">2</td><td class="r">5,100 g</td>
+                <td class="r"><span class="be"><span class="track"><i data-pct="0.58"></i></span>58%</span></td>
+              </tr>
+              <tr class="ydetail" id="d-bp"><td colspan="5"><div class="wrap"><div class="inner"><div class="pad">
+                <div class="flush"><div class="fl">Flush 1</div><div class="fv">3,400 g</div><div class="fm">resilient</div></div>
+                <div class="flush"><div class="fl">Flush 2</div><div class="fv">1,700 g</div><div class="fm">forgiving strain</div></div>
+                <div class="flush"><div class="fl">Dry ratio</div><div class="fv">9.6%</div><div class="fm">clears floor</div></div>
+                <div class="flush"><div class="fl">BE</div><div class="fv">58%</div><div class="fm">beginner-friendly</div></div>
+              </div></div></div></td></tr>
+
+              <tr class="yrow" aria-expanded="false" tabindex="0" role="button" aria-controls="d-pe">
+                <td><span class="sname"><span class="chev">▶</span><span class="swatch" style="color:var(--bruise);background:var(--bruise)"></span>Penis Envy</span></td>
+                <td class="hide"><span class="kind psy">psychedelic</span></td>
+                <td class="r">1</td><td class="r">3,650 g</td>
+                <td class="r"><span class="be"><span class="track"><i data-pct="0.52"></i></span>52%</span></td>
+              </tr>
+              <tr class="ydetail" id="d-pe"><td colspan="5"><div class="wrap"><div class="inner"><div class="pad">
+                <div class="flush"><div class="fl">Flush 1</div><div class="fv">2,600 g</div><div class="fm">dense fruits</div></div>
+                <div class="flush"><div class="fl">Flush 2</div><div class="fv">1,050 g</div><div class="fm">slow but potent</div></div>
+                <div class="flush"><div class="fl">Dry ratio</div><div class="fv">11.2%</div><div class="fm">high solids</div></div>
+                <div class="flush"><div class="fl">BE</div><div class="fv">52%</div><div class="fm">premium line</div></div>
+              </div></div></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- @SECTIONS -->
+    </main>
+    <footer class="note">Preview · “Quantum Blue · Pro”. Static mock data, fully interactive. An upgraded, maximally-animated build of the current in-use theme.</footer>
+  </div>
+</div>
+
+<div class="cmdk" id="cmdk" role="dialog" aria-modal="true" aria-label="Command palette">
+  <div class="box">
+    <div class="cin">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input id="cmdq" type="text" placeholder="Search batches, strains, lots, customers…" autocomplete="off" />
+      <kbd>esc</kbd>
+    </div>
+    <div class="clist" id="cmdlist"></div>
+    <div class="cfoot"><span><kbd>↑</kbd><kbd>↓</kbd> navigate</span><span><kbd>↵</kbd> open</span><span><kbd>esc</kbd> close</span></div>
+  </div>
+</div>
+
+<script>
+(() => {
+  "use strict";
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const fine = window.matchMedia('(pointer: fine)').matches;
+  document.documentElement.classList.add('js');
+  const $ = (s,r=document)=>r.querySelector(s);
+  const $$ = (s,r=document)=>[...r.querySelectorAll(s)];
+  const fmt = n => n.toLocaleString('en-US');
+
+  /* cursor-reactive aurora */
+  if(!reduce && fine){
+    let tx=50,ty=0,cx=50,cy=0,raf=0;
+    addEventListener('pointermove',e=>{tx=e.clientX/innerWidth*100;ty=e.clientY/innerHeight*100;
+      if(!raf)raf=requestAnimationFrame(tick);},{passive:true});
+    const tick=()=>{cx+=(tx-cx)*.08;cy+=(ty-cy)*.08;
+      document.body.style.setProperty('--mx',cx.toFixed(1)+'%');
+      document.body.style.setProperty('--my',cy.toFixed(1)+'%');
+      if(Math.abs(tx-cx)+Math.abs(ty-cy)>.4){raf=requestAnimationFrame(tick);}else{raf=0;}};
+  }
+
+  /* live clock */
+  const clock = $('#clock');
+  const tickClock=()=>{const d=new Date();
+    clock.textContent='· '+d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})
+      +' · '+d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false})+' MDT';};
+  tickClock(); if(!reduce) setInterval(tickClock,1000);
+
+  /* ripple */
+  addEventListener('pointerdown',e=>{
+    const b=e.target.closest('[data-ripple]'); if(!b||reduce) return;
+    const r=b.getBoundingClientRect(),d=Math.max(r.width,r.height);
+    const s=document.createElement('span'); s.className='ripple';
+    s.style.width=s.style.height=d+'px';
+    s.style.left=(e.clientX-r.left-d/2)+'px'; s.style.top=(e.clientY-r.top-d/2)+'px';
+    b.appendChild(s); s.addEventListener('animationend',()=>s.remove());
+  });
+
+  /* count-up — opt-in via [data-count]; respects decimals + suffixes */
+  const counted = new WeakSet();
+  window.__countUp = el=>{
+    if(counted.has(el))return; counted.add(el);
+    const to=parseFloat(el.dataset.count), dec=(el.dataset.dec|0), pre=el.dataset.pre||'', suf=el.dataset.suf||'';
+    if(reduce||isNaN(to)){el.textContent=pre+(isNaN(to)?el.textContent:to.toLocaleString('en-US',{minimumFractionDigits:dec,maximumFractionDigits:dec}))+suf;return;}
+    const dur=1100, t0=performance.now();
+    const step=t=>{let k=Math.min(1,(t-t0)/dur); k=1-Math.pow(1-k,3);
+      const v=to*k; el.textContent=pre+v.toLocaleString('en-US',{minimumFractionDigits:dec,maximumFractionDigits:dec})+suf;
+      if(k<1)requestAnimationFrame(step);};
+    requestAnimationFrame(step);
+  };
+
+  /* shared IntersectionObserver — reveal, count, sparkline, bars */
+  const io = new IntersectionObserver((ents)=>{
+    ents.forEach(en=>{ if(!en.isIntersecting)return; const el=en.target;
+      el.classList.add('in');
+      $$('[data-count]',el).forEach(window.__countUp);
+      if(el.matches('[data-count]'))window.__countUp(el);
+      el.dispatchEvent(new CustomEvent('inview'));
+      io.unobserve(el);
+    });
+  },{threshold:.25});
+  window.__observe = el=>io.observe(el);
+  // register everything tagged .reveal now and after each chunk via __wire()
+  window.__wire = ()=>{ $$('.reveal:not([data-wired])').forEach(el=>{el.dataset.wired='1';io.observe(el);}); };
+
+  /* magnetic tilt for [data-tilt] */
+  window.__tilt = ()=>{ if(reduce||!fine)return;
+    $$('[data-tilt]:not([data-tilted])').forEach(c=>{ c.dataset.tilted='1';
+      c.addEventListener('pointermove',e=>{const r=c.getBoundingClientRect();
+        const px=(e.clientX-r.left)/r.width, py=(e.clientY-r.top)/r.height;
+        c.style.setProperty('--rx',((.5-py)*6).toFixed(2)+'deg');
+        c.style.setProperty('--ry',((px-.5)*7).toFixed(2)+'deg');
+        c.style.setProperty('--gx',(px*100).toFixed(1)+'%');
+        c.style.setProperty('--gy',(py*100).toFixed(1)+'%');});
+      c.addEventListener('pointerleave',()=>{c.style.setProperty('--rx','0deg');c.style.setProperty('--ry','0deg');});
+    });
+  };
+
+  /* toast system */
+  let toastWrap;
+  window.__toast = (title, body, tone='lumen')=>{
+    if(!toastWrap){toastWrap=document.createElement('div');toastWrap.className='toasts';document.body.appendChild(toastWrap);}
+    const t=document.createElement('div');t.className='toast '+tone;
+    t.innerHTML='<span class="tk"></span><div><b>'+title+'</b>'+(body?'<div class="tb">'+body+'</div>':'')+'</div>';
+    toastWrap.appendChild(t); requestAnimationFrame(()=>t.classList.add('show'));
+    setTimeout(()=>{t.classList.remove('show');t.addEventListener('transitionend',()=>t.remove());},3600);
+  };
+
+  /* sparkline lengths — set --len so the stroke can draw in on reveal */
+  $$('.spark path.line').forEach(p=>{ try{const L=p.getTotalLength(); p.parentElement.parentElement.style.setProperty('--len',L.toFixed(1));}catch(e){} });
+
+  /* radial gauges */
+  $$('.gauge').forEach(g=>{
+    const c=g.querySelector('.prog'); if(!c)return;
+    const r=+c.getAttribute('r'), circ=2*Math.PI*r, pct=+g.dataset.pct||0;
+    g.style.setProperty('--circ',circ.toFixed(1));
+    g.style.setProperty('--off',(circ*(1-pct)).toFixed(1));
+    if(reduce){g.classList.add('in');return;}
+    const o=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){g.classList.add('in');o.disconnect();}}),{threshold:.4});
+    o.observe(g);
+  });
+
+  /* ── Quick-log: custom select ── */
+  const sel = $('#strain');
+  if(sel){
+    const btn=$('.selbtn',sel), val=$('.selval',sel), swt=$('.lead .swt',sel);
+    const closeSel=()=>{sel.classList.remove('open');btn.setAttribute('aria-expanded','false');};
+    btn.addEventListener('click',e=>{e.stopPropagation();sel.classList.toggle('open');
+      btn.setAttribute('aria-expanded',sel.classList.contains('open'));});
+    $$('.selmenu button',sel).forEach(o=>o.addEventListener('click',()=>{
+      $$('.selmenu button',sel).forEach(x=>x.setAttribute('aria-selected','false'));
+      o.setAttribute('aria-selected','true');
+      val.textContent=o.dataset.v; swt.style.background=o.dataset.c;
+      sel.dataset.value=o.dataset.v; sel.dataset.kind=o.dataset.k; closeSel();
+    }));
+    document.addEventListener('click',e=>{if(!sel.contains(e.target))closeSel();});
+    document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSel();});
+  }
+
+  /* ── Quick-log: live dry-ratio ── */
+  const fresh=$('#fresh'), dry=$('#dry'), rBig=$('#ratioBig'), rBar=$('#ratioBar'), rState=$('#ratioState');
+  const FLOOR=8;
+  const recompute=()=>{
+    const f=parseFloat(fresh.value), d=parseFloat(dry.value);
+    if(!(f>0)|| !(d>=0)){ rBig.innerHTML='—<small>%</small>'; rBig.className='big is-idle';
+      rBar.style.width='0'; rState.textContent='enter fresh + dry weight'; return; }
+    const r=Math.min(100,d/f*100); const ok=r>=FLOOR;
+    rBig.innerHTML=r.toFixed(1)+'<small>%</small>'; rBig.className='big '+(ok?'is-good':'is-bad');
+    rBar.style.width=Math.min(100,r/15*100)+'%';
+    rBar.style.background=ok?'linear-gradient(90deg,var(--lumen-2),var(--moss))':'linear-gradient(90deg,var(--ember),var(--spore))';
+    rState.textContent=ok?'clears the floor ✓':'below 8% floor';
+    rState.style.color=ok?'var(--moss)':'var(--ember)';
+  };
+  if(fresh){ fresh.addEventListener('input',recompute); dry.addEventListener('input',recompute); }
+
+  /* ── Quick-log: submit flow ── */
+  const qlog=$('#qlog'), qbtn=$('#qlogBtn');
+  let lot=413;
+  if(qlog){ qlog.addEventListener('submit',e=>{e.preventDefault();
+    if(qbtn.dataset.state==='loading')return;
+    const strain=sel?sel.dataset.value:'Golden Teacher';
+    const fl=$('#flush').value||'3';
+    const f=parseFloat(fresh.value)||2140, d=parseFloat(dry.value)||198;
+    const r=(d/f*100);
+    if(reduce){ finish(); return; }
+    qbtn.dataset.state='loading';
+    setTimeout(()=>{ qbtn.dataset.state='done'; $('.lbl',qbtn).textContent='Logged';
+      setTimeout(finish,520);
+    }, 900);
+    function finish(){
+      const code='QB-0'+(lot++);
+      window.__toast('Harvest '+code+' logged', strain+' · flush '+fl+' · '+r.toFixed(1)+'% dry'+(r>=8?' · clears floor':' · below floor'), r>=8?'moss':'ember');
+      setTimeout(()=>{ qbtn.dataset.state='idle'; $('.lbl',qbtn).textContent='Log harvest';
+        qlog.reset(); recompute(); }, 900);
+    }
+  }); }
+
+  /* ── Environment meters + tabs ── */
+  const fillMeters = pane=>{ $$('.meter i',pane).forEach(i=>{ i.style.width='0';
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{ i.style.width=(reduce? (i.dataset.pct*100):(i.dataset.pct*100))+'%'; })); }); };
+  $$('.tabpanes').forEach(tp=>{ const active=$('.tabpane.active',tp);
+    if(reduce){ $$('.meter i',tp).forEach(i=>i.style.width=(i.dataset.pct*100)+'%'); }
+    else { const o=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){fillMeters(active);o.disconnect();}}),{threshold:.3}); o.observe(tp); }
+  });
+  const seg=$('#envseg');
+  if(seg){ const ind=$('.ind',seg), tabs=$$('button',seg);
+    const move=t=>{ ind.style.width=t.offsetWidth+'px'; ind.style.transform='translateX('+(t.offsetLeft-4)+'px)'; };
+    const select=t=>{ tabs.forEach(x=>x.setAttribute('aria-selected','false')); t.setAttribute('aria-selected','true'); move(t);
+      const name=t.dataset.pane; $$('.tabpane').forEach(p=>p.classList.toggle('active',p.dataset.pane===name));
+      fillMeters($('.tabpane.active')); };
+    requestAnimationFrame(()=>move(tabs[0]));
+    tabs.forEach(t=>t.addEventListener('click',()=>select(t)));
+    addEventListener('resize',()=>move($('button[aria-selected="true"]',seg)));
+  }
+
+  /* ── Yield table: bio bars fill on view + expandable rows ── */
+  const yieldSec=$('#yield');
+  if(yieldSec){
+    const fillBars=()=>$$('.be .track i',yieldSec).forEach(i=>{i.style.width=(i.dataset.pct*100)+'%';});
+    if(reduce) fillBars();
+    else { const o=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){fillBars();o.disconnect();}}),{threshold:.2}); o.observe(yieldSec); }
+    $$('.yrow',yieldSec).forEach(row=>{
+      const toggle=()=>row.setAttribute('aria-expanded', row.getAttribute('aria-expanded')==='true'?'false':'true');
+      row.addEventListener('click',toggle);
+      row.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){e.preventDefault();toggle();} });
+    });
+  }
+
+  /* ── Command palette ── */
+  const CMD=[
+    {g:'Batches',i:'◧',t:'QB-0412 · Golden Teacher',m:'fruiting'},
+    {g:'Batches',i:'◧',t:'QB-0408 · Blue Oyster',m:'harvesting'},
+    {g:'Batches',i:'◧',t:'QB-0401 · Lion’s Mane',m:'colonization'},
+    {g:'Strains',i:'❋',t:'Golden Teacher',m:'psychedelic'},
+    {g:'Strains',i:'❋',t:'Blue Oyster',m:'gourmet'},
+    {g:'Strains',i:'❋',t:'Penis Envy',m:'psychedelic'},
+    {g:'Customers',i:'☷',t:'Cascade Co-op',m:'wholesale'},
+    {g:'Customers',i:'☷',t:'Alpine Restaurant Group',m:'restaurant'},
+    {g:'Go to',i:'→',t:'Grow',m:'section'},{g:'Go to',i:'→',t:'Sell',m:'section'},
+    {g:'Go to',i:'→',t:'Comply · FSMA-204 recall',m:'section'},
+    {g:'Actions',i:'＋',t:'Record harvest',m:'⌘N'},{g:'Actions',i:'＋',t:'Generate reorder list',m:''},
+  ];
+  const cmdk=$('#cmdk'), cq=$('#cmdq'), clist=$('#cmdlist');
+  let cidx=0, filtered=[];
+  const renderCmd=()=>{
+    const q=cq.value.trim().toLowerCase();
+    filtered=CMD.filter(c=>!q||c.t.toLowerCase().includes(q)||c.g.toLowerCase().includes(q)||c.m.toLowerCase().includes(q));
+    if(!filtered.length){clist.innerHTML='<div class="cempty">No matches for “'+cq.value+'”.</div>';return;}
+    cidx=Math.min(cidx,filtered.length-1);
+    let html='',lastG=null;
+    filtered.forEach((c,n)=>{ if(c.g!==lastG){html+='<div class="cgrp">'+c.g+'</div>';lastG=c.g;}
+      html+='<div class="citem" role="option" data-n="'+n+'" aria-selected="'+(n===cidx)+'"><span class="ic">'+c.i+'</span><span class="ttl">'+c.t+'</span>'+(c.m?'<span class="meta2">'+c.m+'</span>':'')+'</div>';});
+    clist.innerHTML=html;
+    $$('.citem',clist).forEach(el=>{ el.addEventListener('pointermove',()=>{cidx=+el.dataset.n;syncSel();});
+      el.addEventListener('click',()=>choose(+el.dataset.n)); });
+  };
+  const syncSel=()=>$$('.citem',clist).forEach(el=>el.setAttribute('aria-selected',+el.dataset.n===cidx));
+  const choose=n=>{ const c=filtered[n]; if(!c)return; closeCmd();
+    window.__toast('Opening '+c.t, c.g+(c.m?' · '+c.m:''),'lumen'); };
+  const openCmd=()=>{ cmdk.classList.add('open'); cq.value='';cidx=0;renderCmd();
+    setTimeout(()=>cq.focus(),60); };
+  const closeCmd=()=>{ cmdk.classList.remove('open'); };
+  $('#kopen')&&$('#kopen').addEventListener('click',openCmd);
+  cq.addEventListener('input',()=>{cidx=0;renderCmd();});
+  addEventListener('keydown',e=>{
+    if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();cmdk.classList.contains('open')?closeCmd():openCmd();return;}
+    if(!cmdk.classList.contains('open'))return;
+    if(e.key==='Escape'){closeCmd();}
+    else if(e.key==='ArrowDown'){e.preventDefault();cidx=Math.min(cidx+1,filtered.length-1);syncSel();scrollSel();}
+    else if(e.key==='ArrowUp'){e.preventDefault();cidx=Math.max(cidx-1,0);syncSel();scrollSel();}
+    else if(e.key==='Enter'){e.preventDefault();choose(cidx);}
+  });
+  const scrollSel=()=>{const el=$('.citem[aria-selected="true"]',clist);el&&el.scrollIntoView({block:'nearest'});};
+  cmdk.addEventListener('click',e=>{if(e.target===cmdk)closeCmd();});
+
+  /* Record-harvest button → jump to quick-log and focus */
+  $('#rec-open')&&$('#rec-open').addEventListener('click',()=>{
+    const ql=$('#qlog'); if(ql){ql.scrollIntoView({behavior:reduce?'auto':'smooth',block:'center'});
+      setTimeout(()=>$('#fresh').focus(),reduce?0:500);}
+  });
+
+  // @JS
+
+  window.__wire(); window.__tilt();
+
+  /* Safety: never let a reveal-gated section stay blank (hidden tabs, headless
+     renderers, link-preview bots). After a short grace, force everything in. */
+  setTimeout(()=>{ $$('.reveal:not(.in)').forEach(el=>{el.classList.add('in');$$('[data-count]',el).forEach(window.__countUp);});
+    $$('.gauge:not(.in)').forEach(g=>g.classList.add('in')); }, reduce?0:1800);
+})();
+</script>
+</body>
+</html>

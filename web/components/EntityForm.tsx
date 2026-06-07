@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition, type ReactNode, type FormEvent } from "react";
+import { useToast } from "@/components/ToastProvider";
 
 export interface EntityResult {
   ok: boolean;
@@ -25,6 +26,7 @@ export default function EntityForm({
 }: EntityFormProps) {
   const [result, setResult] = useState<EntityResult | null>(null);
   const [pending, startTransition] = useTransition();
+  const { push } = useToast();
 
   function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -34,6 +36,11 @@ export default function EntityForm({
       const r = await action(data);
       setResult(r);
       if (r.ok && resetOnSuccess) form.reset();
+      push({
+        title: r.ok ? "Saved" : "Couldn’t save",
+        body: r.message ?? (r.ok ? undefined : "Something went wrong."),
+        tone: r.ok ? "moss" : "ember",
+      });
     });
   }
 
@@ -41,7 +48,7 @@ export default function EntityForm({
     <form onSubmit={onSubmit} className="form-grid">
       {children}
       <div className="actions full">
-        <button type="submit" className="primary" disabled={pending}>
+        <button type="submit" className="primary" data-ripple disabled={pending}>
           {pending ? "Saving…" : submitLabel}
         </button>
         {result && (

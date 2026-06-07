@@ -4,6 +4,8 @@ import SporeMark from "@/components/SporeMark";
 import SectionTint from "@/components/SectionTint";
 import CommandPalette from "@/components/CommandPalette";
 import VersionWatcher from "@/components/VersionWatcher";
+import CursorAura from "@/components/CursorAura";
+import ToastProvider from "@/components/ToastProvider";
 import { createServiceClient } from "@/utils/supabase/service";
 
 // Open access - no auth gate. SSR pages read with the service-role client
@@ -23,8 +25,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const buildId = process.env.VERCEL_GIT_COMMIT_SHA ?? "dev";
 
   return (
+    <ToastProvider>
     <div className="shell">
       <SectionTint />
+      <CursorAura />
       <VersionWatcher buildId={buildId} />
       <a href="#main" className="skip-link">
         Skip to main content
@@ -68,6 +72,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
       <CommandPalette index={cmdIndex} />
     </div>
+    </ToastProvider>
   );
 }
 

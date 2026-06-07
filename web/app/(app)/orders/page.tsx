@@ -63,12 +63,12 @@ export default async function OrdersPage() {
       </div>
 
       <div className="kpi-row">
-        <Kpi label="Gross (all time)" value={money(grossYtd)} feature />
-        <Kpi label="Orders" value={orders.length} />
-        <Kpi label="Avg order value" value={money(avg)} />
+        <Kpi label="Gross (all time)" countTo={grossYtd ?? 0} prefix="$" feature />
+        <Kpi label="Orders" countTo={orders.length} />
+        <Kpi label="Avg order value" countTo={avg ?? 0} prefix="$" />
         <Kpi
           label="Unfulfilled"
-          value={orders.filter((o) => o.fulfillment_status !== "fulfilled").length}
+          countTo={orders.filter((o) => o.fulfillment_status !== "fulfilled").length}
         />
       </div>
 

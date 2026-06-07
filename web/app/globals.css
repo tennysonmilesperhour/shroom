@@ -1756,3 +1756,249 @@ tbody tr.row-link:hover td { background: oklch(82% 0.18 195 / 0.05); }
 @media (prefers-reduced-motion: reduce) {
   .loading-skeleton > * { animation: none; }
 }
+
+/* ── 20. Quantum Pro · interactive layer ────────────────────────────────────
+   Global atmosphere + interaction primitives layered on the existing theme.
+   Driven by components/CursorAura.tsx and the components/anim/* primitives.
+   Every effect degrades to a calm static state under reduced motion. */
+:root { --mx: 50%; --my: 0%; }
+
+/* Cursor-tracked bioluminescent aura (CursorAura writes --mx/--my). */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(
+    440px 440px at var(--mx) var(--my),
+    oklch(82% 0.18 195 / 0.10),
+    transparent 70%
+  );
+  transition: background 240ms linear;
+}
+@media (prefers-reduced-motion: reduce) { body::after { display: none; } }
+
+/* Click ripple — any [data-ripple] element clips a single expanding ink blot.
+   overflow:hidden clips the child span, not the element's own glow/box-shadow. */
+[data-ripple] { position: relative; overflow: hidden; }
+.ripple-ink {
+  position: absolute;
+  border-radius: 50%;
+  transform: scale(0);
+  pointer-events: none;
+  background: oklch(100% 0 0 / 0.4);
+  mix-blend-mode: overlay;
+  animation: ripple-pop 620ms var(--ease-out) forwards;
+}
+@keyframes ripple-pop { to { transform: scale(2.6); opacity: 0; } }
+
+/* Stacked transient toasts (ToastProvider). Shares the .toast visual language. */
+.qtoast-stack {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
+.qtoast {
+  pointer-events: auto;
+  display: flex;
+  gap: 11px;
+  align-items: flex-start;
+  min-width: 260px;
+  max-width: 340px;
+  padding: 13px 15px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line-warm);
+  background:
+    linear-gradient(180deg, oklch(82% 0.18 195 / 0.06), transparent 60%),
+    color-mix(in oklch, var(--ink-2) 96%, transparent);
+  box-shadow: var(--shadow-lift), 0 0 60px -20px oklch(82% 0.18 195 / 0.32);
+  animation: qtoast-in 320ms var(--ease-out);
+}
+.qtoast-mark {
+  width: 9px; height: 9px; border-radius: 50%; margin-top: 6px; flex: none;
+  background: var(--lumen); box-shadow: 0 0 10px var(--lumen);
+}
+.qtoast.moss  .qtoast-mark { background: var(--moss);  box-shadow: 0 0 10px var(--moss); }
+.qtoast.ember .qtoast-mark { background: var(--ember); box-shadow: 0 0 10px var(--ember); }
+.qtoast.spore .qtoast-mark { background: var(--spore); box-shadow: 0 0 10px var(--spore); }
+.qtoast-text { flex: 1; min-width: 0; }
+.qtoast-title {
+  font-family: var(--font-display);
+  font-variation-settings: 'opsz' 36, 'SOFT' 25;
+  font-weight: 400; font-size: 15px; letter-spacing: -0.01em;
+  color: var(--text); line-height: 1.2;
+}
+.qtoast-body { color: var(--text-2); font-size: 12.5px; margin-top: 2px; }
+.qtoast-x {
+  background: transparent; border: 0; color: var(--faint);
+  font-size: 18px; line-height: 1; cursor: pointer; padding: 2px 4px;
+  border-radius: var(--radius-sm); transition: color 160ms var(--ease-out);
+}
+.qtoast-x:hover { color: var(--text); }
+@keyframes qtoast-in {
+  from { opacity: 0; transform: translateY(14px) scale(0.96); }
+  to   { opacity: 1; transform: none; }
+}
+@media (max-width: 880px) {
+  .qtoast-stack { left: 14px; right: 14px; }
+  .qtoast { max-width: none; }
+}
+@media (prefers-reduced-motion: reduce) { .qtoast { animation: none; } }
+
+/* ── 20a. Primitives: tilt ──────────────────────────────────────────────── */
+.tilt {
+  transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+  transform-style: preserve-3d;
+  transition: transform 260ms var(--ease-out), box-shadow 260ms var(--ease-out);
+}
+.tilt::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 260ms var(--ease-out);
+  background: radial-gradient(
+    240px 240px at var(--gx, 50%) var(--gy, 0%),
+    oklch(82% 0.18 195 / 0.14),
+    transparent 70%
+  );
+}
+.tilt:hover::after { opacity: 1; }
+
+/* ── 20b. Primitives: sparkline ─────────────────────────────────────────── */
+.sparkline { display: block; width: 100%; height: 30px; overflow: visible; }
+.sparkline-line {
+  fill: none;
+  stroke: var(--lumen);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 5px oklch(82% 0.18 195 / 0.5));
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+}
+.sparkline-line.in { transition: stroke-dashoffset 1200ms var(--ease-out) 120ms; stroke-dashoffset: 0; }
+.sparkline-area { fill: oklch(82% 0.18 195 / 0.10); }
+.sparkline-head { fill: oklch(94% 0.05 195); filter: drop-shadow(0 0 6px var(--lumen)); opacity: 0; }
+.sparkline-head.in { transition: opacity 300ms ease 1100ms; opacity: 1; }
+
+/* ── 20c. Primitives: radial gauge ──────────────────────────────────────── */
+.gauge { position: relative; display: grid; place-items: center; }
+.gauge svg { display: block; }
+.gauge-track { stroke: oklch(60% 0.04 220 / 0.16); }
+.gauge-prog {
+  stroke: var(--lumen);
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 8px oklch(82% 0.18 195 / 0.55));
+  transition: stroke-dashoffset 1400ms var(--ease-out) 200ms;
+}
+.gauge.tone-moss  .gauge-prog { stroke: var(--moss);  filter: drop-shadow(0 0 8px oklch(72% 0.13 155 / 0.55)); }
+.gauge.tone-ember .gauge-prog { stroke: var(--ember); filter: drop-shadow(0 0 8px oklch(68% 0.22 25 / 0.55)); }
+.gauge.tone-spore .gauge-prog { stroke: var(--spore); filter: drop-shadow(0 0 8px oklch(80% 0.15 75 / 0.55)); }
+.gauge-center { position: absolute; display: flex; flex-direction: column; align-items: center; }
+.gauge-center b {
+  font-family: var(--font-display); font-variation-settings: 'opsz' 144;
+  font-weight: 400; font-size: 1.9rem; line-height: 1; letter-spacing: -0.02em;
+}
+.gauge-center span {
+  font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--muted); margin-top: 4px;
+}
+
+/* ── 20d. Primitives: meter ─────────────────────────────────────────────── */
+.meter {
+  position: relative; height: 7px; border-radius: 5px;
+  background: oklch(60% 0.04 220 / 0.16); overflow: hidden;
+}
+.meter-fill {
+  position: absolute; inset: 0 auto 0 0; border-radius: 5px; width: 0;
+  background: linear-gradient(90deg, var(--lumen-2), var(--lumen));
+  box-shadow: 0 0 8px oklch(82% 0.18 195 / 0.5);
+  transition: width 1000ms var(--ease-out);
+}
+.meter.tone-moss  .meter-fill { background: linear-gradient(90deg, var(--lumen-2), var(--moss)); }
+.meter.tone-ember .meter-fill { background: linear-gradient(90deg, var(--ember), var(--spore)); box-shadow: 0 0 8px oklch(68% 0.22 25 / 0.4); }
+.meter.tone-spore .meter-fill { background: linear-gradient(90deg, var(--spore), oklch(82% 0.16 100)); }
+.meter-marker {
+  position: absolute; top: -3px; bottom: -3px; width: 2px;
+  background: var(--text-2); opacity: 0.5; transform: translateX(-1px);
+}
+
+/* ── 20e. Primitives: segmented tabs ────────────────────────────────────── */
+.seg {
+  position: relative; display: inline-flex; gap: 2px; padding: 4px;
+  border-radius: 11px; border: 1px solid var(--line); background: oklch(11% 0.03 245 / 0.5);
+}
+.seg-ind {
+  position: absolute; top: 4px; bottom: 4px; border-radius: 8px; z-index: 0;
+  background: oklch(82% 0.18 195 / 0.14); border: 1px solid var(--line-warm);
+  box-shadow: 0 0 18px oklch(82% 0.18 195 / 0.18);
+  transition: transform 360ms var(--spring, cubic-bezier(.34,1.56,.64,1)), width 360ms var(--spring, cubic-bezier(.34,1.56,.64,1));
+}
+.seg button {
+  position: relative; z-index: 1; padding: 7px 14px; border-radius: 8px;
+  font-size: 13px; font-weight: 600; color: var(--muted); background: none; border: 0; cursor: pointer;
+  transition: color 220ms var(--ease-out);
+}
+.seg button[aria-selected="true"] { color: var(--text); }
+.seg-panels { margin-top: var(--space-4); }
+.seg-panel.active { animation: seg-fade 420ms var(--ease-out); }
+@keyframes seg-fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+/* ── 20f. Primitives: expandable table row ──────────────────────────────── */
+.exp-row { cursor: pointer; }
+.exp-row > td { transition: background 160ms var(--ease-out); }
+.exp-row:hover > td { background: oklch(82% 0.18 195 / 0.05); }
+.exp-row:hover > td:first-child { box-shadow: inset 2px 0 0 var(--lumen); }
+.exp-detail-row > td { padding: 0 !important; border: 0 !important; }
+.exp-detail { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 360ms var(--ease-out); }
+.exp-detail.open { grid-template-rows: 1fr; }
+.exp-detail-inner { overflow: hidden; }
+
+@media (prefers-reduced-motion: reduce) {
+  .tilt { transition: none; }
+  .sparkline-line, .sparkline-head, .gauge-prog, .meter-fill, .seg-ind, .seg-panel.active, .exp-detail {
+    transition: none !important; animation: none !important;
+  }
+}
+
+/* ── 20g. Dashboard compositions ────────────────────────────────────────── */
+.spotlight.has-gauge { display: flex; align-items: center; gap: var(--space-6); }
+.spotlight.has-gauge .spotlight-main { flex: 1; min-width: 0; }
+@media (max-width: 720px) {
+  .spotlight.has-gauge { flex-direction: column; align-items: stretch; }
+  .spotlight.has-gauge .gauge { align-self: center; }
+}
+
+/* Quick log */
+.quicklog { display: flex; flex-direction: column; gap: var(--space-4); }
+.ql-grid { display: grid; grid-template-columns: 1.4fr 0.6fr 1fr 1fr; gap: var(--space-3); }
+.ql-field { display: flex; flex-direction: column; gap: 6px; }
+.ql-field > span {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.04em;
+  text-transform: uppercase; color: var(--muted);
+}
+.ql-foot { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; }
+.ql-ratio { display: flex; align-items: baseline; gap: 10px; }
+.ql-ratio b {
+  font-family: var(--font-display); font-variation-settings: 'opsz' 144;
+  font-weight: 400; font-size: 1.9rem; line-height: 1; letter-spacing: -0.02em;
+  transition: color 240ms var(--ease-out);
+}
+.ql-ratio span { font-size: 12px; color: var(--muted); }
+.ql-ratio.good b, .ql-ratio.good span { color: var(--moss); }
+.ql-ratio.bad b, .ql-ratio.bad span { color: var(--ember); }
+.ql-ratio.idle b { color: var(--text-2); }
+@media (max-width: 720px) { .ql-grid { grid-template-columns: 1fr 1fr; } }
+
+/* Bio-efficiency cell in the yield table */
+.be-cell { display: inline-flex; align-items: center; gap: 9px; justify-content: flex-end; }
+.be-cell .meter { width: 60px; }
+.be-num { font-variant-numeric: tabular-nums; min-width: 38px; text-align: right; }

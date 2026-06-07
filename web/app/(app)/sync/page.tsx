@@ -59,10 +59,10 @@ export default async function SyncPage() {
       </div>
 
       <div className="kpi-row">
-        <Kpi label="Pending ops" value={pending.length} feature />
-        <Kpi label="Entities affected" value={entries.length} />
+        <Kpi label="Pending ops" countTo={pending.length} feature />
+        <Kpi label="Entities affected" countTo={entries.length} />
         <Kpi label="Most recent" value={pending[pending.length - 1]?.created_at?.slice(0, 10) ?? "—"} />
-        <Kpi label="Synced (last 50)" value={recent.length} />
+        <Kpi label="Synced (last 50)" countTo={recent.length} />
       </div>
 
       <Card title="Actions">

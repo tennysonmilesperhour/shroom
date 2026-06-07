@@ -78,9 +78,9 @@ export default function TraceForm({ lots, initial }: TraceFormProps) {
       {result?.ok && result.data && (
         <>
           <div className="kpi-row">
-            <Kpi label="Orders hit" value={affected.length} feature />
-            <Kpi label="Harvests" value={result.data.harvests ?? 0} />
-            <Kpi label="Customers hit" value={customers} />
+            <Kpi label="Orders hit" countTo={affected.length} feature />
+            <Kpi label="Harvests" countTo={result.data.harvests ?? 0} />
+            <Kpi label="Customers hit" countTo={customers} />
             <Kpi label="Strain" value={result.data.strain ?? "-"} />
           </div>
 

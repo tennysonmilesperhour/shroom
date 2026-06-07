@@ -136,10 +136,10 @@ export default async function StrainDetailPage({
       </div>
 
       <div className="kpi-row">
-        <Kpi label="Lifetime fresh" value={Math.round(totalFresh)} unit="g" feature />
-        <Kpi label="Lifetime dry ratio" value={lifetimeRatio} unit="%" />
+        <Kpi label="Lifetime fresh" countTo={Math.round(totalFresh)} unit="g" feature />
+        <Kpi label="Lifetime dry ratio" countTo={lifetimeRatio} decimals={1} unit="%" />
         <Kpi label="Bio-efficiency" value={yieldRow?.biological_efficiency_pct ?? "—"} unit="%" />
-        <Kpi label="Batches grown" value={yieldRow?.batches ?? batches.length} />
+        <Kpi label="Batches grown" countTo={yieldRow?.batches ?? batches.length} />
       </div>
 
       <div className="grid two">

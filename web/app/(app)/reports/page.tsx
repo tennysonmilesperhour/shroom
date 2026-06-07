@@ -93,15 +93,15 @@ export default async function ReportsPage() {
       </div>
 
       <div className="kpi-row">
-        <Kpi label="Gross sales" value={money(k.gross_sales)} feature />
-        <Kpi label="Fresh harvested" value={Math.round(fresh)} unit="g" />
-        <Kpi label="Overall dry ratio" value={overall} unit="%" />
-        <Kpi label="Avg order value" value={money(k.avg_order_value)} />
+        <Kpi label="Gross sales" countTo={k.gross_sales ?? 0} prefix="$" feature />
+        <Kpi label="Fresh harvested" countTo={Math.round(fresh)} unit="g" />
+        <Kpi label="Overall dry ratio" countTo={overall} decimals={1} unit="%" />
+        <Kpi label="Avg order value" countTo={k.avg_order_value ?? 0} prefix="$" />
       </div>
 
       <div className="grid kpis" style={{ marginTop: "var(--space-3)" }}>
-        <Kpi label="Spent substrate" value={c.spent_substrate_kg} unit="kg" />
-        <Kpi label="CO₂e diverted (est.)" value={c.estimated_co2e_diverted_kg} unit="kg" />
+        <Kpi label="Spent substrate" countTo={c.spent_substrate_kg ?? 0} decimals={1} unit="kg" />
+        <Kpi label="CO₂e diverted (est.)" countTo={c.estimated_co2e_diverted_kg ?? 0} decimals={1} unit="kg" />
       </div>
 
       <div className="grid two">

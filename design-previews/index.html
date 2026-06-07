@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Shroom OS — Redesign previews</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+:root{--ink:oklch(22% 0.02 260);--muted:oklch(50% 0.015 260);--line:oklch(90% 0.006 260);--accent:oklch(52% 0.115 205);}
+*{box-sizing:border-box;}
+body{margin:0;font-family:Inter,system-ui,sans-serif;color:var(--ink);background:oklch(98.5% 0.002 255);line-height:1.55;}
+.wrap{max-width:980px;margin:0 auto;padding:64px 24px 96px;}
+h1{font-family:Fraunces,serif;font-weight:500;font-size:clamp(2rem,1.4rem+2.6vw,3rem);letter-spacing:-0.02em;margin:0 0 8px;}
+.lede{color:var(--muted);font-size:17px;max-width:64ch;margin:0 0 40px;}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+.card{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#fff;text-decoration:none;color:inherit;display:flex;flex-direction:column;
+  transition:transform 160ms cubic-bezier(.22,1,.36,1),box-shadow 160ms;}
+.card:hover{transform:translateY(-3px);box-shadow:0 18px 40px -22px oklch(0% 0 0 / .4);}
+.thumb{height:170px;display:grid;place-items:center;position:relative;}
+.thumb .lab{position:absolute;top:12px;left:12px;font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;padding:4px 9px;border-radius:999px;background:#fff;}
+.a .thumb{background:linear-gradient(135deg,oklch(98.6% 0.002 250),oklch(94% 0.005 255));}
+.a .glyph{font-family:'JetBrains Mono',monospace;font-size:38px;color:oklch(52% 0.115 205);font-weight:600;}
+.b .thumb{background:oklch(31% 0.105 22);}
+.b .glyph{font-family:Fraunces,serif;font-size:46px;color:oklch(92% 0.03 40);font-weight:500;font-style:italic;}
+.feat{display:block;margin-bottom:20px;border-color:oklch(82% 0.18 195 / .35);}
+.feat:hover{box-shadow:0 22px 50px -24px oklch(82% 0.18 195 / .5);}
+.feat .thumb{height:150px;background:radial-gradient(600px 200px at 80% -20%, oklch(64% 0.18 270 / .4), transparent 60%),linear-gradient(160deg, oklch(19% 0.045 235), oklch(11% 0.03 245));}
+.feat .glyph{font-family:Fraunces,serif;font-size:44px;font-weight:400;color:oklch(96% 0.04 200);text-shadow:0 0 26px oklch(82% 0.18 195 / .6);letter-spacing:-0.02em;}
+.feat .lab{background:oklch(82% 0.18 195);color:oklch(15% 0.03 245);}
+.feat .meta h2{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.rec{font-family:Inter,sans-serif;font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:oklch(48% 0.12 200);border:1px solid oklch(82% 0.18 195 / .4);border-radius:999px;padding:3px 10px;}
+.feat .meta p{max-width:none;}
+.meta{padding:18px 20px 22px;}
+.meta h2{font-family:Fraunces,serif;font-weight:500;font-size:23px;margin:0 0 4px;}
+.meta .tags{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 0;}
+.tag{font-size:11.5px;font-weight:500;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:3px 10px;}
+.meta p{color:var(--muted);font-size:14px;margin:10px 0 0;}
+.cur{margin-top:48px;padding:20px 22px;border:1px dashed var(--line);border-radius:12px;background:#fff;font-size:14px;color:var(--muted);}
+.cur b{color:var(--ink);font-weight:600;}
+@media (max-width:720px){.grid{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Shroom OS — two redesign directions</h1>
+  <p class="lede">Both rebuild the same dashboard (KPIs, latest-harvest spotlight, environment + attention, yield-by-strain) so you can compare the <em>direction</em>, not the data. Open each, then tell me which to build out for real.</p>
+
+  <a class="card c feat" href="./option-c-quantum-pro.html">
+    <div class="thumb"><span class="lab">Option C · interactive</span><span class="glyph">QB</span></div>
+    <div class="meta">
+      <h2>Quantum Blue · Pro <span class="rec">recommended to try first</span></h2>
+      <p>A maxed-out, fully-interactive upgrade of the <em>current</em> theme — not a new direction, the existing one pushed hard. Cursor-reactive mycelium, magnetic KPI cards with count-up data and drawing sparklines, a working quick-log form where the dry ratio computes as you type, animated environment gauges, expandable rows, a ⌘K command palette, ripples and toasts. Try: type weights in Quick log, hit ⌘K, click a strain row.</p>
+      <div class="tags"><span class="tag">Dark</span><span class="tag">Bioluminescent</span><span class="tag">Heavily animated</span><span class="tag">Interactive</span><span class="tag">Reduced-motion safe</span></div>
+    </div>
+  </a>
+
+  <div class="grid">
+    <a class="card a" href="./option-a-cleanroom.html">
+      <div class="thumb"><span class="lab">Option A</span><span class="glyph">S_</span></div>
+      <div class="meta">
+        <h2>Cleanroom Console</h2>
+        <p>Daytime instrument software for the grow-room floor. Light, true-neutral, Swiss-precise; one spruce signal accent, monospace data, hairline structure. The tool disappears into the task.</p>
+        <div class="tags"><span class="tag">Light</span><span class="tag">Restrained</span><span class="tag">Instrument / Swiss</span><span class="tag">Dense</span></div>
+      </div>
+    </a>
+    <a class="card b" href="./option-b-spore-press.html">
+      <div class="thumb"><span class="lab">Option B</span><span class="glyph">S</span></div>
+      <div class="meta">
+        <h2>Spore Press</h2>
+        <p>The operation as a printed cultivation ledger: a herbarium monograph that happens to be live. Committed oxblood, serif numerals, ruled plates, a spore-print specimen card.</p>
+        <div class="tags"><span class="tag">Editorial</span><span class="tag">Committed colour</span><span class="tag">Serif</span><span class="tag">Tactile</span></div>
+      </div>
+    </a>
+  </div>
+
+  <div class="cur">
+    <b>For reference</b> — the current build is <b>“Quantum Blue · Bioluminescent Editorial”</b>: a dark cool ink-blue field, glassmorphic panels, animated mycelium background, glow-cyan accents. Both options above deliberately move off that axis (A toward daytime-clinical, B toward warm-editorial-print) so the choice is real, not a re-skin.
+  </div>
+</div>
+</body>
+</html>
