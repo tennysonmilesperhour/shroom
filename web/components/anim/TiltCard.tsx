@@ -1,20 +1,24 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import Link from "next/link";
+import { useEffect, useRef, useState, type ReactNode, type Ref } from "react";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 interface TiltCardProps {
   children: ReactNode;
   className?: string;
+  /** When set, the card renders as a navigation link (tilt preserved). */
+  href?: string;
 }
 
 // Wraps content in a magnetic 3D tilt + a cursor-following glow. Purely
 // presentational. On coarse pointers or reduced motion it renders a plain
-// container with the same className (no listeners, no transform).
-export default function TiltCard({ children, className = "" }: TiltCardProps) {
+// container with the same className (no listeners, no transform). With `href`
+// it renders as a Link so the whole card is clickable.
+export default function TiltCard({ children, className = "", href }: TiltCardProps) {
   const reduced = useReducedMotion();
   const [fine, setFine] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLElement>(null);
 
   useEffect(() => {
     setFine(window.matchMedia("(pointer: fine)").matches);
@@ -47,8 +51,18 @@ export default function TiltCard({ children, className = "" }: TiltCardProps) {
     };
   }, [interactive]);
 
+  const cls = `${interactive ? "tilt " : ""}${className}`;
+
+  if (href) {
+    return (
+      <Link href={href} ref={ref as Ref<HTMLAnchorElement>} className={cls}>
+        {children}
+      </Link>
+    );
+  }
+
   return (
-    <div ref={ref} className={`${interactive ? "tilt " : ""}${className}`}>
+    <div ref={ref as Ref<HTMLDivElement>} className={cls}>
       {children}
     </div>
   );

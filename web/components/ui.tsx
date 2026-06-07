@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import Link from "next/link";
 import CountUp from "./anim/CountUp";
 import Sparkline from "./anim/Sparkline";
 import TiltCard from "./anim/TiltCard";
@@ -49,6 +50,8 @@ interface KpiProps {
   series?: number[];
   /** Opt-in magnetic tilt + cursor glow on the card. */
   tilt?: boolean;
+  /** When set, the whole card becomes a navigation link. */
+  href?: string;
 }
 
 export function Kpi({
@@ -63,6 +66,7 @@ export function Kpi({
   suffix,
   series,
   tilt = true,
+  href,
 }: KpiProps) {
   const valueNode =
     countTo != null ? (
@@ -83,10 +87,22 @@ export function Kpi({
     </>
   );
 
-  const className = `card kpi${feature ? " feature" : ""}`;
-  return tilt ? (
-    <TiltCard className={className}>{inner}</TiltCard>
-  ) : (
+  const className = `card kpi${feature ? " feature" : ""}${href ? " kpi-link" : ""}`;
+  if (tilt) {
+    return (
+      <TiltCard className={className} href={href}>
+        {inner}
+      </TiltCard>
+    );
+  }
+  if (href) {
+    return (
+      <Link className={className} href={href}>
+        {inner}
+      </Link>
+    );
+  }
+  return (
     <div className={className}>{inner}</div>
   );
 }

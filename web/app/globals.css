@@ -1189,9 +1189,10 @@ a.badge { cursor: pointer; transition: border-color 160ms var(--ease-out), color
 a.badge:hover { color: var(--lumen); border-color: var(--line-warm); }
 
 /* Clickable table row pattern.
-   The <a> covers the row cell and the row gets a subtle hover treatment.
-   .row-anchor inherits color so it looks like cell text but is keyboard-reachable. */
-tbody tr.row-link { cursor: pointer; }
+   The primary .row-anchor link is stretched across the whole row (::after
+   overlay) so a click anywhere in the row navigates — no JS, still a real
+   keyboard-reachable link. Secondary links/buttons sit above the overlay. */
+tbody tr.row-link { cursor: pointer; position: relative; }
 tbody tr.row-link:hover td { background: oklch(82% 0.18 195 / 0.05); }
 .row-anchor {
   display: inline-block;
@@ -1199,6 +1200,18 @@ tbody tr.row-link:hover td { background: oklch(82% 0.18 195 / 0.05); }
   text-decoration: none;
 }
 .row-anchor:hover { color: var(--lumen); }
+tbody tr.row-link .row-anchor::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+/* Keep any other interactive cell content clickable above the overlay. */
+tbody tr.row-link a:not(.row-anchor),
+tbody tr.row-link button {
+  position: relative;
+  z-index: 1;
+}
 
 /* Key/value detail lists */
 .kv {
@@ -2002,3 +2015,8 @@ body::after {
 .be-cell { display: inline-flex; align-items: center; gap: 9px; justify-content: flex-end; }
 .be-cell .meter { width: 60px; }
 .be-num { font-variant-numeric: tabular-nums; min-width: 38px; text-align: right; }
+
+/* KPI rendered as a navigation link */
+a.kpi-link { color: inherit; text-decoration: none; display: block; }
+a.kpi-link:hover { border-color: var(--line-warm); }
+a.kpi-link:focus-visible { outline: 2px solid var(--lumen); outline-offset: 2px; }

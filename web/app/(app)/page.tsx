@@ -231,7 +231,7 @@ export default async function Dashboard() {
 
       <div className="grid kpis" style={{ marginTop: "var(--space-3)" }}>
         <Kpi label="Dried on-hand (distrib.)" value={`${money(invLow)}–${money(invHigh)}`} tilt />
-        <Kpi label="Open tasks" countTo={openTasks} series={tasksSeries} tilt />
+        <Kpi label="Open tasks" countTo={openTasks} series={tasksSeries} tilt href="/tasks" />
       </div>
 
       <Card title="Quick log" className="quicklog-card">
