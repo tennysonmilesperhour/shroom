@@ -14,6 +14,7 @@ export type SyncEntity =
   | "customer"
   | "strain"
   | "batch"
+  | "preset"
   | "harvest"
   | "order"
   | "purchase_order"

@@ -51,6 +51,13 @@ export async function addBatch(formData: FormData): Promise<EntityResult> {
   const substrate_weight_kg = Number(formData.get("substrate_weight_kg") ?? 0);
   const inoculated_on = String(formData.get("inoculated_on") ?? "").trim();
   const notes = String(formData.get("notes") ?? "").trim();
+  const tub_size = String(formData.get("tub_size") ?? "").trim();
+  const spawn_type = String(formData.get("spawn_type") ?? "").trim();
+  const substrate_type = String(formData.get("substrate_type") ?? "").trim();
+  const bag_type = String(formData.get("bag_type") ?? "").trim();
+  const presetRaw = String(formData.get("preset_id") ?? "");
+  const preset_id = presetRaw && Number.isFinite(Number(presetRaw)) ? Number(presetRaw) : null;
+  const deduct = String(formData.get("deduct_materials") ?? "") === "on";
 
   if (!lot_code) return { ok: false, message: "Lot code is required." };
   if (!Number.isFinite(strain_id)) return { ok: false, message: "Pick a strain." };
@@ -72,14 +79,89 @@ export async function addBatch(formData: FormData): Promise<EntityResult> {
       substrate_weight_kg: Number.isFinite(substrate_weight_kg) ? substrate_weight_kg : 0,
       inoculated_on: inoculated_on || null,
       notes,
+      preset_id,
+      tub_size,
+      spawn_type,
+      substrate_type,
+      bag_type,
     })
     .select("id")
     .single();
   if (error || !data) return { ok: false, message: error?.message ?? "Insert failed." };
 
   await enqueueSync(supabase, "batch", data.id, "insert", { lot_code, stage });
+
+  // Draw the preset's bill-of-materials down from inventory and record exactly
+  // what this tub consumed. Best-effort: the batch is already created, so a
+  // materials hiccup never loses the batch — it just surfaces in the message.
+  let materialNote = "";
+  if (preset_id && deduct) {
+    materialNote = await consumePresetMaterials(supabase, preset_id, data.id);
+  }
+
   revalidatePath("/batches");
-  return { ok: true, message: "Batch added ✓" };
+  return { ok: true, message: `Batch added ✓${materialNote}` };
+}
+
+interface PresetMaterialRow {
+  inventory_item_id: number | null;
+  name: string;
+  quantity: number;
+  unit: string;
+}
+
+// Records batch_materials history rows and decrements inventory for any linked
+// items. Returns a short suffix for the success toast (or an error note).
+async function consumePresetMaterials(
+  supabase: ReturnType<typeof createServiceClient>,
+  presetId: number,
+  batchId: number,
+): Promise<string> {
+  const { data: materials, error } = await supabase
+    .from("preset_materials")
+    .select("inventory_item_id,name,quantity,unit")
+    .eq("preset_id", presetId)
+    .returns<PresetMaterialRow[]>();
+  if (error) return ` (materials skipped: ${error.message})`;
+  if (!materials || materials.length === 0) return "";
+
+  const historyRows = materials.map((m) => ({
+    batch_id: batchId,
+    inventory_item_id: m.inventory_item_id,
+    name: m.name,
+    quantity: m.quantity,
+    unit: m.unit,
+  }));
+  const { error: histErr } = await supabase.from("batch_materials").insert(historyRows);
+  if (histErr) return ` (materials skipped: ${histErr.message})`;
+
+  let drawn = 0;
+  for (const m of materials) {
+    if (m.inventory_item_id == null || !(m.quantity > 0)) continue;
+    const { data: item } = await supabase
+      .from("inventory_items")
+      .select("quantity_on_hand")
+      .eq("id", m.inventory_item_id)
+      .single();
+    if (!item) continue;
+    const next = Math.max(0, Number(item.quantity_on_hand) - m.quantity);
+    const { error: updErr } = await supabase
+      .from("inventory_items")
+      .update({ quantity_on_hand: next })
+      .eq("id", m.inventory_item_id);
+    if (!updErr) {
+      drawn += 1;
+      await enqueueSync(supabase, "supply", m.inventory_item_id, "update", {
+        field: "quantity_on_hand",
+        delta: -m.quantity,
+        to: next,
+        batch_id: batchId,
+      });
+    }
+  }
+
+  revalidatePath("/supplies");
+  return drawn > 0 ? ` · drew ${drawn} material${drawn === 1 ? "" : "s"} from stock` : "";
 }
 
 const STAGE_ORDER = [

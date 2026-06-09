@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Badge, Card, Kpi } from "@/components/ui";
 import { createServiceClient } from "@/utils/supabase/service";
-import { must } from "@/lib/query";
+import { must, soft } from "@/lib/query";
 import { stageTone } from "@/components/ui";
 import LifecycleRing from "@/components/LifecycleRing";
 import AddPanel from "@/components/AddPanel";
@@ -19,6 +19,10 @@ interface BatchDetailRow {
   substrate_weight_kg: number;
   container_id: string | null;
   container_type: string | null;
+  tub_size: string | null;
+  spawn_type: string | null;
+  substrate_type: string | null;
+  bag_type: string | null;
   inoculated_on: string | null;
   colonized_on: string | null;
   fruiting_on: string | null;
@@ -46,6 +50,14 @@ interface ContamRow {
   contam_type: string;
   severity: "low" | "med" | "high";
   action_taken: string | null;
+}
+
+interface BatchMaterialRow {
+  id: number;
+  name: string;
+  quantity: number;
+  unit: string;
+  inventory_item_id: number | null;
 }
 
 interface OrderLineRow {
@@ -109,6 +121,15 @@ export default async function BatchDetailPage({
 
   const batch = batchRows[0];
   if (!batch) notFound();
+
+  // soft: degrades to [] if the batch_materials migration hasn't landed yet.
+  const materials = await soft<BatchMaterialRow>(
+    supabase
+      .from("batch_materials")
+      .select("id,name,quantity,unit,inventory_item_id")
+      .eq("batch_id", id)
+      .order("id"),
+  );
 
   // Downstream orders: order_lines linked to one of this batch's harvests.
   const harvestIds = harvests.map((h) => h.id);
@@ -195,13 +216,46 @@ export default async function BatchDetailPage({
           <dt>Colonized</dt><dd>{batch.colonized_on ?? "—"}</dd>
           <dt>Fruiting</dt><dd>{batch.fruiting_on ?? "—"}</dd>
           <dt>Spent</dt><dd>{batch.spent_on ?? "—"}</dd>
-          <dt>Container</dt><dd>{batch.container_type ?? "—"}</dd>
+          <dt>Container</dt><dd>{batch.container_type ?? "—"}{batch.tub_size ? ` · ${batch.tub_size}` : ""}</dd>
+          <dt>Spawn</dt><dd>{batch.spawn_type || "—"}</dd>
+          <dt>Substrate</dt><dd>{batch.substrate_type || "—"}</dd>
+          <dt>Bag</dt><dd>{batch.bag_type || "—"}</dd>
           <dt>Rating</dt><dd>{batch.rating ? `${batch.rating}/10` : "—"}</dd>
         </dl>
         <div style={{ marginTop: "var(--space-3)" }}>
           <AdvanceStage batchId={batch.id} currentStage={effectiveStage} />
         </div>
       </Card>
+
+      {materials.length > 0 && (
+        <Card title="Materials used">
+          <table>
+            <caption className="sr-only">Materials consumed by this batch</caption>
+            <thead>
+              <tr>
+                <th scope="col">Material</th>
+                <th scope="col" className="right">Quantity</th>
+                <th scope="col">Source</th>
+              </tr>
+            </thead>
+            <tbody>
+              {materials.map((m) => (
+                <tr key={m.id}>
+                  <td>{m.name || "—"}</td>
+                  <td className="right">{m.quantity} {m.unit}</td>
+                  <td>
+                    {m.inventory_item_id ? (
+                      <Badge tone="green">drawn from stock</Badge>
+                    ) : (
+                      <Badge tone="muted">manual</Badge>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </Card>
+      )}
 
       <AddPanel label="Log harvest from this batch" buttonLabel="Log harvest from this batch">
         <AddHarvestForm
