@@ -5,6 +5,7 @@ import CountUp from "@/components/anim/CountUp";
 import RadialGauge from "@/components/anim/RadialGauge";
 import Meter from "@/components/anim/Meter";
 import QuickLog, { type QuickLogBatch } from "@/components/QuickLog";
+import RoutinePlanner, { type Routine } from "@/components/RoutinePlanner";
 import { kgToG, money, DRY_FLOOR } from "@/lib/format";
 import { must, maybe, soft } from "@/lib/query";
 
@@ -132,7 +133,7 @@ export default async function Dashboard() {
   // Optional trend series. soft() so a not-yet-applied migration degrades to
   // empty rather than breaking the dashboard. (Views aren't in the generated
   // types, so these are loosely typed by the row interfaces above.)
-  const [harvestWeekly, batchesWeekly, tasksWeekly, batchPickRes] = await Promise.all([
+  const [harvestWeekly, batchesWeekly, tasksWeekly, routineRows, batchPickRes] = await Promise.all([
     soft<HarvestWeeklyRow>(
       supabase.from("v_harvest_weekly").select("fresh_g,dry_ratio_pct").order("week"),
     ),
@@ -141,6 +142,17 @@ export default async function Dashboard() {
     ),
     soft<OpenTasksWeeklyRow>(
       supabase.from("v_open_tasks_weekly").select("opened").order("week"),
+    ),
+    // soft() so a not-yet-applied routines migration degrades to an empty
+    // command center rather than breaking the dashboard.
+    soft<Routine>(
+      supabase
+        .from("routines")
+        .select("id,kind,title,cadence,href,notes,last_done_at")
+        .eq("active", true)
+        .order("kind")
+        .order("sort_order")
+        .order("created_at"),
     ),
     // batches always exists; embedded strains is typed as an array by supabase-js
     // (same as loadCommandIndex in the layout), so we cast the row shape.
@@ -166,6 +178,8 @@ export default async function Dashboard() {
         <div className="eyebrow">Operation</div>
         <h1 className="section">Today&rsquo;s state of the mycelium</h1>
       </div>
+
+      <RoutinePlanner routines={routineRows as Routine[]} />
 
       {spotlight && (
         <section className="spotlight has-gauge" aria-labelledby="spotlight-title">
