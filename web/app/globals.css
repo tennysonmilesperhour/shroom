@@ -1357,6 +1357,39 @@ tbody tr.row-link button {
 .qa-btn:hover:not(:disabled) { border-color: var(--line-warm); color: var(--lumen); }
 .qa-btn:disabled { opacity: 0.5; cursor: default; }
 
+/* Compact in-table dropdown — used to move a culture along its lifecycle. */
+.inline-select {
+  width: auto;
+  min-width: 124px;
+  padding: 4px 8px;
+  font-size: 12px;
+  border-radius: 6px;
+}
+.inline-select:disabled { opacity: 0.6; cursor: default; }
+
+/* Lifecycle pipeline strip — a row of stage chips with live counts, shown
+   above the cultures & spores register so the workflow reads at a glance. */
+.pipeline-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: var(--space-4);
+}
+.pipeline-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 9px;
+  background: oklch(60% 0.04 220 / 0.05);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.pipeline-count {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-2);
+}
+
 /* Inline "Add new" disclosure panel. Lives at the top of list pages. */
 .add-panel { margin-bottom: var(--space-4); }
 .add-panel-toggle {

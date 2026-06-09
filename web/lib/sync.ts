@@ -13,6 +13,7 @@ export type SyncEntity =
   | "equipment"
   | "customer"
   | "strain"
+  | "culture"
   | "batch"
   | "harvest"
   | "order"
