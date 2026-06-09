@@ -2,8 +2,8 @@ import Link from "next/link";
 import { createServiceClient } from "@/utils/supabase/service";
 import { Badge } from "@/components/ui";
 import type { BadgeTone } from "@/components/ui";
-import { ease, stars } from "@/lib/format";
 import { must } from "@/lib/query";
+import { QualityBars, strainQualities } from "@/components/QualityBars";
 import AddPanel from "@/components/AddPanel";
 import AddStrainForm from "./AddStrainForm";
 
@@ -71,18 +71,16 @@ export default async function StrainsPage() {
               </div>
               <div className="strain-card-meta">
                 <span>F{s.generation}</span>
-                <span>Ease {ease(s.ease_rating)}</span>
-                <span>BE {s.typical_be ?? "-"}%</span>
+                {s.vendor && <span>{s.vendor}</span>}
                 <span>{s.syringes_on_hand ?? 0} syringes</span>
               </div>
+              <QualityBars qualities={strainQualities(s)} />
               <div className="strain-card-bottom">
-                <span
-                  className="stars"
-                  aria-label={`Priority ${s.priority ?? 0} of 5`}
-                >
-                  {stars(s.priority)}
-                </span>
-                {s.library_status && <Badge tone="muted">{s.library_status}</Badge>}
+                {s.library_status === "unknown" ? (
+                  <Badge tone="violet">source: searching</Badge>
+                ) : (
+                  s.library_status && <Badge tone="muted">{s.library_status}</Badge>
+                )}
                 {s.grow_again ? (
                   <Badge tone="green">grow again</Badge>
                 ) : (

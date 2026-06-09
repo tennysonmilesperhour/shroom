@@ -707,6 +707,58 @@ td.num, .num { font-feature-settings: 'tnum'; font-variant-numeric: tabular-nums
   border-radius: inherit;
 }
 
+/* Multicolored quality bars (strain cards + strain detail). Each quality is a
+   labelled mini-meter whose fill color and length encode a different trait. */
+.quality-bars {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 16px;
+  margin-bottom: var(--space-3);
+}
+.quality { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.quality-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.quality-label { color: var(--muted); }
+.quality-val {
+  color: var(--text-2);
+  text-transform: none;
+  letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
+}
+.quality-track {
+  height: 6px;
+  background: oklch(60% 0.04 220 / 0.12);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.quality-track > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  box-shadow: 0 0 8px color-mix(in oklch, currentColor 0%, transparent);
+  filter: saturate(1.05);
+  transition: width 320ms var(--ease-out);
+}
+.quality-track.is-empty {
+  background: repeating-linear-gradient(
+    -45deg,
+    oklch(60% 0.04 220 / 0.10),
+    oklch(60% 0.04 220 / 0.10) 4px,
+    transparent 4px,
+    transparent 8px
+  );
+}
+.strain-card .quality-bars { margin-bottom: var(--space-3); }
+.quality-card { padding: var(--space-3) var(--space-4); }
+.quality-card .quality-bars { margin-bottom: 0; }
+
 /* ── 13. Inputs ─────────────────────────────────────────────────────────── */
 input, textarea, select {
   background: oklch(15% 0.035 240 / 0.55);
