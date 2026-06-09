@@ -16,11 +16,14 @@ interface VersionResponse {
 // the tab regains focus. When a newer deploy is live, renders a toast with
 // a Reload button.
 export default function VersionWatcher({ buildId }: VersionWatcherProps) {
-  const [stale, setStale] = useState(false);
-  const [dismissed, setDismissed] = useState(false);
+  // The newest deployed build id we've seen, if it differs from ours.
+  const [latest, setLatest] = useState<string | null>(null);
+  // The build id the user explicitly dismissed with "Later". A newer deploy
+  // (a different id) will re-prompt rather than stay silent forever.
+  const [dismissedFor, setDismissedFor] = useState<string | null>(null);
 
   useEffect(() => {
-    // Empty baseline = local dev or first-ever deploy; nothing to compare to.
+    // Empty baseline = unknown build; nothing to compare against.
     if (!buildId || buildId === "dev") return;
 
     let cancelled = false;
@@ -32,7 +35,7 @@ export default function VersionWatcher({ buildId }: VersionWatcherProps) {
         const data = (await res.json()) as VersionResponse;
         if (cancelled) return;
         if (data.buildId && data.buildId !== buildId) {
-          setStale(true);
+          setLatest(data.buildId);
         }
       } catch {
         // Network blip - try again on the next tick.
@@ -53,7 +56,8 @@ export default function VersionWatcher({ buildId }: VersionWatcherProps) {
     };
   }, [buildId]);
 
-  if (!stale || dismissed) return null;
+  const stale = latest !== null && latest !== dismissedFor;
+  if (!stale) return null;
 
   return (
     <div className="toast version-toast" role="alert" aria-live="assertive">
@@ -66,7 +70,7 @@ export default function VersionWatcher({ buildId }: VersionWatcherProps) {
           type="button"
           className="toast-dismiss"
           aria-label="Dismiss"
-          onClick={() => setDismissed(true)}
+          onClick={() => setDismissedFor(latest)}
         >
           Later
         </button>

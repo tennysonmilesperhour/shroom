@@ -22,7 +22,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     /* ignore - palette still renders with empty results */
   }
 
-  const buildId = process.env.VERCEL_GIT_COMMIT_SHA ?? "dev";
+  // Build id inlined at build time (next.config.mjs). Always present, and
+  // changes on every deploy, so VersionWatcher can detect stale tabs.
+  const buildId = process.env.NEXT_PUBLIC_BUILD_ID ?? "dev";
 
   return (
     <ToastProvider>
