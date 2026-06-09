@@ -1,6 +1,7 @@
 import { createServiceClient } from "@/utils/supabase/service";
 import { Badge, Card } from "@/components/ui";
 import { must } from "@/lib/query";
+import RowActions from "@/components/RowActions";
 
 export const dynamic = "force-dynamic";
 
@@ -46,6 +47,7 @@ export default async function FoodSafetyPage() {
                 <th scope="col">Description</th>
                 <th scope="col">By</th>
                 <th scope="col">Result</th>
+                <th scope="col" className="actions-col"><span className="sr-only">Actions</span></th>
               </tr>
             </thead>
             <tbody>
@@ -68,6 +70,21 @@ export default async function FoodSafetyPage() {
                     <Badge tone={l.passed ? "green" : "red"}>
                       {l.passed ? "pass" : "fail"}
                     </Badge>
+                  </td>
+                  <td className="actions-col">
+                    <RowActions
+                      entity="food_safety"
+                      id={l.id}
+                      label={`${l.category} · ${l.log_date}`}
+                      initial={{
+                        log_date: l.log_date,
+                        category: l.category,
+                        performed_by: l.performed_by,
+                        passed: l.passed,
+                        description: l.description,
+                        corrective_action: l.corrective_action,
+                      }}
+                    />
                   </td>
                 </tr>
               ))}

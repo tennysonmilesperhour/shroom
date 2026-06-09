@@ -2,6 +2,7 @@ import { createServiceClient } from "@/utils/supabase/service";
 import { Badge, Card } from "@/components/ui";
 import { money } from "@/lib/format";
 import { must } from "@/lib/query";
+import RowActions from "@/components/RowActions";
 
 export const dynamic = "force-dynamic";
 
@@ -22,8 +23,11 @@ interface CampaignRow {
   id: number;
   name: string;
   channel: string;
+  audience: string | null;
+  status: string | null;
   recipients: number;
   opens: number;
+  clicks: number;
   revenue: number;
 }
 interface CartRow {
@@ -141,6 +145,7 @@ export default async function MarketingPage() {
                   <th scope="col" className="right">Sent</th>
                   <th scope="col" className="right">Opens</th>
                   <th scope="col" className="right">Revenue</th>
+                  <th scope="col" className="actions-col"><span className="sr-only">Actions</span></th>
                 </tr>
               </thead>
               <tbody>
@@ -154,6 +159,23 @@ export default async function MarketingPage() {
                     <td className="right">{c.recipients}</td>
                     <td className="right">{c.opens}</td>
                     <td className="right">{money(c.revenue)}</td>
+                    <td className="actions-col">
+                      <RowActions
+                        entity="campaign"
+                        id={c.id}
+                        label={c.name}
+                        initial={{
+                          name: c.name,
+                          channel: c.channel,
+                          audience: c.audience,
+                          status: c.status,
+                          recipients: c.recipients,
+                          opens: c.opens,
+                          clicks: c.clicks,
+                          revenue: c.revenue,
+                        }}
+                      />
+                    </td>
                   </tr>
                 ))}
               </tbody>

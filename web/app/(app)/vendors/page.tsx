@@ -3,6 +3,7 @@ import { Card } from "@/components/ui";
 import { must } from "@/lib/query";
 import { displayUrl, normalizeUrl } from "@/lib/external";
 import AddPanel from "@/components/AddPanel";
+import RowActions from "@/components/RowActions";
 import AddVendorForm from "./AddVendorForm";
 
 export const dynamic = "force-dynamic";
@@ -60,6 +61,7 @@ export default async function VendorsPage() {
                   <th scope="col">Rating</th>
                   <th scope="col">Priority</th>
                   <th scope="col">Notes</th>
+                  <th scope="col" className="actions-col"><span className="sr-only">Actions</span></th>
                 </tr>
               </thead>
               <tbody>
@@ -98,6 +100,22 @@ export default async function VendorsPage() {
                     <td className="muted">{v.contact_priority || "-"}</td>
                     <td className="muted" style={{ fontSize: 12 }}>
                       {v.notes ?? "-"}
+                    </td>
+                    <td className="actions-col">
+                      <RowActions
+                        entity="vendor"
+                        id={v.id}
+                        label={v.name}
+                        initial={{
+                          name: v.name,
+                          category: v.category,
+                          products: v.products,
+                          url: v.url,
+                          rating: v.rating,
+                          contact_priority: v.contact_priority,
+                          notes: v.notes,
+                        }}
+                      />
                     </td>
                   </tr>
                   );

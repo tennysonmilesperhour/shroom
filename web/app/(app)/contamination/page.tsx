@@ -2,6 +2,7 @@ import { createServiceClient } from "@/utils/supabase/service";
 import { Badge, Card } from "@/components/ui";
 import { must } from "@/lib/query";
 import SightingForm from "./SightingForm";
+import RowActions from "@/components/RowActions";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +11,9 @@ interface LogRow {
   observed_on: string;
   contam_type: string;
   severity: "low" | "med" | "high";
+  batch_id: number | null;
+  action_taken: string | null;
+  reported_by: string | null;
   batches: { lot_code: string } | null;
 }
 
@@ -30,7 +34,9 @@ export default async function ContaminationPage() {
     must<LogRow[]>(
       supabase
         .from("contamination_logs")
-        .select("id,observed_on,contam_type,severity,batches(lot_code)")
+        .select(
+          "id,observed_on,contam_type,severity,batch_id,action_taken,reported_by,batches(lot_code)",
+        )
         .order("observed_on", { ascending: false })
         .returns<LogRow[]>(),
       "load contamination logs",
@@ -50,6 +56,11 @@ export default async function ContaminationPage() {
       "load batches",
     ),
   ]);
+
+  const batchSelectOptions = batches.map((b) => ({
+    value: String(b.id),
+    label: b.lot_code,
+  }));
 
   return (
     <>
@@ -79,6 +90,7 @@ export default async function ContaminationPage() {
                   <th scope="col">Batch</th>
                   <th scope="col">Type</th>
                   <th scope="col">Severity</th>
+                  <th scope="col" className="actions-col"><span className="sr-only">Actions</span></th>
                 </tr>
               </thead>
               <tbody>
@@ -99,6 +111,22 @@ export default async function ContaminationPage() {
                       >
                         {l.severity}
                       </Badge>
+                    </td>
+                    <td className="actions-col">
+                      <RowActions
+                        entity="contamination"
+                        id={l.id}
+                        label={l.batches?.lot_code ?? l.contam_type}
+                        initial={{
+                          batch_id: l.batch_id,
+                          observed_on: l.observed_on,
+                          contam_type: l.contam_type,
+                          severity: l.severity,
+                          action_taken: l.action_taken,
+                          reported_by: l.reported_by,
+                        }}
+                        options={{ batch_id: batchSelectOptions }}
+                      />
                     </td>
                   </tr>
                 ))}

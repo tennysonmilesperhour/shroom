@@ -3,6 +3,7 @@ import { Badge, Card } from "@/components/ui";
 import { money } from "@/lib/format";
 import { must } from "@/lib/query";
 import AddPanel from "@/components/AddPanel";
+import RowActions from "@/components/RowActions";
 import AddPurchaseOrderForm from "./AddPurchaseOrderForm";
 
 export const dynamic = "force-dynamic";
@@ -17,11 +18,14 @@ interface POItem {
 
 interface PORow {
   id: number;
+  vendor_id: number | null;
   reference: string | null;
   status: string;
   ordered_at: string | null;
   expected_at: string | null;
+  received_at: string | null;
   total: number;
+  notes: string | null;
   vendors: { name: string } | null;
   purchase_order_items: POItem[] | null;
 }
@@ -82,6 +86,29 @@ export default async function PurchaseOrdersPage() {
                 Ordered {p.ordered_at || "-"} · Expected {p.expected_at || "-"}
               </span>
               <span className="muted">Total {money(p.total)}</span>
+              <span style={{ marginLeft: "auto" }}>
+                <RowActions
+                  entity="purchase_order"
+                  id={p.id}
+                  label={p.reference || `PO #${p.id}`}
+                  initial={{
+                    vendor_id: p.vendor_id,
+                    status: p.status,
+                    reference: p.reference,
+                    ordered_at: p.ordered_at,
+                    expected_at: p.expected_at,
+                    received_at: p.received_at,
+                    total: p.total,
+                    notes: p.notes,
+                  }}
+                  options={{
+                    vendor_id: vendorOpts.map((v) => ({
+                      value: String(v.id),
+                      label: v.name,
+                    })),
+                  }}
+                />
+              </span>
             </div>
             <table>
               <caption className="sr-only">Purchase order items</caption>

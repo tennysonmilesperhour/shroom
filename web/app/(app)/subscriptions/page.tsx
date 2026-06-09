@@ -2,6 +2,7 @@ import { createServiceClient } from "@/utils/supabase/service";
 import { Badge, Card } from "@/components/ui";
 import { money } from "@/lib/format";
 import { must } from "@/lib/query";
+import RowActions from "@/components/RowActions";
 
 export const dynamic = "force-dynamic";
 
@@ -11,24 +12,36 @@ interface SubItem {
 }
 interface SubRow {
   id: number;
+  customer_id: number | null;
   plan_name: string;
   interval: string;
   status: string;
+  started_on: string | null;
   next_renewal: string | null;
   price: number;
   customers: { name: string } | null;
   subscription_items: SubItem[] | null;
 }
+interface CustomerOpt {
+  id: number;
+  name: string;
+}
 
 export default async function SubscriptionsPage() {
   const supabase = createServiceClient();
-  const subs = await must<SubRow[]>(
-    supabase
-      .from("subscriptions")
-      .select("*, customers(name), subscription_items(quantity, products(name))")
-      .order("next_renewal", { ascending: true, nullsFirst: false }),
-    "load subscriptions",
-  );
+  const [subs, customerOpts] = await Promise.all([
+    must<SubRow[]>(
+      supabase
+        .from("subscriptions")
+        .select("*, customers(name), subscription_items(quantity, products(name))")
+        .order("next_renewal", { ascending: true, nullsFirst: false }),
+      "load subscriptions",
+    ),
+    must<CustomerOpt[]>(
+      supabase.from("customers").select("id,name").order("name"),
+      "load customers",
+    ),
+  ]);
 
   return (
     <>
@@ -55,6 +68,7 @@ export default async function SubscriptionsPage() {
                 <th scope="col">Status</th>
                 <th scope="col">Renews</th>
                 <th scope="col" className="right">Price</th>
+                <th scope="col" className="actions-col"><span className="sr-only">Actions</span></th>
               </tr>
             </thead>
             <tbody>
@@ -73,6 +87,28 @@ export default async function SubscriptionsPage() {
                   </td>
                   <td className="muted">{s.next_renewal || "-"}</td>
                   <td className="right">{money(s.price)}</td>
+                  <td className="actions-col">
+                    <RowActions
+                      entity="subscription"
+                      id={s.id}
+                      label={s.plan_name}
+                      initial={{
+                        customer_id: s.customer_id,
+                        plan_name: s.plan_name,
+                        interval: s.interval,
+                        price: s.price,
+                        status: s.status,
+                        started_on: s.started_on,
+                        next_renewal: s.next_renewal,
+                      }}
+                      options={{
+                        customer_id: customerOpts.map((c) => ({
+                          value: String(c.id),
+                          label: c.name,
+                        })),
+                      }}
+                    />
+                  </td>
                 </tr>
               ))}
             </tbody>
