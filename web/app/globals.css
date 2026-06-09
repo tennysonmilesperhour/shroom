@@ -833,6 +833,20 @@ ol.steps li { margin: 4px 0; }
 .kanban .chip-link { display: block; color: inherit; }
 .kanban .chip-link:hover { color: var(--lumen); }
 
+/* Drag-and-drop board interactions */
+.kanban .chip-drag { cursor: grab; }
+.kanban .chip-drag:active { cursor: grabbing; }
+.kanban .chip-drag.dragging {
+  opacity: 0.5;
+  border-color: var(--line-warm);
+}
+.kanban .col.drop-over {
+  border-color: var(--lumen);
+  background: var(--panel-glow);
+  box-shadow: inset 0 0 0 1px var(--lumen);
+}
+.kanban .col-empty { padding: var(--space-2) 0; }
+
 /* ── 16. Login ──────────────────────────────────────────────────────────── */
 .login-wrap {
   min-height: 100vh;
@@ -2020,3 +2034,221 @@ body::after {
 a.kpi-link { color: inherit; text-decoration: none; display: block; }
 a.kpi-link:hover { border-color: var(--line-warm); }
 a.kpi-link:focus-visible { outline: 2px solid var(--lumen); outline-offset: 2px; }
+
+/* ── 21. Side notes / feedback drawer ───────────────────────────────────── */
+/* Collapsed tab pinned to the right edge — present on every page. */
+.fb-tab {
+  position: fixed;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 85;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 12px 11px 14px;
+  border: 1px solid var(--line-warm);
+  border-right: 0;
+  border-radius: var(--radius) 0 0 var(--radius);
+  background: color-mix(in oklch, var(--ink-2) 94%, transparent);
+  color: var(--text-2);
+  cursor: pointer;
+  box-shadow: var(--shadow-lift), 0 0 50px -22px oklch(82% 0.18 195 / 0.35);
+  transition: color 160ms var(--ease-out), border-color 160ms var(--ease-out),
+    padding 160ms var(--ease-out);
+}
+.fb-tab:hover { color: var(--lumen); padding-right: 16px; }
+.fb-tab-label {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.fb-tab-badge {
+  position: absolute;
+  top: -7px;
+  left: -7px;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 5px;
+  border-radius: 10px;
+  background: var(--ember, oklch(70% 0.17 35));
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 19px;
+  text-align: center;
+  box-shadow: 0 0 10px oklch(70% 0.17 35 / 0.6);
+}
+
+/* The drawer itself. */
+.fb-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 86;
+  width: min(380px, 92vw);
+  display: flex;
+  flex-direction: column;
+  background:
+    linear-gradient(180deg, oklch(82% 0.18 195 / 0.05), transparent 30%),
+    color-mix(in oklch, var(--ink-2) 97%, transparent);
+  border-left: 1px solid var(--line-warm);
+  box-shadow: -24px 0 60px -30px oklch(0% 0 0 / 0.6);
+  transform: translateX(100%);
+  transition: transform 280ms var(--ease-out);
+  backdrop-filter: blur(8px);
+}
+.fb-drawer.open { transform: none; }
+
+.fb-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-4) var(--space-3);
+  border-bottom: 1px solid var(--line-soft);
+}
+.fb-eyebrow {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600;
+}
+.fb-title {
+  margin: 2px 0 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 22px;
+  line-height: 1.1;
+  color: var(--text);
+}
+.fb-x {
+  background: transparent;
+  border: 0;
+  color: var(--faint);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  transition: color 160ms var(--ease-out);
+}
+.fb-x:hover { color: var(--text); }
+
+.fb-compose {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--line-soft);
+}
+.fb-page { font-size: 12px; color: var(--muted); }
+.fb-page-tag {
+  color: var(--lumen);
+  font-weight: 600;
+}
+.fb-textarea {
+  width: 100%;
+  margin-top: 8px;
+  padding: 10px 12px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  resize: vertical;
+  transition: border-color 160ms var(--ease-out);
+}
+.fb-textarea:focus { outline: none; border-color: var(--lumen); }
+.fb-error { color: var(--ember, oklch(70% 0.17 35)); font-size: 12px; margin: 8px 0 0; }
+.fb-compose-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+.fb-hint { font-size: 11px; color: var(--faint); }
+
+.fb-scope {
+  display: flex;
+  gap: 6px;
+  padding: var(--space-3) var(--space-4) 0;
+}
+.fb-scope button {
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 160ms var(--ease-out);
+}
+.fb-scope button.active {
+  border-color: var(--line-warm);
+  color: var(--lumen);
+  background: var(--panel-glow);
+}
+
+.fb-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-3) var(--space-4) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}
+.fb-empty { color: var(--muted); font-size: 13px; margin: var(--space-3) 0 0; }
+.fb-note {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 11px 12px;
+  transition: border-color 160ms var(--ease-out), opacity 160ms var(--ease-out);
+}
+.fb-note.done { opacity: 0.55; }
+.fb-note.done .fb-note-body { text-decoration: line-through; }
+.fb-note-body {
+  font-size: 13px;
+  color: var(--text);
+  white-space: pre-wrap;
+  line-height: 1.45;
+}
+.fb-note-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.fb-note-tag {
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--lumen-2);
+  border: 1px solid var(--line-soft);
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+.fb-note-time { font-size: 11.5px; color: var(--muted); }
+.fb-note-toggle {
+  margin-left: auto;
+  background: transparent;
+  border: 0;
+  color: var(--faint);
+  font-size: 11.5px;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: var(--radius-sm);
+  transition: color 160ms var(--ease-out);
+}
+.fb-note-toggle:hover { color: var(--lumen); }
+
+@media (prefers-reduced-motion: reduce) {
+  .fb-drawer { transition: none; }
+  .fb-tab { transition: none; }
+}

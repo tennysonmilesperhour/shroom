@@ -5,6 +5,7 @@ import GenerateTasks from "@/components/GenerateTasks";
 import { must } from "@/lib/query";
 import AddPanel from "@/components/AddPanel";
 import AddBatchForm from "./AddBatchForm";
+import BatchBoard from "./BatchBoard";
 
 export const dynamic = "force-dynamic";
 
@@ -71,7 +72,14 @@ export default async function BatchesPage() {
     must<RoomOpt[]>(supabase.from("rooms").select("id,name").order("name"), "load rooms"),
   ]);
 
-  const byStage = (s: Stage) => batches.filter((b) => b.stage === s);
+  const boardBatches = batches.map((b) => ({
+    id: b.id,
+    lot_code: b.lot_code,
+    stage: b.stage,
+    container_id: b.container_id,
+    contamination_flag: b.contamination_flag,
+    strain: b.strains?.name ?? null,
+  }));
 
   return (
     <>
@@ -88,39 +96,10 @@ export default async function BatchesPage() {
       </AddPanel>
 
       <Card title="Tub / bag board" variant="featured">
-        <div className="kanban">
-          {STAGES.map((s) => {
-            const items = byStage(s);
-            return (
-              <div className="col" key={s}>
-                <h4>
-                  {STAGE_LABEL[s]} <span className="muted">· {items.length}</span>
-                </h4>
-                {items.length === 0 ? (
-                  <p className="muted" style={{ fontSize: 12, margin: 0 }}>-</p>
-                ) : (
-                  items.map((b) => (
-                    <Link
-                      key={b.id}
-                      href={`/batches/${b.id}`}
-                      className="chip chip-link"
-                    >
-                      <b>{b.container_id || b.lot_code}</b>{" "}
-                      {b.contamination_flag && (
-                        <Badge tone="red">
-                          <span className="sr-only">Contaminated</span>!
-                        </Badge>
-                      )}
-                      <div className="meta">
-                        {b.strains?.name ?? "?"} · {b.lot_code}
-                      </div>
-                    </Link>
-                  ))
-                )}
-              </div>
-            );
-          })}
-        </div>
+        <p className="muted" style={{ marginTop: 0, fontSize: 12.5 }}>
+          Drag a tub between columns to move it through the lifecycle. Click to open.
+        </p>
+        <BatchBoard batches={boardBatches} stages={STAGES} stageLabel={STAGE_LABEL} />
       </Card>
 
       <Card title="Spawn task templates">

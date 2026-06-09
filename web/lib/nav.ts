@@ -67,6 +67,25 @@ export function isActive(href: string, currentPath: string): boolean {
   return href === "/" ? currentPath === "/" : currentPath.startsWith(href);
 }
 
+/** Human-readable label for a pathname, used to tag feedback notes with the
+    screen they were filed from. Falls back to a Title-Cased first segment for
+    routes not in the nav (e.g. detail pages like /batches/12). */
+export function labelForPath(path: string): string {
+  if (path === "/") return "Dashboard";
+  let best: { href: string; label: string } | null = null;
+  for (const group of NAV_GROUPS) {
+    for (const [href, label] of group.items) {
+      if (href === "/") continue;
+      if (path === href || path.startsWith(href + "/") || path.startsWith(href)) {
+        if (!best || href.length > best.href.length) best = { href, label };
+      }
+    }
+  }
+  if (best) return best.label;
+  const seg = path.split("/").filter(Boolean)[0] ?? "App";
+  return seg.charAt(0).toUpperCase() + seg.slice(1).replace(/-/g, " ");
+}
+
 /** Resolve the section key for a given pathname so the shell can tint
     background gradients per IA group. */
 export function sectionForPath(path: string): NavGroup["key"] {
