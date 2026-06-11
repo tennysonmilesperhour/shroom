@@ -119,7 +119,7 @@ spirit (and dark amber/earth theme, DM Mono + Syne) while closing its gaps:
 | Gap in `grow_ops.jsx` | Fix in Shroom OS |
 |---|---|
 | **Static / hardcoded data** | Live REST API over a real database; the UI fetches everything |
-| **No single source of truth** | One normalized schema is *the* source of truth (replaces the churning Word→Sheet→workbook sprawl) |
+| **No single source of truth** | The canonical **`Master Cultivation Reference.xlsx`** is *the* source of truth; a live importer syncs it into both data stores (see below) |
 | **No persistence** | SQLite (swappable to Postgres via `SHROOM_DB_URL`); nothing lost on refresh |
 | **Not multi-user / production-grade** | Stateless API ready for auth + multiple operators |
 | **API key in the browser** | Advisor key lives **server-side** (`ANTHROPIC_API_KEY` env); context is assembled live per request, never hardcoded |
@@ -132,6 +132,26 @@ flush-by-flush harvests with fresh→dry ratios, environment targets-vs-actuals 
 
 ---
 
+## 3b. Source of truth: the Master Cultivation Reference
+
+The operation is driven from one canonical Excel workbook,
+**`Master Cultivation Reference.xlsx`** (synced via Google Drive). A live
+importer (`backend/app/sheet/`) parses every tab and **upserts it into both
+stores** — the FastAPI/SQLite reference DB and the Supabase the web app reads —
+so the sheet, not the code, is authoritative.
+
+```bash
+# Local copy -> FastAPI SQLite DB
+python -m backend.app.sheet.importer --target sqlite --path "…/Master Cultivation Reference.xlsx"
+# Google Drive -> live Supabase (also runs daily via GitHub Actions)
+python -m backend.app.sheet.importer --target supabase
+```
+
+Imports are idempotent (upsert on natural keys / content hashes), so they can run
+on a schedule. Full tab→table mapping: [`supabase/SHEET_MAPPING.md`](supabase/SHEET_MAPPING.md).
+
+---
+
 ## 4. Architecture
 
 ```
@@ -140,6 +160,7 @@ backend/app/
   models.py          Domain model — cultivation, ops, business, traceability spine
   schemas.py         Pydantic v2 request/response contracts
   seed.py            Realistic Quantum Blue Mycology demo dataset
+  sheet/             Live importer: Master Cultivation Reference .xlsx -> both stores
   main.py            FastAPI app; mounts /api routers + serves the SPA
   routers/
     cultivation.py   strains, recipes, rooms, batches, lifecycle, contamination

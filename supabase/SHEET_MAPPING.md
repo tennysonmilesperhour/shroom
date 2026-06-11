@@ -1,42 +1,69 @@
-# Master Cultivation Sheet → Shroom OS mapping
+# Master Cultivation Reference → Shroom OS
 
-The Google Sheet (*Master Cultivation Reference*) is treated as a **read-only
-reference**. We did **not** modify the sheet. Its tabs are mirrored into the
-Supabase schema additively — filling gaps without overriding the normalization
-improvements already in the model.
+The **single source of truth** is the canonical Excel workbook
+**`Master Cultivation Reference.xlsx`** (Quantum Blue Mycology · Isaac Childs),
+maintained in the synced *Mushrooms* Google Drive folder
+([file](https://drive.google.com/file/d/1KJSAauzZ-CBpA1f4hDISsLzAiFnoh4jC/view)).
+It supersedes every earlier sheet/workbook that was previously transcribed by
+hand into the seed data — those are no longer authoritative.
 
-| Sheet tab | Schema target | Notes |
+Unlike before, the sheet is **no longer a read-only reference we mirror once**:
+a live importer (`backend/app/sheet/`) parses the workbook and **upserts every
+tab into both data stores** — the FastAPI/SQLite reference DB and the Supabase
+the web app reads — so editing the sheet updates the app.
+
+## Running the importer
+
+```bash
+# From a local copy of the workbook into the FastAPI SQLite DB:
+python -m backend.app.sheet.importer --target sqlite \
+    --path "~/Mushrooms/Master Cultivation Reference.xlsx"
+
+# From Google Drive into the live Supabase (unattended):
+GOOGLE_OAUTH_TOKEN=… NEXT_PUBLIC_SUPABASE_URL=… SUPABASE_SERVICE_ROLE_KEY=… \
+    python -m backend.app.sheet.importer --target supabase
+```
+
+The source resolves in priority order: `--path` / `MASTER_SHEET_PATH`, then a
+Google Drive download of `MASTER_SHEET_FILE_ID` (default is the canonical file)
+using `GOOGLE_OAUTH_TOKEN`. The scheduled GitHub Action
+(`.github/workflows/sheet-import.yml`) runs the Supabase sync daily and on
+demand. Every run is recorded in `public.sheet_imports`.
+
+Imports are **idempotent**: each table upserts on a natural key (declared in
+migration `15_master_sheet_import.sql`), so re-running updates rows in place
+instead of duplicating them. Append-only tabs (Sales Log, Incident Log) upsert
+on a content hash.
+
+## Tab → table mapping
+
+| Sheet tab | Supabase / SQLite target | Upsert key |
 |---|---|---|
-| Setup / Equipment | `equipment` | Martha Tent, humidifier, FAE fan, Inkbird IBT + IAM-T2, dehydrator, etc. Linked to `rooms`. |
-| Environment Parameters | `rooms` targets + `environment_readings` | Sheet tracks **°F ranges**; we store a normalized single target in **°C** and the app converts to °F for display + the in-spec check. Ranges (e.g. 75–78 °F) documented in equipment/room notes. |
-| Strains (active/colonizing/inoculating) | `strains` + `batches` | Tub/Bag ID → `batches.container_id`; transfer/mix/first-pin dates → `batches.*_on`; rating → `batches.rating`. |
-| Spore library (fridge) | `strains` (`library_status`, `priority`, `acquired_on`, `syringes_on_hand`) | Full 19-strain library imported (psychedelic + functional). |
-| Pricing Reference | `price_tiers` | Wholesale/distributor/retail (medicinal) + farmers-market/restaurant/Harmons/DTC (functional). |
-| Harvest Tracker | `harvests` (+ `dry_ratio_pct` generated) | Real numbers loaded (SG F1 445/31.2 = 7.0%, IW F1 723.5/46.8 = 6.5%, IW F2 428/26.9 = 6.3%). |
-| Jar / Dry Inventory | `dry_inventory` | Jar ID, dry weight, used, `remaining_g` (generated). J-01…J-03 seeded. |
-| Cycle Log | `batches` + `stage_events` | Inoculated → Mixed → Transferred → First Pins → Harvest lifecycle. |
-| Protocols (checklists) | `protocols` | 5 SOPs with ordered `steps` (jsonb): Inoculation, Post-Harvest Dunk & Reset, Harvest Day, Daily Env Check, Bulk Transfer. |
-| Contamination + Troubleshooting | `reference_guides` | 6 contamination + 11 symptom→fix entries. Feeds the AI advisor. |
-| Issue Log | `issue_log` | 18 lessons-learned entries (date, issue, root cause, resolution). |
-| Vendors / Sourcing | `vendors` | Supplies, spores, functional, and Chaga wild-harvest sourcing leads. |
-| Sales Leads | `customers` (CRM fields) | `status`, `role`, `price_tier`, `volume_est`, `region`, `last_contact`, `follow_up_date`, `priority`. Named leads imported (Jackie, Jonathan, Tennysion, Daniel, Amanda, Greg, Harmons, markets, naturopaths, Haven). |
+| Environment (equipment) | `equipment` | `name` |
+| Strain Library + Fridge & Incoming | `strains` (both) | `name` |
+| Jar Inventory | `dry_inventory` | `jar_id` |
+| Jar Inventory → *Pricing Reference* | `price_tiers` | `tier, product_class` |
+| Sourced Finished Goods | `sourced_finished_goods` *(new)* | `strain` |
+| Sales Log | `sales_log` *(new)* | `row_hash` |
+| Harvest Tracker | `harvests` (both) | `source_ref` (lot code) |
+| Grow Cycle Log | `batches` (both) | `lot_code` |
+| Buyers & Pricing | `customers` (both) | `name` |
+| Vendors (+ Chaga sourcing leads) | `vendors` | `name` |
+| Protocols | `protocols` | `name` |
+| Troubleshooting → guide + symptom | `reference_guides` | `guide_type, label` |
+| Troubleshooting → incident log | `issue_log` | `source_hash` |
 
-## Deliberate differences (improvements kept, not overridden)
+The FastAPI/SQLite store has a coarser model, so it receives the subset its
+schema represents: **strains, customers, and the batch → harvest cultivation
+spine**. Supabase, whose schema was built for these tabs, receives all of them.
 
-- **Units:** sheet is °F / gal; DB stores °C / kg normalized, app localizes to the
-  operator's °F/gram mental model on display + input.
+## Deliberate normalizations (kept from the model)
+
+- **Units:** the sheet is °F / grams; harvest weights are stored in kg
+  (`weight_kg`) and the app localizes back to the operator's gram/°F view.
+- **Ease rating** keeps the sheet's `/10` convention (`'9/10'` → `9`); a
+  non-numeric ease (`'Moderate'`) leaves the column default.
 - **Traceability spine** (`Strain → Batch → Harvest → OrderLine → Order →
-  Customer`) and **RLS** are model improvements with no sheet equivalent — kept.
-- **Ease rating** adopts the sheet's **/10** convention.
-- The sheet's duplicate pricing/contact data (which lived in two files) collapses
-  into single normalized tables here — directly resolving the documented
-  single-source-of-truth headache.
-
-## Recommended next reference-driven features
-
-1. **Protocol-aware tasks:** generate the Daily Environmental Check + Harvest Day
-   checklists as recurring tasks per active batch.
-2. **Advisor grounding:** feed `reference_guides` + `issue_log` into the AI
-   advisor so its answers cite the operation's own hard-won lessons.
-3. **Container/tub board:** a Kanban by `container_id` + `library_status` mirroring
-   how the sheet tracks T-/G- IDs through the lifecycle.
+  Customer`) and **RLS** are model features with no sheet column — preserved.
+- A grow-cycle row's `(tub, flush)` becomes the synthesized **lot code**
+  (`T-01-F1`) that links a batch to its harvest across both stores.
