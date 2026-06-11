@@ -1,0 +1,43 @@
+name: Sheet import
+
+# Manual sync of the Master Cultivation Reference .xlsx (the single source of
+# truth) into the Supabase the web app reads. Triggered on demand — by the
+# operator from the GitHub UI, or by the in-app "Sync from sheet" button on
+# /sync (which calls the GitHub workflow-dispatch API). No schedule: the sheet
+# syncs when a human asks it to.
+#
+# Required repository secrets:
+#   GOOGLE_SERVICE_ACCOUNT_JSON - service-account key JSON with Drive read scope,
+#                                 with the workbook shared to its email
+#   SUPABASE_URL                - https://<ref>.supabase.co
+#   SUPABASE_SERVICE_ROLE_KEY   - service-role key (bypasses RLS; keep secret)
+# Optional:
+#   MASTER_SHEET_FILE_ID        - overrides the default Drive file id
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Import target"
+        type: choice
+        default: supabase
+        options: [supabase, sqlite, both]
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+      - name: Import sheet
+        env:
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          MASTER_SHEET_FILE_ID: ${{ secrets.MASTER_SHEET_FILE_ID }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          python -m backend.app.sheet.importer \
+            --target "${{ github.event.inputs.target || 'supabase' }}"
