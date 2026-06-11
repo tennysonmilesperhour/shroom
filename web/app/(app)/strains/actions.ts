@@ -3,6 +3,7 @@
 import { createServiceClient } from "@/utils/supabase/service";
 import { revalidatePath } from "next/cache";
 import { enqueueSync } from "@/lib/sync";
+import { runSporeCrawl } from "@/lib/spore-crawler";
 import type { EntityResult } from "@/components/EntityForm";
 
 const VALID_TYPES = new Set(["psychedelic", "functional", "gourmet"]);
@@ -61,4 +62,23 @@ export async function addStrain(formData: FormData): Promise<EntityResult> {
   await enqueueSync(supabase, "strain", data.id, "insert", { name, mushroom_type });
   revalidatePath("/strains");
   return { ok: true, message: "Strain added ✓" };
+}
+
+// Manually trigger the spore-source crawler. Pass a strainId to scan just that
+// strain (used by the per-strain "Run source search now" button); omit it to
+// scan every strain whose source is currently "unknown" (same scope the weekly
+// cron uses). Safe to call even before the crawler tables exist - it degrades
+// to a no-op summary.
+export async function runSporeCrawlNow(strainId?: number): Promise<EntityResult> {
+  const supabase = createServiceClient();
+  const summary = await runSporeCrawl(supabase, strainId ? { strainId } : {});
+  revalidatePath("/strains");
+  if (strainId) revalidatePath(`/strains/${strainId}`);
+  if (summary.status === "error") {
+    return { ok: false, message: `Source search failed: ${summary.detail}` };
+  }
+  return {
+    ok: true,
+    message: `Checked ${summary.strainsChecked} strain(s); ${summary.listingsFound} in-stock source(s) found.`,
+  };
 }

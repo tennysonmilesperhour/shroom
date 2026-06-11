@@ -3,8 +3,11 @@ import { notFound } from "next/navigation";
 import { Badge, Card, Kpi } from "@/components/ui";
 import type { BadgeTone } from "@/components/ui";
 import { createServiceClient } from "@/utils/supabase/service";
-import { must, maybe } from "@/lib/query";
-import { cToF, ease, stars } from "@/lib/format";
+import { must, maybe, soft } from "@/lib/query";
+import { cToF, ease } from "@/lib/format";
+import { QualityBars, strainQualities } from "@/components/QualityBars";
+import { normalizeUrl, displayUrl } from "@/lib/external";
+import RunSporeCrawlButton from "../RunSporeCrawlButton";
 
 export const dynamic = "force-dynamic";
 
@@ -58,6 +61,16 @@ interface YieldRow {
   batches: number;
 }
 
+interface SporeListingRow {
+  id: number;
+  vendor_name: string;
+  source_url: string;
+  product_title: string;
+  in_stock: boolean;
+  price: string;
+  found_at: string;
+}
+
 function typeTone(t: string): BadgeTone {
   if (t === "psychedelic") return "blue";
   if (t === "functional") return "green";
@@ -74,7 +87,7 @@ export default async function StrainDetailPage({
   if (!Number.isFinite(id)) notFound();
 
   const supabase = createServiceClient();
-  const [strain, batches, harvests, yieldRow] = await Promise.all([
+  const [strain, batches, harvests, yieldRow, sporeListings] = await Promise.all([
     maybe<StrainRow>(
       supabase.from("strains").select("*").eq("id", id).single(),
       "load strain",
@@ -104,6 +117,14 @@ export default async function StrainDetailPage({
         .single(),
       "load yield for strain",
     ),
+    soft<SporeListingRow>(
+      supabase
+        .from("spore_source_listings")
+        .select("id,vendor_name,source_url,product_title,in_stock,price,found_at")
+        .eq("strain_id", id)
+        .order("in_stock", { ascending: false })
+        .order("found_at", { ascending: false }),
+    ),
   ]);
 
   if (!strain) notFound();
@@ -123,16 +144,21 @@ export default async function StrainDetailPage({
         <h1 className="section">{strain.name}</h1>
         <div className="hero-meta">
           <Badge tone={typeTone(strain.mushroom_type)}>{strain.mushroom_type}</Badge>
-          {strain.library_status && <Badge tone="muted">{strain.library_status}</Badge>}
+          {strain.library_status === "unknown" ? (
+            <Badge tone="violet">source: searching</Badge>
+          ) : (
+            strain.library_status && <Badge tone="muted">{strain.library_status}</Badge>
+          )}
           {strain.grow_again ? (
             <Badge tone="green">grow again</Badge>
           ) : (
             <Badge tone="red">retire</Badge>
           )}
-          <span className="stars" aria-label={`Priority ${strain.priority ?? 0} of 5`}>
-            {stars(strain.priority)}
-          </span>
         </div>
+      </div>
+
+      <div className="card quality-card">
+        <QualityBars qualities={strainQualities(strain)} />
       </div>
 
       <div className="kpi-row">
@@ -166,6 +192,70 @@ export default async function StrainDetailPage({
           </dl>
         </Card>
       </div>
+
+      {(strain.library_status === "unknown" || sporeListings.length > 0) && (
+        <Card title="Spore sourcing">
+          {strain.library_status === "unknown" ? (
+            <p className="muted" style={{ marginTop: 0 }}>
+              Source marked <b>unknown</b>. A weekly crawler scans tracked spore
+              vendors for this strain in stock and available for purchase.
+            </p>
+          ) : (
+            <p className="muted" style={{ marginTop: 0 }}>
+              Most recent sources found by the sourcing crawler.
+            </p>
+          )}
+
+          {sporeListings.length === 0 ? (
+            <p className="muted" style={{ margin: "0 0 12px" }}>
+              No sources found yet. Run a search to scan vendors now.
+            </p>
+          ) : (
+            <table>
+              <caption className="sr-only">Spore sources for {strain.name}</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Vendor</th>
+                  <th scope="col">Listing</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Found</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sporeListings.map((l) => {
+                  const href = normalizeUrl(l.source_url);
+                  return (
+                    <tr key={l.id}>
+                      <td><b>{l.vendor_name || "—"}</b></td>
+                      <td>
+                        {href ? (
+                          <a href={href} target="_blank" rel="noopener noreferrer" className="row-anchor">
+                            {displayUrl(l.source_url)} ↗
+                          </a>
+                        ) : (
+                          l.product_title || "—"
+                        )}
+                      </td>
+                      <td>
+                        {l.in_stock ? (
+                          <Badge tone="green">in stock{l.price ? ` · ${l.price}` : ""}</Badge>
+                        ) : (
+                          <Badge tone="muted">listed</Badge>
+                        )}
+                      </td>
+                      <td className="muted">{l.found_at?.slice(0, 10) ?? "—"}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+
+          <div style={{ marginTop: 12 }}>
+            <RunSporeCrawlButton strainId={strain.id} />
+          </div>
+        </Card>
+      )}
 
       <Card title="Batches">
         {batches.length === 0 ? (

@@ -79,6 +79,7 @@ export default function AddStrainForm() {
           <option value="awaiting">awaiting</option>
           <option value="ordered">ordered</option>
           <option value="en_route">en route</option>
+          <option value="unknown">unknown — auto-search sources</option>
         </select>
       </div>
       <div>
