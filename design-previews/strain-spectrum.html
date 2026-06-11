@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Shroom OS — Psilocybe Alkaloid Spectrum (preview)</title>
+<style>
+  :root{
+    --ink:oklch(15% 0.035 240);--ink-deep:oklch(11% 0.030 245);
+    --panel:oklch(19% 0.045 235 / .8);--line:oklch(60% 0.04 220 / .14);
+    --line-soft:oklch(60% 0.04 220 / .08);--text:oklch(95% 0.012 220);
+    --text-2:oklch(80% 0.025 220);--muted:oklch(72% 0.030 220);--faint:oklch(60% 0.025 220);
+    --lumen:oklch(82% 0.180 195);--bruise:oklch(60% 0.210 295);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:linear-gradient(180deg,var(--ink),var(--ink-deep) 70%);
+    color:var(--text);font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    padding:32px;line-height:1.5}
+  .wrap{max-width:980px;margin:0 auto}
+  .eyebrow{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.72rem;
+    text-transform:uppercase;letter-spacing:.12em;color:var(--lumen)}
+  h1{font-size:1.5rem;margin:.2rem 0 .4rem}
+  p.lead{color:var(--text-2);max-width:64ch}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:24px;margin-top:20px;backdrop-filter:blur(8px)}
+  .spectrum{display:flex;gap:28px;flex-wrap:wrap;align-items:center}
+  .wheel{flex:1 1 360px;max-width:440px}
+  svg{width:100%;height:auto;overflow:visible}
+  .side{flex:1 1 240px;min-width:220px;display:flex;flex-direction:column;gap:14px}
+  .readout{border:1px solid var(--line);border-radius:10px;padding:14px;
+    background:oklch(23% 0.055 230 / .5);min-height:96px}
+  .readout b{font-size:1.05rem}
+  .meta{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:6px;
+    font-family:ui-monospace,monospace;font-size:.8rem;color:var(--text-2)}
+  .tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px}
+  .tag{font-family:ui-monospace,monospace;font-size:.7rem;color:var(--muted);
+    border:1px solid var(--line);border-radius:20px;padding:2px 9px}
+  .swatch{display:inline-block;width:14px;height:14px;border-radius:50%;
+    box-shadow:0 0 10px -1px currentColor;vertical-align:-2px;margin-right:7px}
+  dl.legend{margin:0;display:flex;flex-direction:column;gap:10px}
+  dl.legend dt{font-family:ui-monospace,monospace;font-size:.72rem;text-transform:uppercase;
+    letter-spacing:.04em;color:var(--muted)}
+  dl.legend dd{margin:2px 0 0;font-size:.83rem;color:var(--text-2)}
+  dl.legend em{color:var(--lumen);font-style:normal}
+  text.axis{font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.04em;
+    text-transform:uppercase;fill:var(--muted)}
+  text.guide{font-family:ui-monospace,monospace;font-size:8px;fill:var(--faint)}
+  text.dotlabel{font-family:ui-monospace,monospace;font-size:11px;font-weight:600;fill:var(--text);
+    paint-order:stroke;stroke:var(--ink-deep);stroke-width:3px;text-anchor:middle}
+  a.dot{cursor:pointer}
+  a.dot circle{transition:r .12s ease}
+  .note{font-size:.8rem;color:var(--muted);margin-top:14px}
+  .preview-badge{display:inline-block;font-family:ui-monospace,monospace;font-size:.7rem;
+    color:var(--bruise);border:1px solid oklch(60% .21 295 / .4);border-radius:20px;padding:2px 10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <span class="preview-badge">STATIC PREVIEW · matches /strains</span>
+  <div class="eyebrow" style="margin-top:10px">Medicinal spectrum</div>
+  <h1>Psilocybe alkaloid &amp; experience wheel</h1>
+  <p class="lead">The 15 psychedelic strains arranged by reported character (angle / color) and measured
+    potency (distance from center). Total-potency differences between cubensis strains are small and
+    dominated by cultivation; the &ldquo;character&rdquo; arc is community lore, not proven pharmacology.</p>
+
+  <div class="card">
+    <div class="spectrum">
+      <figure class="wheel" style="margin:0">
+        <svg id="svg" viewBox="0 0 360 360" role="img" aria-label="Strain spectrum"></svg>
+      </figure>
+      <div class="side">
+        <div class="readout" id="readout">
+          <span style="color:var(--muted)">Hover a node to read its profile.</span>
+        </div>
+        <dl class="legend">
+          <div><dt>Distance from center</dt>
+            <dd>Measured total tryptamine (% dry weight) — <em>lab-grounded</em>. Outer = stronger.</dd></div>
+          <div><dt>Angle / color</dt>
+            <dd>Reported character — <em>anecdotal</em>. Amber = gentle, cyan = bright/balanced, violet = intense.</dd></div>
+        </dl>
+      </div>
+    </div>
+    <p class="note">Potency tiers grounded in lab assays + Oakland Hyphae Psilocybin Cup data; experiential
+      personalities are anecdotal and confounded by dose, set &amp; setting. Within one strain, sample-to-sample
+      potency can vary by up to ~100%.</p>
+  </div>
+</div>
+
+<script>
+const STRAINS=[
+ {n:"Enigma",t:1.90,lo:1.40,hi:2.60,hue:300,tier:"Exceptional",ev:"Some lab support",tags:["exceptional","intense","visual","heavy"]},
+ {n:"Penis Envy",t:1.80,lo:1.30,hi:2.50,hue:298,tier:"Very High",ev:"Some lab support",tags:["intense","visual","deep","body-load"]},
+ {n:"PE6",t:1.70,lo:1.20,hi:2.40,hue:292,tier:"Very High",ev:"Some lab support",tags:["intense","visual","introspective","body-load"]},
+ {n:"Tidal Wave",t:1.60,lo:1.10,hi:2.60,hue:205,tier:"Very High",ev:"Some lab support",tags:["potent","balanced","visual","euphoric"]},
+ {n:"Jedi Mind Fuck",t:1.40,lo:1.00,hi:1.90,hue:288,tier:"Very High",ev:"Some lab support",tags:["intense","visual","introspective","emotional"]},
+ {n:"Blue Meanie",t:1.15,lo:0.80,hi:1.60,hue:160,tier:"High",ev:"Anecdotal",tags:["fast-onset","euphoric","giggly","visual"]},
+ {n:"BV (Bluey Vuittons)",t:1.10,lo:0.80,hi:1.50,hue:195,tier:"High",ev:"Anecdotal",tags:["balanced","visual","clean"]},
+ {n:"Illusion Weaver",t:1.00,lo:0.70,hi:1.40,hue:270,tier:"High",ev:"Anecdotal",tags:["visual","introspective","dreamy"]},
+ {n:"Stargazer",t:0.95,lo:0.70,hi:1.30,hue:185,tier:"High",ev:"Anecdotal",tags:["visual","euphoric","energetic","creative"]},
+ {n:"Golden Halo",t:0.95,lo:0.60,hi:1.40,hue:92,tier:"High",ev:"Anecdotal",tags:["euphoric","warm","under-characterized"]},
+ {n:"B+",t:0.80,lo:0.60,hi:1.10,hue:82,tier:"Moderate",ev:"Anecdotal",tags:["gentle","balanced","warm","beginner"]},
+ {n:"Costa Rican",t:0.75,lo:0.50,hi:1.00,hue:68,tier:"Moderate",ev:"Anecdotal",tags:["warm","social","giggly","moderate"]},
+ {n:"Fiji",t:0.70,lo:0.50,hi:0.95,hue:72,tier:"Moderate",ev:"Anecdotal",tags:["smooth","clear-headed","social","gentle"]},
+ {n:"Golden Teacher",t:0.70,lo:0.50,hi:0.95,hue:78,tier:"Moderate-High",ev:"Anecdotal",tags:["gentle","introspective","spiritual","balanced"]},
+ {n:"Hillbilly",t:0.65,lo:0.45,hi:0.90,hue:85,tier:"Moderate",ev:"Anecdotal",tags:["light","social","clear-headed","functional"]},
+];
+const SIZE=360,CX=180,CY=180,IN=34,OUT=150,RIN=154,ROUT=168,SEG=72,PMIN=0.4,PMAX=2.6;
+const NS="http://www.w3.org/2000/svg";
+const hue=(h,l=72,c=.17)=>`oklch(${l}% ${c} ${h})`;
+const rad=t=>t==null?.18:Math.min(1,Math.max(0,(t-PMIN)/(PMAX-PMIN)));
+const pt=(h,rf,iR,oR)=>{const r=iR+rf*(oR-iR),th=h*Math.PI/180;return[CX+r*Math.cos(th),CY-r*Math.sin(th)];};
+const el=(n,a)=>{const e=document.createElementNS(NS,n);for(const k in a)e.setAttribute(k,a[k]);return e;};
+const svg=document.getElementById("svg"),readout=document.getElementById("readout");
+
+svg.appendChild(el("circle",{cx:CX,cy:CY,r:OUT,fill:"oklch(15% 0.03 243)",stroke:"var(--line)"}));
+[0.5,1,1.5,2,2.5].forEach(p=>{const r=IN+rad(p)*(OUT-IN);
+  svg.appendChild(el("circle",{cx:CX,cy:CY,r,fill:"none",stroke:"var(--line-soft)","stroke-dasharray":"2 4"}));
+  const g=el("text",{x:CX+3,y:CY-r+11,class:"guide"});g.textContent=p+"%";svg.appendChild(g);});
+for(let i=0;i<SEG;i++){const a0=i/SEG*360,a1=(i+1)/SEG*360,m=(a0+a1)/2;
+  const[ax,ay]=pt(a0,0,RIN,RIN),[bx,by]=pt(a0,0,ROUT,ROUT),[cx,cy]=pt(a1,0,ROUT,ROUT),[dx,dy]=pt(a1,0,RIN,RIN);
+  svg.appendChild(el("path",{d:`M ${ax} ${ay} L ${bx} ${by} A ${ROUT} ${ROUT} 0 0 0 ${cx} ${cy} L ${dx} ${dy} A ${RIN} ${RIN} 0 0 1 ${ax} ${ay} Z`,fill:hue(m,70,.16),opacity:.85}));}
+const ax1=el("text",{x:CX+OUT+6,y:CY+4,class:"axis","text-anchor":"start"});ax1.textContent="gentle";svg.appendChild(ax1);
+const ax2=el("text",{x:CX,y:CY-OUT-18,class:"axis","text-anchor":"middle"});ax2.textContent="balanced · bright";svg.appendChild(ax2);
+const ax3=el("text",{x:CX-OUT-6,y:CY+4,class:"axis","text-anchor":"end"});ax3.textContent="intense";svg.appendChild(ax3);
+
+STRAINS.forEach(s=>{const[x,y]=pt(s.hue,rad(s.t),IN,OUT);
+  const a=el("a",{class:"dot"});a.style.color=hue(s.hue,74,.18);
+  const c=el("circle",{cx:x,cy:y,r:6.5,fill:hue(s.hue,74,.18),stroke:"oklch(98% 0 0 / .55)","stroke-width":1});
+  a.appendChild(c);
+  const show=()=>{c.setAttribute("r",9);c.setAttribute("stroke","var(--text)");c.setAttribute("stroke-width",2);
+    let lb=svg.querySelector(".dotlabel");if(!lb){lb=el("text",{class:"dotlabel"});svg.appendChild(lb);}
+    lb.setAttribute("x",x);lb.setAttribute("y",y-13);lb.textContent=s.n;
+    readout.innerHTML=`<span class="swatch" style="color:${hue(s.hue,74,.18)}"></span><b>${s.n}</b>`+
+      `<div class="meta"><span>${s.tier}</span><span>${s.lo}–${s.hi}% total</span><span>${s.ev}</span></div>`+
+      `<div class="tags">${s.tags.map(t=>`<span class="tag">${t}</span>`).join("")}</div>`;};
+  const hide=()=>{c.setAttribute("r",6.5);c.setAttribute("stroke","oklch(98% 0 0 / .55)");c.setAttribute("stroke-width",1);
+    const lb=svg.querySelector(".dotlabel");if(lb)lb.remove();};
+  a.addEventListener("mouseenter",show);a.addEventListener("mouseleave",hide);
+  svg.appendChild(a);});
+</script>
+</body>
+</html>
