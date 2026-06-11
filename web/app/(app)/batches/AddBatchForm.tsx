@@ -3,6 +3,7 @@
 import { useId, useState } from "react";
 import EntityForm from "@/components/EntityForm";
 import { addBatch } from "./actions";
+import { STAGE_ORDER, STAGE_LABEL } from "@/lib/stages";
 
 interface Option {
   id: number;
@@ -99,13 +100,10 @@ export default function AddBatchForm({ strains, rooms, presets }: AddBatchFormPr
         </div>
         <div>
           <label htmlFor={ids.stage}>Stage</label>
-          <select id={ids.stage} name="stage" defaultValue="inoculation">
-            <option value="inoculation">inoculation</option>
-            <option value="colonization">colonization</option>
-            <option value="spawn_to_bulk">spawn_to_bulk</option>
-            <option value="fruiting">fruiting</option>
-            <option value="harvesting">harvesting</option>
-            <option value="spent">spent</option>
+          <select id={ids.stage} name="stage" defaultValue="colonization">
+            {STAGE_ORDER.map((s) => (
+              <option key={s} value={s}>{STAGE_LABEL[s]}</option>
+            ))}
           </select>
         </div>
         <div>

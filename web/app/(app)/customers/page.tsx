@@ -5,6 +5,7 @@ import { must } from "@/lib/query";
 import type { BadgeTone } from "@/components/ui";
 import AddPanel from "@/components/AddPanel";
 import AddCustomerForm from "./AddCustomerForm";
+import RowActions from "@/components/RowActions";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,11 @@ interface CustomerRow {
   follow_up_date: string | null;
   priority: number | null;
   notes: string | null;
+  contact_email: string | null;
+  phone: string | null;
+  region: string | null;
+  volume_est: string | null;
+  address: string | null;
 }
 
 function statusTone(s: string): BadgeTone {
@@ -66,6 +72,7 @@ export default async function CustomersPage() {
                 <th scope="col">Status</th>
                 <th scope="col">Follow-up</th>
                 <th scope="col" className="right">Priority</th>
+                <th scope="col" className="actions-col"><span className="sr-only">Actions</span></th>
               </tr>
             </thead>
             <tbody>
@@ -94,6 +101,28 @@ export default async function CustomersPage() {
                     <span className="stars" aria-label={`Priority ${c.priority ?? 0} of 5`}>
                       {"★".repeat(c.priority ?? 0)}
                     </span>
+                  </td>
+                  <td className="actions-col">
+                    <RowActions
+                      entity="customer"
+                      id={c.id}
+                      label={c.name}
+                      viewHref={`/customers/${c.id}`}
+                      initial={{
+                        name: c.name,
+                        channel: c.channel,
+                        status: c.status,
+                        contact_email: c.contact_email,
+                        phone: c.phone,
+                        role: c.role,
+                        region: c.region,
+                        price_tier: c.price_tier,
+                        volume_est: c.volume_est,
+                        follow_up_date: c.follow_up_date,
+                        address: c.address,
+                        notes: c.notes,
+                      }}
+                    />
                   </td>
                 </tr>
               ))}

@@ -8,21 +8,28 @@ import AddPanel from "@/components/AddPanel";
 import AddStrainForm from "./AddStrainForm";
 import AlkaloidSpectrum from "@/components/AlkaloidSpectrum";
 import type { SpectrumStrain } from "@/lib/spectrum";
+import RowActions from "@/components/RowActions";
 
 export const dynamic = "force-dynamic";
 
 interface StrainRow {
   id: number;
   name: string;
+  species: string | null;
+  strain_code: string | null;
   mushroom_type: string;
   vendor: string | null;
+  genetics: string | null;
   potency: string | null;
   ease_rating: number | null;
-  grow_again: boolean;
-  generation: number;
   typical_be: number | null;
+  typical_flushes: number | null;
   syringes_on_hand: number | null;
   library_status: string | null;
+  grow_again: boolean;
+  active: boolean | null;
+  notes: string | null;
+  generation: number;
   priority: number | null;
   potency_tier: string | null;
   alkaloid_total_pct: number | null;
@@ -45,7 +52,7 @@ export default async function StrainsPage() {
     supabase
       .from("strains")
       .select(
-        "id,name,mushroom_type,vendor,potency,ease_rating,grow_again,generation,typical_be,syringes_on_hand,library_status,priority,potency_tier,alkaloid_total_pct,alkaloid_total_low_pct,alkaloid_total_high_pct,spectrum_hue,evidence_grade,experience_tags",
+        "id,name,species,strain_code,mushroom_type,vendor,genetics,potency,ease_rating,typical_be,typical_flushes,syringes_on_hand,library_status,grow_again,active,notes,generation,priority,potency_tier,alkaloid_total_pct,alkaloid_total_low_pct,alkaloid_total_high_pct,spectrum_hue,evidence_grade,experience_tags",
       )
       .order("library_status")
       .order("name"),
@@ -119,31 +126,58 @@ export default async function StrainsPage() {
       ) : (
         <div className="strain-grid">
           {strains.map((s) => (
-            <Link key={s.id} href={`/strains/${s.id}`} className="strain-card">
-              <div className="strain-card-top">
-                <span className="strain-card-name">{s.name}</span>
-                <Badge tone={typeTone(s.mushroom_type)}>{s.mushroom_type}</Badge>
+            <div key={s.id} className="strain-card-wrap">
+              <Link href={`/strains/${s.id}`} className="strain-card">
+                <div className="strain-card-top">
+                  <span className="strain-card-name">{s.name}</span>
+                  <Badge tone={typeTone(s.mushroom_type)}>{s.mushroom_type}</Badge>
+                </div>
+                <div className="strain-card-meta">
+                  <span>F{s.generation}</span>
+                  {s.vendor && <span>{s.vendor}</span>}
+                  <span>{s.syringes_on_hand ?? 0} syringes</span>
+                </div>
+                <QualityBars qualities={strainQualities(s)} />
+                <div className="strain-card-bottom">
+                  {s.potency_tier && <Badge tone="violet">{s.potency_tier}</Badge>}
+                  {s.library_status === "unknown" ? (
+                    <Badge tone="violet">source: searching</Badge>
+                  ) : (
+                    s.library_status && <Badge tone="muted">{s.library_status}</Badge>
+                  )}
+                  {s.grow_again ? (
+                    <Badge tone="green">grow again</Badge>
+                  ) : (
+                    <Badge tone="red">retire</Badge>
+                  )}
+                </div>
+              </Link>
+              <div className="strain-card-actions">
+                <RowActions
+                  entity="strain"
+                  id={s.id}
+                  label={s.name}
+                  viewHref={`/strains/${s.id}`}
+                  initial={{
+                    name: s.name,
+                    species: s.species,
+                    strain_code: s.strain_code,
+                    mushroom_type: s.mushroom_type,
+                    vendor: s.vendor,
+                    genetics: s.genetics,
+                    potency: s.potency,
+                    ease_rating: s.ease_rating,
+                    typical_be: s.typical_be,
+                    typical_flushes: s.typical_flushes,
+                    syringes_on_hand: s.syringes_on_hand,
+                    library_status: s.library_status,
+                    grow_again: s.grow_again,
+                    active: s.active,
+                    notes: s.notes,
+                  }}
+                />
               </div>
-              <div className="strain-card-meta">
-                <span>F{s.generation}</span>
-                {s.vendor && <span>{s.vendor}</span>}
-                <span>{s.syringes_on_hand ?? 0} syringes</span>
-              </div>
-              <QualityBars qualities={strainQualities(s)} />
-              <div className="strain-card-bottom">
-                {s.potency_tier && <Badge tone="violet">{s.potency_tier}</Badge>}
-                {s.library_status === "unknown" ? (
-                  <Badge tone="violet">source: searching</Badge>
-                ) : (
-                  s.library_status && <Badge tone="muted">{s.library_status}</Badge>
-                )}
-                {s.grow_again ? (
-                  <Badge tone="green">grow again</Badge>
-                ) : (
-                  <Badge tone="red">retire</Badge>
-                )}
-              </div>
-            </Link>
+            </div>
           ))}
         </div>
       )}

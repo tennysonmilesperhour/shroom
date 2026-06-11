@@ -5,6 +5,7 @@ import { must } from "@/lib/query";
 import { DRY_FLOOR } from "@/lib/format";
 import AddPanel from "@/components/AddPanel";
 import AddHarvestForm from "./AddHarvestForm";
+import RowActions from "@/components/RowActions";
 
 export const dynamic = "force-dynamic";
 
@@ -25,11 +26,13 @@ interface HarvestRow {
 interface JarRow {
   id: number;
   jar_id: string;
+  strain_id: number | null;
   flush_number: number | null;
   dry_weight_g: number;
   used_g: number;
   remaining_g: number;
   location: string | null;
+  notes: string | null;
   strains: { name: string } | null;
 }
 
@@ -39,9 +42,26 @@ interface BatchOptionRow {
   strains: { name: string } | null;
 }
 
+interface BaseHarvestRow {
+  id: number;
+  batch_id: number;
+  harvested_on: string;
+  flush_number: number | null;
+  weight_kg: number | null;
+  dry_weight_kg: number | null;
+  grade: string | null;
+  labor_minutes: number | null;
+  notes: string | null;
+}
+
+interface StrainOptionRow {
+  id: number;
+  name: string;
+}
+
 export default async function HarvestsPage() {
   const supabase = createServiceClient();
-  const [rows, jars, batchOpts] = await Promise.all([
+  const [rows, jars, batchOpts, baseHarvests, strainOpts] = await Promise.all([
     must<HarvestRow[]>(
       supabase.from("v_dry_ratio").select("*").order("harvested_on", { ascending: false }),
       "load harvests",
@@ -58,6 +78,14 @@ export default async function HarvestsPage() {
         .returns<BatchOptionRow[]>(),
       "load batch options",
     ),
+    must<BaseHarvestRow[]>(
+      supabase.from("harvests").select("*"),
+      "load harvest records",
+    ),
+    must<StrainOptionRow[]>(
+      supabase.from("strains").select("id,name").order("name"),
+      "load strain options",
+    ),
   ]);
 
   const batchOptions = batchOpts.map((b) => ({
@@ -65,6 +93,16 @@ export default async function HarvestsPage() {
     lot_code: b.lot_code,
     strain: b.strains?.name ?? null,
   }));
+
+  const batchSelectOptions = batchOpts.map((b) => ({
+    value: String(b.id),
+    label: b.lot_code,
+  }));
+  const strainSelectOptions = strainOpts.map((s) => ({
+    value: String(s.id),
+    label: s.name,
+  }));
+  const baseHarvestById = new Map(baseHarvests.map((h) => [h.id, h]));
 
   const fresh = rows.reduce((s, r) => s + (r.fresh_g ?? 0), 0);
   const dry = rows.reduce((s, r) => s + (r.dry_g ?? 0), 0);
@@ -112,6 +150,7 @@ export default async function HarvestsPage() {
                 <th scope="col" className="right">Fresh (g)</th>
                 <th scope="col" className="right">Dry (g)</th>
                 <th scope="col" className="right">Ratio</th>
+                <th scope="col" className="actions-col"><span className="sr-only">Actions</span></th>
               </tr>
             </thead>
             <tbody>
@@ -145,6 +184,29 @@ export default async function HarvestsPage() {
                   <td className="right">
                     {r.dry_ratio_pct}%{r.below_floor ? " ⚠" : ""}
                   </td>
+                  <td className="actions-col">
+                    {(() => {
+                      const base = baseHarvestById.get(r.harvest_id);
+                      return base ? (
+                        <RowActions
+                          entity="harvest"
+                          id={r.harvest_id}
+                          label={r.lot_code ?? `Flush ${r.flush_number}`}
+                          initial={{
+                            batch_id: base.batch_id,
+                            harvested_on: base.harvested_on,
+                            flush_number: base.flush_number,
+                            weight_kg: base.weight_kg,
+                            dry_weight_kg: base.dry_weight_kg,
+                            grade: base.grade,
+                            labor_minutes: base.labor_minutes,
+                            notes: base.notes,
+                          }}
+                          options={{ batch_id: batchSelectOptions }}
+                        />
+                      ) : null;
+                    })()}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -169,6 +231,7 @@ export default async function HarvestsPage() {
                 <th scope="col" className="right">Used</th>
                 <th scope="col" className="right">Remaining</th>
                 <th scope="col">Location</th>
+                <th scope="col" className="actions-col"><span className="sr-only">Actions</span></th>
               </tr>
             </thead>
             <tbody>
@@ -181,6 +244,23 @@ export default async function HarvestsPage() {
                   <td className="right">{j.used_g}</td>
                   <td className="right">{j.remaining_g}</td>
                   <td className="muted">{j.location ?? "-"}</td>
+                  <td className="actions-col">
+                    <RowActions
+                      entity="jar"
+                      id={j.id}
+                      label={j.jar_id}
+                      initial={{
+                        jar_id: j.jar_id,
+                        strain_id: j.strain_id,
+                        flush_number: j.flush_number,
+                        dry_weight_g: j.dry_weight_g,
+                        used_g: j.used_g,
+                        location: j.location,
+                        notes: j.notes,
+                      }}
+                      options={{ strain_id: strainSelectOptions }}
+                    />
+                  </td>
                 </tr>
               ))}
             </tbody>

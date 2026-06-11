@@ -5,9 +5,11 @@ import { createServiceClient } from "@/utils/supabase/service";
 import { must, soft } from "@/lib/query";
 import { stageTone } from "@/components/ui";
 import LifecycleRing from "@/components/LifecycleRing";
+import { normalizeStage } from "@/lib/stages";
 import AddPanel from "@/components/AddPanel";
 import AddHarvestForm from "../../harvests/AddHarvestForm";
 import AdvanceStage from "./AdvanceStage";
+import RowActions from "@/components/RowActions";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +17,8 @@ interface BatchDetailRow {
   id: number;
   lot_code: string;
   stage: string;
+  strain_id: number;
+  room_id: number | null;
   block_count: number;
   substrate_weight_kg: number;
   container_id: string | null;
@@ -92,7 +96,7 @@ export default async function BatchDetailPage({
   if (!Number.isFinite(id)) notFound();
 
   const supabase = createServiceClient();
-  const [batchRows, harvests, contam] = await Promise.all([
+  const [batchRows, harvests, contam, strainOpts, roomOpts] = await Promise.all([
     must<BatchDetailRow[]>(
       supabase
         .from("batches")
@@ -116,6 +120,14 @@ export default async function BatchDetailPage({
         .eq("batch_id", id)
         .order("observed_on", { ascending: false }),
       "load contamination log for batch",
+    ),
+    must<{ id: number; name: string }[]>(
+      supabase.from("strains").select("id,name").order("name"),
+      "load strains",
+    ),
+    must<{ id: number; name: string }[]>(
+      supabase.from("rooms").select("id,name").order("name"),
+      "load rooms",
     ),
   ]);
 
@@ -165,7 +177,9 @@ export default async function BatchDetailPage({
       ? Math.round((totalFresh / batch.substrate_weight_kg) * 1000) / 10
       : 0;
 
-  const effectiveStage = batch.contamination_flag ? "contaminated" : batch.stage;
+  const effectiveStage = batch.contamination_flag
+    ? "contaminated"
+    : normalizeStage(batch.stage);
 
   return (
     <>
@@ -173,20 +187,48 @@ export default async function BatchDetailPage({
         &larr; Batches
       </Link>
 
-      <div>
-        <div className="eyebrow">Production</div>
-        <h1 className="section">Lot {batch.lot_code}</h1>
-        <div className="hero-meta">
-          <Badge tone={stageTone(effectiveStage)}>{effectiveStage}</Badge>
-          {batch.contamination_flag && <Badge tone="red">contamination flagged</Badge>}
-          {batch.strains && (
-            <Link href={`/strains/${batch.strains.id}`} className="badge muted">
-              {batch.strains.name}
-            </Link>
-          )}
-          {batch.rooms && <Badge tone="muted">{batch.rooms.name}</Badge>}
-          {batch.container_id && <Badge tone="muted">{batch.container_id}</Badge>}
+      <div className="detail-head">
+        <div>
+          <div className="eyebrow">Production</div>
+          <h1 className="section">Lot {batch.lot_code}</h1>
+          <div className="hero-meta">
+            <Badge tone={stageTone(effectiveStage)}>{effectiveStage}</Badge>
+            {batch.contamination_flag && <Badge tone="red">contamination flagged</Badge>}
+            {batch.strains && (
+              <Link href={`/strains/${batch.strains.id}`} className="badge muted">
+                {batch.strains.name}
+              </Link>
+            )}
+            {batch.rooms && <Badge tone="muted">{batch.rooms.name}</Badge>}
+            {batch.container_id && <Badge tone="muted">{batch.container_id}</Badge>}
+          </div>
         </div>
+        <RowActions
+          entity="batch"
+          id={batch.id}
+          label={batch.lot_code}
+          afterDeleteHref="/batches"
+          options={{
+            strain_id: strainOpts.map((s) => ({ value: String(s.id), label: s.name })),
+            room_id: [
+              { value: "", label: "(unassigned)" },
+              ...roomOpts.map((r) => ({ value: String(r.id), label: r.name })),
+            ],
+          }}
+          initial={{
+            lot_code: batch.lot_code,
+            strain_id: batch.strain_id,
+            room_id: batch.room_id,
+            stage: normalizeStage(batch.stage),
+            container_type: batch.container_type,
+            container_id: batch.container_id,
+            block_count: batch.block_count,
+            substrate_weight_kg: batch.substrate_weight_kg,
+            inoculated_on: batch.inoculated_on,
+            rating: batch.rating,
+            notes: batch.notes,
+          }}
+        />
       </div>
 
       <div className="batch-hero">

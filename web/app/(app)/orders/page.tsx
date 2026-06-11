@@ -5,6 +5,7 @@ import { money } from "@/lib/format";
 import { must } from "@/lib/query";
 import AddPanel from "@/components/AddPanel";
 import AddOrderForm from "./AddOrderForm";
+import RowActions from "@/components/RowActions";
 
 export const dynamic = "force-dynamic";
 
@@ -15,8 +16,12 @@ interface OrderLine {
 interface OrderRow {
   id: number;
   order_number: string;
+  customer_id: number | null;
   channel: string;
   order_date: string;
+  fulfillment_date: string | null;
+  status: string | null;
+  notes: string | null;
   financial_status: string;
   fulfillment_status: string;
   customers: { id: number; name: string } | null;
@@ -93,6 +98,7 @@ export default async function OrdersPage() {
                 <th scope="col">Payment</th>
                 <th scope="col">Fulfillment</th>
                 <th scope="col" className="right">Total</th>
+                <th scope="col" className="actions-col"><span className="sr-only">Actions</span></th>
               </tr>
             </thead>
             <tbody>
@@ -123,6 +129,28 @@ export default async function OrdersPage() {
                     </Badge>
                   </td>
                   <td className="right">{money(lineTotal(o.order_lines))}</td>
+                  <td className="actions-col">
+                    <RowActions
+                      entity="order"
+                      id={o.id}
+                      label={o.order_number}
+                      initial={{
+                        order_number: o.order_number,
+                        customer_id: o.customer_id,
+                        channel: o.channel,
+                        order_date: o.order_date,
+                        fulfillment_date: o.fulfillment_date,
+                        status: o.status,
+                        notes: o.notes,
+                      }}
+                      options={{
+                        customer_id: customerOpts.map((c) => ({
+                          value: String(c.id),
+                          label: c.name,
+                        })),
+                      }}
+                    />
+                  </td>
                 </tr>
               ))}
             </tbody>

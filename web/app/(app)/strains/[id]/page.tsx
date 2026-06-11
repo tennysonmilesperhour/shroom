@@ -9,6 +9,7 @@ import { QualityBars, strainQualities } from "@/components/QualityBars";
 import { normalizeUrl, displayUrl } from "@/lib/external";
 import RunSporeCrawlButton from "../RunSporeCrawlButton";
 import { alkaloidSplit, evidenceTone, evidenceLabel, hueColor } from "@/lib/spectrum";
+import RowActions from "@/components/RowActions";
 
 export const dynamic = "force-dynamic";
 
@@ -153,22 +154,46 @@ export default async function StrainDetailPage({
         &larr; Strain library
       </Link>
 
-      <div>
-        <div className="eyebrow">Genetics</div>
-        <h1 className="section">{strain.name}</h1>
-        <div className="hero-meta">
-          <Badge tone={typeTone(strain.mushroom_type)}>{strain.mushroom_type}</Badge>
-          {strain.library_status === "unknown" ? (
-            <Badge tone="violet">source: searching</Badge>
-          ) : (
-            strain.library_status && <Badge tone="muted">{strain.library_status}</Badge>
-          )}
-          {strain.grow_again ? (
-            <Badge tone="green">grow again</Badge>
-          ) : (
-            <Badge tone="red">retire</Badge>
-          )}
+      <div className="detail-head">
+        <div>
+          <div className="eyebrow">Genetics</div>
+          <h1 className="section">{strain.name}</h1>
+          <div className="hero-meta">
+            <Badge tone={typeTone(strain.mushroom_type)}>{strain.mushroom_type}</Badge>
+            {strain.library_status === "unknown" ? (
+              <Badge tone="violet">source: searching</Badge>
+            ) : (
+              strain.library_status && <Badge tone="muted">{strain.library_status}</Badge>
+            )}
+            {strain.grow_again ? (
+              <Badge tone="green">grow again</Badge>
+            ) : (
+              <Badge tone="red">retire</Badge>
+            )}
+          </div>
         </div>
+        <RowActions
+          entity="strain"
+          id={strain.id}
+          label={strain.name}
+          afterDeleteHref="/strains"
+          initial={{
+            name: strain.name,
+            species: strain.species,
+            strain_code: strain.strain_code,
+            mushroom_type: strain.mushroom_type,
+            vendor: strain.vendor,
+            genetics: strain.genetics,
+            potency: strain.potency,
+            ease_rating: strain.ease_rating,
+            typical_be: strain.typical_be,
+            typical_flushes: strain.typical_flushes,
+            syringes_on_hand: strain.syringes_on_hand,
+            library_status: strain.library_status,
+            grow_again: strain.grow_again,
+            notes: strain.notes,
+          }}
+        />
       </div>
 
       <div className="card quality-card">

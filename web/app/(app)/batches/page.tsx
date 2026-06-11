@@ -6,39 +6,27 @@ import { must, soft } from "@/lib/query";
 import AddPanel from "@/components/AddPanel";
 import AddBatchForm, { type PresetOption } from "./AddBatchForm";
 import BatchBoard from "./BatchBoard";
+import RowActions from "@/components/RowActions";
+import { STAGE_ORDER, STAGE_LABEL, normalizeStage } from "@/lib/stages";
 
 export const dynamic = "force-dynamic";
 
-const STAGES = [
-  "inoculation",
-  "colonization",
-  "spawn_to_bulk",
-  "fruiting",
-  "harvesting",
-  "spent",
-] as const;
-type Stage = (typeof STAGES)[number];
-
-const STAGE_LABEL: Record<Stage, string> = {
-  inoculation: "Inoculation",
-  colonization: "Colonization",
-  spawn_to_bulk: "Spawn to bulk",
-  fruiting: "Fruiting",
-  harvesting: "Harvesting",
-  spent: "Spent",
-};
+const STAGES = STAGE_ORDER;
 
 interface BatchRow {
   id: number;
   lot_code: string;
-  stage: Stage;
+  stage: string;
   block_count: number;
   substrate_weight_kg: number;
   inoculated_on: string | null;
+  room_id: number | null;
+  strain_id: number;
   container_id: string | null;
   container_type: string | null;
   contamination_flag: boolean;
   rating: number | null;
+  notes: string | null;
   strains: { name: string } | null;
   rooms: { name: string } | null;
 }
@@ -117,11 +105,17 @@ export default async function BatchesPage() {
   const boardBatches = batches.map((b) => ({
     id: b.id,
     lot_code: b.lot_code,
-    stage: b.stage,
+    stage: normalizeStage(b.stage),
     container_id: b.container_id,
     contamination_flag: b.contamination_flag,
     strain: b.strains?.name ?? null,
   }));
+
+  const strainOptions = strainOpts.map((s) => ({ value: String(s.id), label: s.name }));
+  const roomOptions = [
+    { value: "", label: "(unassigned)" },
+    ...roomOpts.map((r) => ({ value: String(r.id), label: r.name })),
+  ];
 
   return (
     <>
@@ -173,6 +167,7 @@ export default async function BatchesPage() {
                 <th scope="col" className="right">Substrate</th>
                 <th scope="col">Inoculated</th>
                 <th scope="col" className="right">Rating</th>
+                <th scope="col" className="actions-col"><span className="sr-only">Actions</span></th>
               </tr>
             </thead>
             <tbody>
@@ -189,13 +184,35 @@ export default async function BatchesPage() {
                   </td>
                   <td>{b.strains?.name ?? "?"}</td>
                   <td>
-                    <Badge tone={stageTone(b.stage)}>{b.stage}</Badge>
+                    <Badge tone={stageTone(normalizeStage(b.stage))}>{normalizeStage(b.stage)}</Badge>
                   </td>
                   <td>{b.rooms?.name ?? "-"}</td>
                   <td className="right">{b.block_count}</td>
                   <td className="right">{b.substrate_weight_kg} kg</td>
                   <td>{b.inoculated_on ?? "-"}</td>
                   <td className="right">{b.rating ? `${b.rating}/10` : "-"}</td>
+                  <td className="actions-col">
+                    <RowActions
+                      entity="batch"
+                      id={b.id}
+                      viewHref={`/batches/${b.id}`}
+                      label={b.lot_code}
+                      options={{ strain_id: strainOptions, room_id: roomOptions }}
+                      initial={{
+                        lot_code: b.lot_code,
+                        strain_id: b.strain_id,
+                        room_id: b.room_id,
+                        stage: normalizeStage(b.stage),
+                        container_type: b.container_type,
+                        container_id: b.container_id,
+                        block_count: b.block_count,
+                        substrate_weight_kg: b.substrate_weight_kg,
+                        inoculated_on: b.inoculated_on,
+                        rating: b.rating,
+                        notes: b.notes,
+                      }}
+                    />
+                  </td>
                 </tr>
               ))}
             </tbody>

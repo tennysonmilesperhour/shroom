@@ -1,4 +1,4 @@
-// Circular progress visualization across the 6 batch lifecycle stages.
+// Circular progress visualization across the batch lifecycle stages.
 // Each stage is a labeled arc; completed stages glow, the current one pulses,
 // future stages are dim. Elapsed days sit in the center.
 //
@@ -7,9 +7,9 @@
 // available data.
 
 import type { ReactNode } from "react";
+import { normalizeStage } from "@/lib/stages";
 
 const STAGES = [
-  { key: "inoculation",   label: "Inoc." },
   { key: "colonization",  label: "Coloniz." },
   { key: "spawn_to_bulk", label: "Bulk" },
   { key: "fruiting",      label: "Fruit" },
@@ -38,8 +38,9 @@ export default function LifecycleRing({
   const segCount = STAGES.length;
   const segGap = 0.04; // radians of gap between arcs
 
-  const currentIdx = STAGES.findIndex((s) => s.key === stage);
-  const isContaminated = stage === "contaminated";
+  const norm = normalizeStage(stage);
+  const currentIdx = STAGES.findIndex((s) => s.key === norm);
+  const isContaminated = norm === "contaminated";
 
   // Convert a stage index to the arc start/end angles in radians, with
   // angle 0 at 12 o'clock and arcs running clockwise.

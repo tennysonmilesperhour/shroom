@@ -3,18 +3,38 @@ import { createServiceClient } from "@/utils/supabase/service";
 import { Kpi, Card, Badge } from "@/components/ui";
 import type { BadgeTone } from "@/components/ui";
 import { must } from "@/lib/query";
+import RowActions from "@/components/RowActions";
 
 export const dynamic = "force-dynamic";
 
 interface TaskRow {
   id: number;
   title: string;
+  description: string | null;
   status: string;
   priority: string;
   due_date: string | null;
+  batch_id: number | null;
+  room_id: number | null;
+  assigned_to: number | null;
   batches: { id: number; lot_code: string } | null;
   rooms: { name: string } | null;
   staff: { name: string } | null;
+}
+
+interface BatchOptionRow {
+  id: number;
+  lot_code: string;
+}
+
+interface RoomOptionRow {
+  id: number;
+  name: string;
+}
+
+interface StaffOptionRow {
+  id: number;
+  name: string;
 }
 
 const priorityTone = (p: string): BadgeTone =>
@@ -25,14 +45,36 @@ const statusTone = (s: string): BadgeTone =>
 
 export default async function TasksPage() {
   const supabase = createServiceClient();
-  const tasks = await must<TaskRow[]>(
-    supabase
-      .from("tasks")
-      .select("id,title,status,priority,due_date, batches(id,lot_code), rooms(name), staff(name)")
-      .order("due_date", { ascending: true, nullsFirst: false })
-      .returns<TaskRow[]>(),
-    "load tasks",
-  );
+  const [tasks, batchOpts, roomOpts, staffOpts] = await Promise.all([
+    must<TaskRow[]>(
+      supabase
+        .from("tasks")
+        .select(
+          "id,title,description,status,priority,due_date,batch_id,room_id,assigned_to, batches(id,lot_code), rooms(name), staff(name)",
+        )
+        .order("due_date", { ascending: true, nullsFirst: false })
+        .returns<TaskRow[]>(),
+      "load tasks",
+    ),
+    must<BatchOptionRow[]>(
+      supabase.from("batches").select("id,lot_code").order("lot_code"),
+      "load batch options",
+    ),
+    must<RoomOptionRow[]>(
+      supabase.from("rooms").select("id,name").order("name"),
+      "load room options",
+    ),
+    must<StaffOptionRow[]>(
+      supabase.from("staff").select("id,name").order("name"),
+      "load staff options",
+    ),
+  ]);
+
+  const taskOptions = {
+    batch_id: batchOpts.map((b) => ({ value: String(b.id), label: b.lot_code })),
+    room_id: roomOpts.map((r) => ({ value: String(r.id), label: r.name })),
+    assigned_to: staffOpts.map((s) => ({ value: String(s.id), label: s.name })),
+  };
 
   const today = new Date().toISOString().slice(0, 10);
   const isOverdue = (t: TaskRow) => t.status !== "done" && !!t.due_date && t.due_date < today;
@@ -66,6 +108,7 @@ export default async function TasksPage() {
                 <th scope="col">Batch</th>
                 <th scope="col">Due</th>
                 <th scope="col">Priority</th>
+                <th scope="col" className="actions-col"><span className="sr-only">Actions</span></th>
               </tr>
             </thead>
             <tbody>
@@ -102,6 +145,24 @@ export default async function TasksPage() {
                   <td>
                     <Badge tone={priorityTone(t.priority)}>{t.priority}</Badge>
                   </td>
+                  <td className="actions-col">
+                    <RowActions
+                      entity="task"
+                      id={t.id}
+                      label={t.title}
+                      initial={{
+                        title: t.title,
+                        description: t.description,
+                        batch_id: t.batch_id,
+                        room_id: t.room_id,
+                        assigned_to: t.assigned_to,
+                        due_date: t.due_date,
+                        status: t.status,
+                        priority: t.priority,
+                      }}
+                      options={taskOptions}
+                    />
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -118,6 +179,7 @@ export default async function TasksPage() {
                 <th scope="col">Task</th>
                 <th scope="col">Batch</th>
                 <th scope="col">Status</th>
+                <th scope="col" className="actions-col"><span className="sr-only">Actions</span></th>
               </tr>
             </thead>
             <tbody>
@@ -135,6 +197,24 @@ export default async function TasksPage() {
                   </td>
                   <td>
                     <Badge tone={statusTone(t.status)}>{t.status}</Badge>
+                  </td>
+                  <td className="actions-col">
+                    <RowActions
+                      entity="task"
+                      id={t.id}
+                      label={t.title}
+                      initial={{
+                        title: t.title,
+                        description: t.description,
+                        batch_id: t.batch_id,
+                        room_id: t.room_id,
+                        assigned_to: t.assigned_to,
+                        due_date: t.due_date,
+                        status: t.status,
+                        priority: t.priority,
+                      }}
+                      options={taskOptions}
+                    />
                   </td>
                 </tr>
               ))}

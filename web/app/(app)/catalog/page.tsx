@@ -2,6 +2,7 @@ import { createServiceClient } from "@/utils/supabase/service";
 import { Badge, Card } from "@/components/ui";
 import { money } from "@/lib/format";
 import { must } from "@/lib/query";
+import RowActions from "@/components/RowActions";
 
 export const dynamic = "force-dynamic";
 
@@ -9,10 +10,19 @@ interface ProductRow {
   id: number;
   name: string;
   sku: string | null;
+  strain_id: number | null;
+  category: string | null;
+  unit: string | null;
   status: string;
   price: number;
+  distributor_price: number | null;
+  description: string | null;
   inventory_quantity: number;
   product_variants: { title: string; price: number; inventory_quantity: number }[] | null;
+}
+interface StrainOpt {
+  id: number;
+  name: string;
 }
 interface CollectionRow {
   id: number;
@@ -39,7 +49,7 @@ interface ValuationRow {
 
 export default async function CatalogPage() {
   const supabase = createServiceClient();
-  const [products, collections, tiers, valuation] = await Promise.all([
+  const [products, collections, tiers, valuation, strainOpts] = await Promise.all([
     must<ProductRow[]>(
       supabase
         .from("products")
@@ -50,6 +60,7 @@ export default async function CatalogPage() {
     must<CollectionRow[]>(supabase.from("collections").select("*").order("title"), "load collections"),
     must<TierRow[]>(supabase.from("price_tiers").select("*"), "load price tiers"),
     must<ValuationRow[]>(supabase.from("v_inventory_valuation").select("*"), "load valuation"),
+    must<StrainOpt[]>(supabase.from("strains").select("id,name").order("name"), "load strains"),
   ]);
 
   return (
@@ -75,6 +86,7 @@ export default async function CatalogPage() {
                 <th scope="col">Variants</th>
                 <th scope="col" className="right">Price</th>
                 <th scope="col" className="right">On hand</th>
+                <th scope="col" className="actions-col"><span className="sr-only">Actions</span></th>
               </tr>
             </thead>
             <tbody>
@@ -93,6 +105,30 @@ export default async function CatalogPage() {
                   </td>
                   <td className="right">{money(p.price)}</td>
                   <td className="right">{p.inventory_quantity}</td>
+                  <td className="actions-col">
+                    <RowActions
+                      entity="product"
+                      id={p.id}
+                      label={p.name}
+                      initial={{
+                        name: p.name,
+                        sku: p.sku,
+                        strain_id: p.strain_id,
+                        category: p.category,
+                        unit: p.unit,
+                        price: p.price,
+                        distributor_price: p.distributor_price,
+                        status: p.status,
+                        description: p.description,
+                      }}
+                      options={{
+                        strain_id: strainOpts.map((s) => ({
+                          value: String(s.id),
+                          label: s.name,
+                        })),
+                      }}
+                    />
+                  </td>
                 </tr>
               ))}
             </tbody>

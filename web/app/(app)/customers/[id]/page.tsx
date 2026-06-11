@@ -6,6 +6,7 @@ import { createServiceClient } from "@/utils/supabase/service";
 import { must, maybe } from "@/lib/query";
 import { money } from "@/lib/format";
 import { mailto, telLink } from "@/lib/external";
+import RowActions from "@/components/RowActions";
 
 export const dynamic = "force-dynamic";
 
@@ -107,18 +108,40 @@ export default async function CustomerDetailPage({
         &larr; Customers
       </Link>
 
-      <div>
-        <div className="eyebrow">Commerce</div>
-        <h1 className="section">{customer.name}</h1>
-        <div className="hero-meta">
-          <Badge tone="muted">{customer.channel}</Badge>
-          <Badge tone={statusTone(customer.status)}>{customer.status}</Badge>
-          {customer.region && <Badge tone="muted">{customer.region}</Badge>}
-          {customer.price_tier && <Badge tone="muted">{customer.price_tier} tier</Badge>}
-          <span className="stars" aria-label={`Priority ${customer.priority ?? 0} of 5`}>
-            {"★".repeat(customer.priority ?? 0)}
-          </span>
+      <div className="detail-head">
+        <div>
+          <div className="eyebrow">Commerce</div>
+          <h1 className="section">{customer.name}</h1>
+          <div className="hero-meta">
+            <Badge tone="muted">{customer.channel}</Badge>
+            <Badge tone={statusTone(customer.status)}>{customer.status}</Badge>
+            {customer.region && <Badge tone="muted">{customer.region}</Badge>}
+            {customer.price_tier && <Badge tone="muted">{customer.price_tier} tier</Badge>}
+            <span className="stars" aria-label={`Priority ${customer.priority ?? 0} of 5`}>
+              {"★".repeat(customer.priority ?? 0)}
+            </span>
+          </div>
         </div>
+        <RowActions
+          entity="customer"
+          id={customer.id}
+          label={customer.name}
+          afterDeleteHref="/customers"
+          initial={{
+            name: customer.name,
+            channel: customer.channel,
+            status: customer.status,
+            contact_email: customer.contact_email,
+            phone: customer.phone,
+            role: customer.role,
+            region: customer.region,
+            price_tier: customer.price_tier,
+            volume_est: customer.volume_est,
+            follow_up_date: customer.follow_up_date,
+            address: customer.address,
+            notes: customer.notes,
+          }}
+        />
       </div>
 
       <div className="kpi-row">

@@ -4,6 +4,7 @@ import { createServiceClient } from "@/utils/supabase/service";
 import { revalidatePath } from "next/cache";
 import { enqueueSync } from "@/lib/sync";
 import type { EntityResult } from "@/components/EntityForm";
+import { STAGE_ORDER, VALID_STAGES, nextStage, normalizeStage } from "@/lib/stages";
 
 export interface GenerateResult {
   ok: boolean;
@@ -33,10 +34,6 @@ export async function generateProtocolTasks(
   return { ok: true, created: Number(data ?? 0), message: "" };
 }
 
-const VALID_STAGES = new Set([
-  "inoculation", "colonization", "spawn_to_bulk",
-  "fruiting", "harvesting", "spent", "contaminated",
-]);
 const VALID_CONTAINERS = new Set(["tub", "grain_bag", "aio"]);
 
 export async function addBatch(formData: FormData): Promise<EntityResult> {
@@ -44,7 +41,7 @@ export async function addBatch(formData: FormData): Promise<EntityResult> {
   const strain_id = Number(formData.get("strain_id") ?? NaN);
   const roomRaw = String(formData.get("room_id") ?? "");
   const room_id = roomRaw ? Number(roomRaw) : null;
-  const stage = String(formData.get("stage") ?? "inoculation");
+  const stage = String(formData.get("stage") ?? "colonization");
   const container_type = String(formData.get("container_type") ?? "tub");
   const container_id = String(formData.get("container_id") ?? "").trim();
   const block_count = Number(formData.get("block_count") ?? 0);
@@ -65,6 +62,13 @@ export async function addBatch(formData: FormData): Promise<EntityResult> {
   if (!VALID_CONTAINERS.has(container_type))
     return { ok: false, message: "Invalid container type." };
 
+  // A batch enters the cycle already colonizing, so stamp colonized_on when it
+  // starts there (falling back to the inoculation date the operator entered).
+  const colonized_on =
+    stage === "colonization"
+      ? inoculated_on || new Date().toISOString().slice(0, 10)
+      : null;
+
   const supabase = createServiceClient();
   const { data, error } = await supabase
     .from("batches")
@@ -78,6 +82,7 @@ export async function addBatch(formData: FormData): Promise<EntityResult> {
       block_count: Number.isFinite(block_count) ? block_count : 0,
       substrate_weight_kg: Number.isFinite(substrate_weight_kg) ? substrate_weight_kg : 0,
       inoculated_on: inoculated_on || null,
+      colonized_on,
       notes,
       preset_id,
       tub_size,
@@ -164,13 +169,9 @@ async function consumePresetMaterials(
   return drawn > 0 ? ` · drew ${drawn} material${drawn === 1 ? "" : "s"} from stock` : "";
 }
 
-const STAGE_ORDER = [
-  "inoculation", "colonization", "spawn_to_bulk",
-  "fruiting", "harvesting", "spent",
-] as const;
-
-// Board stages a tub can be dragged between. Mirrors STAGE_ORDER; "contaminated"
-// is intentionally excluded — that transition stays a deliberate logging action.
+// Board stages a tub can be dragged between. Mirrors the shared STAGE_ORDER
+// (lib/stages); "contaminated" is intentionally excluded — that transition
+// stays a deliberate logging action.
 const BOARD_STAGES = new Set<string>(STAGE_ORDER);
 
 // Move a batch to an arbitrary stage via the kanban board (drag + drop).
@@ -220,12 +221,12 @@ export async function advanceBatchStage(batchId: number): Promise<EntityResult> 
     .single();
   if (readErr || !current) return { ok: false, message: readErr?.message ?? "Not found." };
 
-  const idx = STAGE_ORDER.indexOf(current.stage as (typeof STAGE_ORDER)[number]);
-  if (idx < 0) return { ok: false, message: `Stage "${current.stage}" cannot be advanced.` };
-  if (idx === STAGE_ORDER.length - 1)
-    return { ok: false, message: "Already at the final stage." };
-
-  const next = STAGE_ORDER[idx + 1];
+  const next = nextStage(current.stage);
+  if (!next) {
+    return normalizeStage(current.stage) === STAGE_ORDER[STAGE_ORDER.length - 1]
+      ? { ok: false, message: "Already at the final stage." }
+      : { ok: false, message: `Stage "${current.stage}" cannot be advanced.` };
+  }
   const today = new Date().toISOString().slice(0, 10);
   const update: Record<string, unknown> = { stage: next };
   if (next === "colonization") update.colonized_on = today;
