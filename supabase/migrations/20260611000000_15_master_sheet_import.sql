@@ -16,11 +16,10 @@ create unique index if not exists price_tiers_tier_class_uniq on public.price_ti
 create unique index if not exists reference_guides_type_label_uniq
   on public.reference_guides (guide_type, label);
 
--- Append-only logs upsert on a content hash so a re-import is a no-op, not a
--- duplicate. The hash is computed by the importer from the row's key fields.
-alter table public.issue_log add column if not exists source_hash text;
-create unique index if not exists issue_log_source_hash_uniq
-  on public.issue_log (source_hash) where source_hash is not null;
+-- Append-only logs upsert on a natural composite key so a re-import is a no-op,
+-- not a duplicate (reproducible from SQL, Python, and the in-app sync alike).
+create unique index if not exists issue_log_natural_uniq
+  on public.issue_log (log_date, issue);
 
 -- A harvest row maps 1:1 to a (tub, flush) in the sheet; source_ref carries the
 -- synthesized lot code so re-imports update the same harvest.
@@ -44,7 +43,8 @@ create table if not exists public.sourced_finished_goods (
   created_at  timestamptz not null default now()
 );
 
--- "Sales Log" — one row per transaction. row_hash makes re-imports idempotent.
+-- "Sales Log" — one row per transaction. The natural key
+-- (sale_date, buyer, strains, amount) makes re-imports idempotent.
 create table if not exists public.sales_log (
   id           bigint generated always as identity primary key,
   sale_date    date,
@@ -55,9 +55,10 @@ create table if not exists public.sales_log (
   tier         text not null default '',
   source_notes text not null default '',
   payment      text not null default '',
-  row_hash     text not null unique,
   created_at   timestamptz not null default now()
 );
+create unique index if not exists sales_log_natural_uniq
+  on public.sales_log (sale_date, buyer, strains, amount);
 
 -- One row per importer execution, for observability of the live sync.
 create table if not exists public.sheet_imports (

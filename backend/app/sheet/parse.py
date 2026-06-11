@@ -99,6 +99,7 @@ class SourcedGood:
 
 @dataclass
 class Sale:
+    # Natural key for idempotent upserts: (sale_date, buyer, strains, amount).
     sale_date: date | None
     buyer: str
     strains: str
@@ -107,10 +108,6 @@ class Sale:
     tier: str = ""
     source_notes: str = ""
     payment: str = ""
-
-    @property
-    def row_hash(self) -> str:
-        return util.row_hash(self.sale_date, self.buyer, self.strains, self.grams, self.amount)
 
 
 @dataclass
@@ -131,14 +128,11 @@ class Guide:
 
 @dataclass
 class Incident:
+    # Natural key for idempotent upserts: (log_date, issue).
     log_date: date | None
     issue: str
     root_cause: str = ""
     resolution: str = ""
-
-    @property
-    def source_hash(self) -> str:
-        return util.row_hash(self.log_date, self.issue, self.root_cause)
 
 
 @dataclass

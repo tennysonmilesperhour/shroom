@@ -271,8 +271,8 @@ class SupabaseSink:
 
         counts["issue_log"] = self._upsert("issue_log", [{
             "log_date": _iso(i.log_date), "issue": i.issue, "root_cause": i.root_cause,
-            "resolution": i.resolution, "source_hash": i.source_hash,
-        } for i in parsed.incidents], on_conflict="source_hash")
+            "resolution": i.resolution,
+        } for i in parsed.incidents], on_conflict="log_date,issue")
 
         counts["sourced_finished_goods"] = self._upsert("sourced_finished_goods", [{
             "strain": s.strain, "on_hand_g": s.on_hand_g, "used_g": s.used_g,
@@ -282,8 +282,8 @@ class SupabaseSink:
         counts["sales_log"] = self._upsert("sales_log", [{
             "sale_date": _iso(s.sale_date), "buyer": s.buyer, "strains": s.strains,
             "grams": s.grams, "amount": s.amount, "tier": s.tier,
-            "source_notes": s.source_notes, "payment": s.payment, "row_hash": s.row_hash,
-        } for s in parsed.sales], on_conflict="row_hash")
+            "source_notes": s.source_notes, "payment": s.payment,
+        } for s in parsed.sales], on_conflict="sale_date,buyer,strains,amount")
 
         # Cultivation spine needs FK resolution: strains -> batches -> harvests.
         strain_ids = self._strain_id_map()

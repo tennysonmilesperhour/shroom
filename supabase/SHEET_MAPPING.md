@@ -26,14 +26,27 @@ GOOGLE_OAUTH_TOKEN=… NEXT_PUBLIC_SUPABASE_URL=… SUPABASE_SERVICE_ROLE_KEY=�
 
 The source resolves in priority order: `--path` / `MASTER_SHEET_PATH`, then a
 Google Drive download of `MASTER_SHEET_FILE_ID` (default is the canonical file)
-using `GOOGLE_OAUTH_TOKEN`. The scheduled GitHub Action
-(`.github/workflows/sheet-import.yml`) runs the Supabase sync daily and on
-demand. Every run is recorded in `public.sheet_imports`.
+using a service-account key (`GOOGLE_SERVICE_ACCOUNT_JSON`, recommended) or a
+short-lived `GOOGLE_OAUTH_TOKEN`. Every run is recorded in `public.sheet_imports`.
+
+### The "Sync from sheet" button
+
+The sync is **manual, one-click**: the `/sync` page has a **Sync from sheet**
+button that triggers the importer's GitHub Actions workflow
+(`.github/workflows/sheet-import.yml`) via workflow-dispatch. The button greys
+out (“✓ Synced today”) once it's been run for the day and re-enables tomorrow.
+Wiring it up needs:
+
+- **Web app** (Vercel env): `GITHUB_DISPATCH_TOKEN` (fine-grained PAT, Actions
+  read+write), optionally `GITHUB_REPO` / `GITHUB_SYNC_REF`.
+- **GitHub repo secrets**: `GOOGLE_SERVICE_ACCOUNT_JSON` (workbook shared to the
+  SA email, read-only), `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`.
 
 Imports are **idempotent**: each table upserts on a natural key (declared in
 migration `15_master_sheet_import.sql`), so re-running updates rows in place
-instead of duplicating them. Append-only tabs (Sales Log, Incident Log) upsert
-on a content hash.
+instead of duplicating them. The append-only tabs upsert on a natural composite
+key — Sales Log on `(sale_date, buyer, strains, amount)`, Incident Log on
+`(log_date, issue)`.
 
 ## Tab → table mapping
 
@@ -44,14 +57,14 @@ on a content hash.
 | Jar Inventory | `dry_inventory` | `jar_id` |
 | Jar Inventory → *Pricing Reference* | `price_tiers` | `tier, product_class` |
 | Sourced Finished Goods | `sourced_finished_goods` *(new)* | `strain` |
-| Sales Log | `sales_log` *(new)* | `row_hash` |
+| Sales Log | `sales_log` *(new)* | `sale_date, buyer, strains, amount` |
 | Harvest Tracker | `harvests` (both) | `source_ref` (lot code) |
 | Grow Cycle Log | `batches` (both) | `lot_code` |
 | Buyers & Pricing | `customers` (both) | `name` |
 | Vendors (+ Chaga sourcing leads) | `vendors` | `name` |
 | Protocols | `protocols` | `name` |
 | Troubleshooting → guide + symptom | `reference_guides` | `guide_type, label` |
-| Troubleshooting → incident log | `issue_log` | `source_hash` |
+| Troubleshooting → incident log | `issue_log` | `log_date, issue` |
 
 The FastAPI/SQLite store has a coarser model, so it receives the subset its
 schema represents: **strains, customers, and the batch → harvest cultivation

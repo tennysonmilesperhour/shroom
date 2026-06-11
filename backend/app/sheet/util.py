@@ -7,7 +7,6 @@ blocking the whole sync.
 """
 from __future__ import annotations
 
-import hashlib
 import re
 from datetime import date, datetime
 
@@ -114,13 +113,6 @@ def money_range(value: object) -> tuple[float | None, float | None]:
 def grams(value: object) -> float | None:
     """Weight in grams from cells like '15', '20g', '85g (3oz)'."""
     return first_number(value)
-
-
-def row_hash(*parts: object) -> str:
-    """Stable content hash for append-only rows (sales, incidents) so a
-    re-import upserts the same row instead of duplicating it."""
-    joined = "|".join(clean(p).lower() for p in parts)
-    return hashlib.sha1(joined.encode("utf-8")).hexdigest()
 
 
 # --- domain-specific normalizers ------------------------------------------- #

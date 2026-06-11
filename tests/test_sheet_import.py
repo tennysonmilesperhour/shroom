@@ -96,7 +96,6 @@ def test_sales_skips_total_rows(parsed):
     assert len(parsed.sales) == 2
     buyers = {s.buyer for s in parsed.sales}
     assert buyers == {"Daniel Childs", "Adam Nugent"}
-    assert all(s.row_hash for s in parsed.sales)
 
 
 def test_sourced_goods(parsed):
@@ -119,7 +118,8 @@ def test_troubleshooting_guides_and_incidents(parsed):
     assert {g.label for g in contamination} == {"Green/Black Mold (Trich)", "Overlay"}
     assert {g.label for g in symptom} == {"Stalled pins 4-5 days", "Long skinny stems"}
     assert len(parsed.incidents) == 2
-    assert all(i.source_hash for i in parsed.incidents)
+    assert {i.issue for i in parsed.incidents} == {
+        "F2 Stargazer pins damaged", "JMF colonization stalled — 87F"}
 
 
 def test_batches_and_harvests(parsed):
