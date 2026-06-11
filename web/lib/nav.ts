@@ -16,6 +16,7 @@ export const NAV_GROUPS: readonly NavGroup[] = [
     items: [
       ["/", "Dashboard"],
       ["/batches", "Batches"],
+      ["/presets", "Tub Presets"],
       ["/strains", "Strains"],
       ["/cultures", "Cultures & Spores"],
       ["/harvests", "Harvests"],

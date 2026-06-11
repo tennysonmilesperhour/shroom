@@ -1791,6 +1791,61 @@ tbody tr.row-link button {
 .cc-item:hover .cc-remove, .cc-remove:focus-visible { opacity: 1; }
 .cc-remove:hover { color: var(--ember); background: oklch(68% 0.22 25 / 0.08); }
 @media (hover: none) { .cc-remove { opacity: 0.55; } }
+/* Tub-preset prefill picker + dynamic materials editor. */
+.add-panel-preset { margin-bottom: var(--space-4); }
+.add-panel-preset label {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--lumen);
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.add-panel-preset select { width: 100%; }
+
+.preset-materials { display: grid; gap: var(--space-2); }
+.preset-material-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.4fr) 90px 80px auto;
+  gap: var(--space-2);
+  align-items: center;
+}
+.preset-material-remove {
+  background: transparent;
+  border: 1px solid var(--line-warm);
+  border-radius: var(--radius-sm, 6px);
+  color: var(--muted);
+  cursor: pointer;
+  padding: 6px 8px;
+  line-height: 1;
+}
+.preset-material-remove:hover { color: var(--ember); border-color: var(--ember); }
+@media (max-width: 720px) {
+  .preset-material-row { grid-template-columns: 1fr 1fr; }
+}
+
+.preset-deduct label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 13px;
+  color: var(--text);
+}
+.preset-deduct input { width: auto; }
+
+.link-danger {
+  background: transparent;
+  border: none;
+  color: var(--ember);
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+  text-decoration: underline;
+}
+.link-danger:disabled { opacity: 0.6; cursor: default; }
 
 /* Strain card grid (replaces the old accordion). */
 .strain-grid {

@@ -2,9 +2,9 @@ import Link from "next/link";
 import { createServiceClient } from "@/utils/supabase/service";
 import { Badge, Card, stageTone } from "@/components/ui";
 import GenerateTasks from "@/components/GenerateTasks";
-import { must } from "@/lib/query";
+import { must, soft } from "@/lib/query";
 import AddPanel from "@/components/AddPanel";
-import AddBatchForm from "./AddBatchForm";
+import AddBatchForm, { type PresetOption } from "./AddBatchForm";
 
 export const dynamic = "force-dynamic";
 
@@ -56,9 +56,25 @@ interface RoomOpt {
   name: string;
 }
 
+// Shape returned by the presets read before mapping to the form's PresetOption.
+interface PresetRaw {
+  id: number;
+  name: string;
+  strain_id: number | null;
+  room_id: number | null;
+  container_type: string | null;
+  tub_size: string | null;
+  spawn_type: string | null;
+  substrate_type: string | null;
+  bag_type: string | null;
+  block_count: number | null;
+  substrate_weight_kg: number | null;
+  preset_materials: { count: number }[];
+}
+
 export default async function BatchesPage() {
   const supabase = createServiceClient();
-  const [batches, protocols, strainOpts, roomOpts] = await Promise.all([
+  const [batches, protocols, strainOpts, roomOpts, presetRaw] = await Promise.all([
     must<BatchRow[]>(
       supabase
         .from("batches")
@@ -69,7 +85,33 @@ export default async function BatchesPage() {
     must<ProtocolRow[]>(supabase.from("protocols").select("id,name").order("name"), "load protocols"),
     must<StrainOpt[]>(supabase.from("strains").select("id,name").order("name"), "load strains"),
     must<RoomOpt[]>(supabase.from("rooms").select("id,name").order("name"), "load rooms"),
+    // soft: degrades to [] if the presets migration hasn't been applied yet, so
+    // batch creation never breaks on a not-yet-migrated database.
+    soft<PresetRaw>(
+      supabase
+        .from("batch_presets")
+        .select(
+          "id,name,strain_id,room_id,container_type,tub_size,spawn_type,substrate_type,bag_type,block_count,substrate_weight_kg, preset_materials(count)",
+        )
+        .eq("active", true)
+        .order("name"),
+    ),
   ]);
+
+  const presets: PresetOption[] = presetRaw.map((p) => ({
+    id: p.id,
+    name: p.name,
+    strain_id: p.strain_id,
+    room_id: p.room_id,
+    container_type: p.container_type ?? "tub",
+    tub_size: p.tub_size ?? "",
+    spawn_type: p.spawn_type ?? "",
+    substrate_type: p.substrate_type ?? "",
+    bag_type: p.bag_type ?? "",
+    block_count: p.block_count ?? 0,
+    substrate_weight_kg: p.substrate_weight_kg ?? 0,
+    material_count: p.preset_materials?.[0]?.count ?? 0,
+  }));
 
   const byStage = (s: Stage) => batches.filter((b) => b.stage === s);
 
@@ -84,7 +126,7 @@ export default async function BatchesPage() {
       </div>
 
       <AddPanel label="New batch" buttonLabel="Inoculate new batch">
-        <AddBatchForm strains={strainOpts} rooms={roomOpts} />
+        <AddBatchForm strains={strainOpts} rooms={roomOpts} presets={presets} />
       </AddPanel>
 
       <Card title="Tub / bag board" variant="featured">

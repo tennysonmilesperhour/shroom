@@ -15,6 +15,7 @@ export type SyncEntity =
   | "strain"
   | "culture"
   | "batch"
+  | "preset"
   | "harvest"
   | "order"
   | "purchase_order"
