@@ -238,9 +238,15 @@ def _non_blank_count(row: list) -> int:
 # --------------------------------------------------------------------------- #
 # Per-tab parsers
 # --------------------------------------------------------------------------- #
+# Only a *container* parenthetical is noise ("Golden Teacher (bag)"); a name
+# alias like "BV (Bluey Vuittons)" is meaningful and must be preserved.
+_CONTAINER_PAREN = re.compile(
+    r"\s*\([^)]*\b(?:bag|grain|aio|tub|monotub|jar)\b[^)]*\)\s*$", re.I)
+
+
 def _strip_name(name: str) -> str:
-    """Canonical strain name: drop a trailing parenthetical like '(bag)'."""
-    return re.sub(r"\s*\([^)]*\)\s*$", "", util.clean(name)).strip()
+    """Canonical strain name: drop only a trailing container parenthetical."""
+    return _CONTAINER_PAREN.sub("", util.clean(name)).strip()
 
 
 def parse_strain_library(wb: Workbook) -> list[Strain]:
