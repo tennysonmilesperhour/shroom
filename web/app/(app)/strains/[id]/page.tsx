@@ -5,6 +5,7 @@ import type { BadgeTone } from "@/components/ui";
 import { createServiceClient } from "@/utils/supabase/service";
 import { must, maybe } from "@/lib/query";
 import { cToF, ease, stars } from "@/lib/format";
+import { alkaloidSplit, evidenceTone, evidenceLabel, hueColor } from "@/lib/spectrum";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +30,19 @@ interface StrainRow {
   library_status: string | null;
   priority: number | null;
   notes: string | null;
+  potency_tier: string | null;
+  alkaloid_total_pct: number | null;
+  alkaloid_total_low_pct: number | null;
+  alkaloid_total_high_pct: number | null;
+  psilocin_psilocybin_ratio: number | null;
+  spectrum_hue: number | null;
+  evidence_grade: string | null;
+  experience_summary: string | null;
+  experience_tags: string[] | null;
+  onset_min: number | null;
+  peak_hr: number | null;
+  duration_hr: number | null;
+  profile_source: string | null;
 }
 
 interface BatchRow {
@@ -141,6 +155,73 @@ export default async function StrainDetailPage({
         <Kpi label="Bio-efficiency" value={yieldRow?.biological_efficiency_pct ?? "—"} unit="%" />
         <Kpi label="Batches grown" countTo={yieldRow?.batches ?? batches.length} />
       </div>
+
+      {strain.mushroom_type === "psychedelic" && strain.alkaloid_total_pct != null && (() => {
+        const split = alkaloidSplit(strain.alkaloid_total_pct, strain.psilocin_psilocybin_ratio);
+        const pbPct = split ? (split.psilocybin / (split.psilocybin + split.psilocin)) * 100 : 0;
+        const hue = strain.spectrum_hue ?? 295;
+        return (
+          <Card title="Alkaloid profile & reported experience" className="profile-card">
+            <div className="profile-head">
+              <span className="profile-swatch" style={{ background: hueColor(hue, 74, 0.18) }} aria-hidden />
+              {strain.potency_tier && <Badge tone="violet">{strain.potency_tier}</Badge>}
+              <Badge tone={evidenceTone(strain.evidence_grade)}>
+                {evidenceLabel(strain.evidence_grade)}
+              </Badge>
+            </div>
+
+            <div className="profile-bar-block">
+              <div className="profile-bar-label">
+                <span>Total tryptamine</span>
+                <span>
+                  <b>{strain.alkaloid_total_pct}%</b>{" "}
+                  <span className="muted">
+                    ({strain.alkaloid_total_low_pct}–{strain.alkaloid_total_high_pct}% dry wt)
+                  </span>
+                </span>
+              </div>
+              {split && (
+                <>
+                  <div className="profile-split" role="img"
+                    aria-label={`Roughly ${pbPct.toFixed(0)}% psilocybin, ${(100 - pbPct).toFixed(0)}% psilocin`}>
+                    <span className="profile-split-pb" style={{ width: `${pbPct}%` }} />
+                    <span className="profile-split-pc" style={{ width: `${100 - pbPct}%` }} />
+                  </div>
+                  <div className="profile-split-key">
+                    <span><i className="dot pb" /> Psilocybin ≈ {split.psilocybin.toFixed(2)}%</span>
+                    <span><i className="dot pc" /> Psilocin ≈ {split.psilocin.toFixed(2)}%</span>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {strain.experience_summary && (
+              <p className="profile-summary">{strain.experience_summary}</p>
+            )}
+
+            {strain.experience_tags && strain.experience_tags.length > 0 && (
+              <div className="profile-tags">
+                {strain.experience_tags.map((t) => (
+                  <Badge key={t} tone="muted">{t}</Badge>
+                ))}
+              </div>
+            )}
+
+            <dl className="kv kv-3 profile-timing">
+              <dt>Onset</dt><dd>{strain.onset_min != null ? `~${strain.onset_min} min` : "—"}</dd>
+              <dt>Peak</dt><dd>{strain.peak_hr != null ? `~${strain.peak_hr} h` : "—"}</dd>
+              <dt>Duration</dt><dd>{strain.duration_hr != null ? `~${strain.duration_hr} h` : "—"}</dd>
+            </dl>
+
+            <p className="profile-caveat muted">
+              Potency is lab-grounded; the experiential &ldquo;character&rdquo; is anecdotal and shaped
+              heavily by dose, set and setting. Sample-to-sample potency within a strain can vary by
+              up to ~100%.
+              {strain.profile_source ? ` Source: ${strain.profile_source}` : ""}
+            </p>
+          </Card>
+        );
+      })()}
 
       <div className="grid two">
         <Card title="Genetics & sourcing">
