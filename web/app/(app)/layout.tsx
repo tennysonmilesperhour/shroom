@@ -6,6 +6,7 @@ import CommandPalette from "@/components/CommandPalette";
 import VersionWatcher from "@/components/VersionWatcher";
 import CursorAura from "@/components/CursorAura";
 import ToastProvider from "@/components/ToastProvider";
+import FeedbackPanel from "@/components/FeedbackPanel";
 import { createServiceClient } from "@/utils/supabase/service";
 
 // Open access - no auth gate. SSR pages read with the service-role client
@@ -73,6 +74,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       </div>
 
       <CommandPalette index={cmdIndex} />
+      <FeedbackPanel />
     </div>
     </ToastProvider>
   );

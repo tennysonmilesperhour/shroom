@@ -169,6 +169,46 @@ const STAGE_ORDER = [
   "fruiting", "harvesting", "spent",
 ] as const;
 
+// Board stages a tub can be dragged between. Mirrors STAGE_ORDER; "contaminated"
+// is intentionally excluded — that transition stays a deliberate logging action.
+const BOARD_STAGES = new Set<string>(STAGE_ORDER);
+
+// Move a batch to an arbitrary stage via the kanban board (drag + drop).
+// Unlike advanceBatchStage this allows jumping forward or back; it stamps the
+// relevant lifecycle date the first time a batch reaches that stage.
+export async function moveBatchStage(
+  batchId: number,
+  toStage: string,
+): Promise<EntityResult> {
+  if (!Number.isFinite(batchId)) return { ok: false, message: "Invalid batch." };
+  if (!BOARD_STAGES.has(toStage)) return { ok: false, message: "Invalid stage." };
+
+  const supabase = createServiceClient();
+  const { data: current, error: readErr } = await supabase
+    .from("batches")
+    .select("stage,colonized_on,fruiting_on,spent_on")
+    .eq("id", batchId)
+    .single();
+  if (readErr || !current) return { ok: false, message: readErr?.message ?? "Not found." };
+  if (current.stage === toStage) return { ok: true, message: "No change" };
+
+  const today = new Date().toISOString().slice(0, 10);
+  const update: Record<string, unknown> = { stage: toStage };
+  // Stamp the lifecycle date only if this stage hasn't been recorded before,
+  // so dragging back and forth never clobbers an existing milestone.
+  if (toStage === "colonization" && !current.colonized_on) update.colonized_on = today;
+  else if (toStage === "fruiting" && !current.fruiting_on) update.fruiting_on = today;
+  else if (toStage === "spent" && !current.spent_on) update.spent_on = today;
+
+  const { error } = await supabase.from("batches").update(update).eq("id", batchId);
+  if (error) return { ok: false, message: error.message };
+
+  await enqueueSync(supabase, "batch", batchId, "update", { stage: toStage });
+  revalidatePath(`/batches/${batchId}`);
+  revalidatePath("/batches");
+  return { ok: true, message: `Moved to ${toStage}` };
+}
+
 export async function advanceBatchStage(batchId: number): Promise<EntityResult> {
   if (!Number.isFinite(batchId)) return { ok: false, message: "Invalid batch." };
 
