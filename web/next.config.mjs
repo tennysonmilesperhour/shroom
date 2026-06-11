@@ -30,6 +30,10 @@ const securityHeaders = [
       "img-src 'self' data: blob:",
       "font-src 'self' data:",
       `connect-src 'self' ${SUPABASE_HOST} wss://*.supabase.co`,
+      // Truth Source embeds live Google Sheets in <iframe>s; without an
+      // explicit frame-src this falls back to default-src 'self' and the
+      // embeds are blocked.
+      "frame-src 'self' https://docs.google.com",
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",

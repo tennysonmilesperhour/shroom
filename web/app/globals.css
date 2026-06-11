@@ -801,6 +801,41 @@ button.primary:disabled { opacity: 0.5; cursor: default; transform: none; box-sh
 
 .muted { color: var(--muted); }
 
+/* Truth Source — embedded live sheet cards. */
+.embed-source-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+.embed-frame {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: oklch(100% 0 0 / 0.96);
+  display: block;
+}
+button.btn-ghost {
+  appearance: none;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+button.btn-ghost:hover {
+  color: var(--ember);
+  border-color: var(--line-warm);
+  background: oklch(60% 0.04 220 / 0.06);
+}
+button.btn-ghost:disabled { opacity: 0.5; cursor: default; }
+
 /* ── 14. Accordion ──────────────────────────────────────────────────────── */
 details.acc {
   border: 1px solid var(--line);
