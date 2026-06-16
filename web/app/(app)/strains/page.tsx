@@ -95,10 +95,10 @@ export default async function StrainsPage() {
               <h3 style={{ margin: "2px 0 0" }}>Psilocybe alkaloid &amp; experience wheel</h3>
             </div>
             <p className="muted spectrum-blurb">
-              The {spectrum.length} psychedelic strains arranged by reported character (angle/color) and
-              measured potency (distance from center). Total-potency differences between cubensis strains
-              are small and dominated by cultivation; the &ldquo;character&rdquo; arc is community lore, not
-              proven pharmacology.
+              The {spectrum.length} psychedelic strains as a color spectrum of reported character — each
+              wedge a strain, its length the measured potency (longer = stronger). Total-potency differences
+              between cubensis strains are small and dominated by cultivation; the &ldquo;character&rdquo;
+              spectrum is community lore, not proven pharmacology.
             </p>
           </div>
           <AlkaloidSpectrum strains={spectrum} />
