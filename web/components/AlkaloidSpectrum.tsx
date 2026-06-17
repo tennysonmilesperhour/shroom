@@ -4,9 +4,10 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   hueColor,
-  potencyRadius,
   polarPoint,
   evidenceLabel,
+  POTENCY_MIN,
+  POTENCY_MAX,
   type SpectrumStrain,
 } from "@/lib/spectrum";
 
@@ -19,7 +20,9 @@ const HUB_R = 7; // tiny center cap where wedges converge
 // Gap between neighbouring wedges, in degrees, so each slice reads as its own triangle.
 const WEDGE_GAP = 1.4;
 // Weakest strains still get a visible nib so every wedge is clickable.
-const MIN_RADIUS_FRAC = 0.14;
+const RADIUS_FLOOR = 0.18;
+// <1 expands the differences between the clustered mid-potency strains.
+const RADIUS_GAMMA = 0.7;
 
 // Potency reference rings (% dry weight) drawn as dashed circles.
 const POTENCY_GUIDES = [0.5, 1.0, 1.5, 2.0, 2.5];
@@ -46,6 +49,18 @@ export default function AlkaloidSpectrum({ strains }: { strains: SpectrumStrain[
   const ordered = [...strains].sort((a, b) => a.hue - b.hue);
   const per = 360 / ordered.length;
 
+  // Radial scale: anchor the top of the scale to the strongest strain on hand so
+  // the most potent wedge reaches the rim (less empty space), then apply a gamma
+  // curve to pull the bunched mid-potency strains apart (more length contrast).
+  const totals = ordered.map((s) => s.totalPct).filter((v): v is number => v != null);
+  const scaleMax = Math.max(totals.length ? Math.max(...totals) : POTENCY_MAX, POTENCY_MIN + 0.1);
+
+  const displayFrac = (pct: number | null): number => {
+    if (pct == null) return RADIUS_FLOOR;
+    const t = Math.min(1, Math.max(0, (pct - POTENCY_MIN) / (scaleMax - POTENCY_MIN)));
+    return RADIUS_FLOOR + (1 - RADIUS_FLOOR) * Math.pow(t, RADIUS_GAMMA);
+  };
+
   return (
     <div className="spectrum">
       <figure className="spectrum-wheel">
@@ -68,8 +83,7 @@ export default function AlkaloidSpectrum({ strains }: { strains: SpectrumStrain[
           {ordered.map((s, i) => {
             const a0 = i * per + WEDGE_GAP / 2;
             const a1 = (i + 1) * per - WEDGE_GAP / 2;
-            const frac = Math.max(MIN_RADIUS_FRAC, potencyRadius(s.totalPct));
-            const rData = frac * OUTER_R;
+            const rData = displayFrac(s.totalPct) * OUTER_R;
             const isActive = s.id === activeId;
             const color = hueColor(s.hue, 74, 0.18);
             return (
@@ -103,8 +117,8 @@ export default function AlkaloidSpectrum({ strains }: { strains: SpectrumStrain[
           })}
 
           {/* potency guide rings (drawn over the wedges, non-interactive) */}
-          {POTENCY_GUIDES.map((pct) => {
-            const r = potencyRadius(pct) * OUTER_R;
+          {POTENCY_GUIDES.filter((pct) => pct <= scaleMax + 1e-6).map((pct) => {
+            const r = displayFrac(pct) * OUTER_R;
             return (
               <g key={pct} style={{ pointerEvents: "none" }}>
                 <circle
