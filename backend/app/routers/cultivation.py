@@ -19,6 +19,10 @@ def list_strains(db: Session = Depends(get_db)):
 
 @router.post("/strains", response_model=schemas.StrainOut, status_code=201)
 def create_strain(payload: schemas.StrainCreate, db: Session = Depends(get_db)):
+    if payload.lineage_parent_id is not None and not db.get(
+        models.Strain, payload.lineage_parent_id
+    ):
+        raise HTTPException(400, "Unknown lineage_parent_id")
     strain = models.Strain(**payload.model_dump())
     db.add(strain)
     db.commit()
@@ -34,8 +38,10 @@ def strain_lineage(strain_id: int, db: Session = Depends(get_db)):
         raise HTTPException(404, "Strain not found")
 
     ancestors = []
+    seen = {strain.id}
     cursor = strain.parent
-    while cursor is not None:
+    while cursor is not None and cursor.id not in seen:
+        seen.add(cursor.id)
         ancestors.append({"id": cursor.id, "name": cursor.name, "generation": cursor.generation})
         cursor = cursor.parent
 
@@ -97,6 +103,8 @@ def create_batch(payload: schemas.BatchCreate, db: Session = Depends(get_db)):
         raise HTTPException(409, f"Lot code '{payload.lot_code}' already exists")
     if not db.get(models.Strain, payload.strain_id):
         raise HTTPException(400, "Unknown strain_id")
+    if payload.stage not in models.STAGES:
+        raise HTTPException(400, f"stage must be one of {models.STAGES}")
     batch = models.Batch(**payload.model_dump())
     db.add(batch)
     db.flush()
@@ -172,7 +180,9 @@ def batch_timeline(batch_id: int, db: Session = Depends(get_db)):
     batch = db.get(models.Batch, batch_id)
     if not batch:
         raise HTTPException(404, "Batch not found")
-    events = sorted(batch.stage_events, key=lambda e: e.occurred_at or 0)
+    from datetime import datetime as _dt
+
+    events = sorted(batch.stage_events, key=lambda e: e.occurred_at or _dt.min)
     return [
         {
             "stage": e.stage,

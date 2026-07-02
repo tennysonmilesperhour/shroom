@@ -2,7 +2,7 @@ import { createServiceClient } from "@/utils/supabase/service";
 import { NextResponse } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-const MODEL = process.env.SHROOM_ADVISOR_MODEL || "claude-sonnet-4-6";
+const MODEL = process.env.SHROOM_ADVISOR_MODEL || "claude-sonnet-4-5";
 const QUESTION_MAX = 500;
 
 // Simple in-memory IP rate limiter. Process-local, so single-instance only -

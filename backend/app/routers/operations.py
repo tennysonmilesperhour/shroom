@@ -69,11 +69,13 @@ def create_task(payload: schemas.TaskCreate, db: Session = Depends(get_db)):
 
 
 @router.patch("/tasks/{task_id}", response_model=schemas.TaskOut)
-def update_task(task_id: int, payload: schemas.TaskCreate, db: Session = Depends(get_db)):
+def update_task(task_id: int, payload: schemas.TaskUpdate, db: Session = Depends(get_db)):
     task = db.get(models.Task, task_id)
     if not task:
         raise HTTPException(404, "Task not found")
-    for key, value in payload.model_dump().items():
+    # exclude_unset: a PATCH with {"status": "done"} must not reset the
+    # task's other fields to schema defaults.
+    for key, value in payload.model_dump(exclude_unset=True).items():
         setattr(task, key, value)
     db.commit()
     db.refresh(task)

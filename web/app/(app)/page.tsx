@@ -6,6 +6,7 @@ import RadialGauge from "@/components/anim/RadialGauge";
 import Meter from "@/components/anim/Meter";
 import QuickLog, { type QuickLogBatch } from "@/components/QuickLog";
 import RoutinePlanner, { type Routine } from "@/components/RoutinePlanner";
+import OperationPulse from "@/components/OperationPulse";
 import { kgToG, money, DRY_FLOOR } from "@/lib/format";
 import { must, maybe, soft } from "@/lib/query";
 
@@ -172,8 +173,18 @@ export default async function Dashboard() {
     .slice(0, 60)
     .map((b) => ({ id: b.id, lot_code: b.lot_code, stage: b.stage, strain: b.strains?.name ?? null }));
 
+  // Live vitals for the reactive ambient background (#4).
+  const vitals = {
+    activeBatches: active,
+    blocks,
+    alerts: alerts.length,
+    lastHarvestOn: spotlight?.harvested_on ?? null,
+  };
+
   return (
     <>
+      <OperationPulse vitals={vitals} />
+
       <div>
         <div className="eyebrow">Operation</div>
         <h1 className="section">Today&rsquo;s state of the mycelium</h1>

@@ -222,6 +222,9 @@ class Harvest(Base):
     weight_kg: Mapped[float] = mapped_column(Float, default=0.0)  # fresh weight
     dry_weight_kg: Mapped[float] = mapped_column(Float, default=0.0)
     grade: Mapped[str] = mapped_column(String(20), default="A")  # A / B / process
+    # Operator-facing SKU for this flush — tags the dried yield for labels,
+    # inventory, and sales. Free text so it fits any numbering scheme.
+    sku: Mapped[str] = mapped_column(String(64), default="")
     picker_id: Mapped[int | None] = mapped_column(ForeignKey("staff.id"))
     labor_minutes: Mapped[float] = mapped_column(Float, default=0.0)
     notes: Mapped[str] = mapped_column(Text, default="")
@@ -287,7 +290,9 @@ class InventoryItem(Base):
 
     @property
     def needs_reorder(self) -> bool:
-        return self.quantity_on_hand <= self.reorder_threshold
+        # A zero threshold means "not tracked for reorder" — otherwise every
+        # untracked item is permanently flagged low.
+        return self.reorder_threshold > 0 and self.quantity_on_hand <= self.reorder_threshold
 
 
 class Customer(Base):

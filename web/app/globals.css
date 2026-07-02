@@ -2834,3 +2834,340 @@ button.danger-btn:disabled { opacity: 0.5; cursor: default; }
 
 /* Detail-page header: title block left, row actions right. */
 .detail-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); }
+
+/* ── 20. Light theme ─────────────────────────────────────────────────────────
+   Daylight variant of Quantum Blue. Same identity — editorial serif, mono data,
+   bioluminescent accents — re-voiced for a bright room: luminous cool-paper
+   surfaces, deep ink-blue text, and the accent family pulled down in lightness
+   so it stays legible on white. Set via <html data-theme="light"> (boot script
+   in app/layout.tsx; toggled by components/ThemeToggle). All new visual work is
+   authored against these tokens so it reads correctly in either theme.
+   Specificity note: html[data-theme="light"] (0,1,1) beats :root (0,1,0), and
+   the sectioned body rules below use two html attributes (0,2,1) to beat the
+   dark html[data-section] body rules (0,1,1) regardless of source order. */
+html[data-theme="light"] {
+  color-scheme: light;
+
+  --ink:        oklch(96.5% 0.006 240);
+  --ink-2:      oklch(99.4% 0.003 235);
+  --ink-3:      oklch(97.4% 0.006 230);
+  --ink-deep:   oklch(93.5% 0.010 245);
+
+  --panel:      color-mix(in oklch, var(--ink-2) 90%, transparent);
+  --panel-2:    color-mix(in oklch, var(--ink-3) 84%, transparent);
+  --panel-edge: oklch(58% 0.16 195 / 0.16);
+  --panel-glow: oklch(58% 0.16 195 / 0.05);
+
+  --line:       oklch(45% 0.03 258 / 0.16);
+  --line-soft:  oklch(45% 0.03 258 / 0.09);
+  --line-warm:  oklch(58% 0.15 195 / 0.40);
+
+  --text:       oklch(28% 0.025 258);
+  --text-2:     oklch(40% 0.030 258);
+  /* WCAG AA: ~4.9:1 on the paper surfaces at this lightness. */
+  --muted:      oklch(49% 0.030 258);
+  --faint:      oklch(60% 0.028 258);
+
+  /* Accents dropped in lightness for legibility on white; hues preserved. */
+  --lumen:      oklch(56% 0.135 210);
+  --lumen-2:    oklch(50% 0.125 215);
+  --indigo:     oklch(50% 0.175 268);
+  --bruise:     oklch(48% 0.190 295);
+  --moss:       oklch(50% 0.120 155);
+  --spore:      oklch(56% 0.130 70);
+  --ember:      oklch(54% 0.210 25);
+
+  --glow:       0 0 24px oklch(58% 0.16 195 / 0.16);
+  --glow-soft:  0 0 14px oklch(58% 0.16 195 / 0.10);
+  --shadow-lift:
+    0 1px 0 oklch(100% 0 0 / 0.65) inset,
+    0 18px 40px -24px oklch(45% 0.05 258 / 0.28),
+    0 2px 6px -3px oklch(45% 0.05 258 / 0.13);
+}
+
+/* Base field */
+html[data-theme="light"] body {
+  background:
+    radial-gradient(1200px 700px at 82% -10%, oklch(66% 0.14 270 / 0.10), transparent 58%),
+    radial-gradient(1000px 800px at 6% 12%, oklch(60% 0.16 295 / 0.06), transparent 56%),
+    radial-gradient(800px 500px at 50% 110%, oklch(70% 0.11 155 / 0.06), transparent 60%),
+    linear-gradient(180deg, oklch(97.5% 0.006 240) 0%, oklch(95.5% 0.008 245) 65%, oklch(94% 0.010 250) 100%);
+}
+/* Grain reads muddy over paper — dial it back and let it darken subtly. */
+html[data-theme="light"] body::before { opacity: 0.14; mix-blend-mode: multiply; }
+
+/* Per-section ambient tints, light-mode voicing */
+html[data-theme="light"][data-section="grow"] body {
+  background:
+    radial-gradient(1200px 700px at 82% -10%, oklch(70% 0.12 155 / 0.12), transparent 58%),
+    radial-gradient(1000px 800px at 6% 12%, oklch(64% 0.16 270 / 0.07), transparent 56%),
+    linear-gradient(180deg, oklch(97.5% 0.006 240), oklch(94.5% 0.010 250) 100%);
+}
+html[data-theme="light"][data-section="sell"] body {
+  background:
+    radial-gradient(1200px 700px at 82% -10%, oklch(70% 0.14 195 / 0.13), transparent 58%),
+    radial-gradient(1000px 800px at 6% 12%, oklch(64% 0.16 268 / 0.06), transparent 56%),
+    linear-gradient(180deg, oklch(97.5% 0.006 240), oklch(94.5% 0.010 250) 100%);
+}
+html[data-theme="light"][data-section="source"] body {
+  background:
+    radial-gradient(1200px 700px at 82% -10%, oklch(64% 0.16 268 / 0.12), transparent 58%),
+    radial-gradient(1000px 800px at 6% 12%, oklch(60% 0.18 295 / 0.06), transparent 56%),
+    linear-gradient(180deg, oklch(97.5% 0.006 240), oklch(94.5% 0.010 250) 100%);
+}
+html[data-theme="light"][data-section="comply"] body {
+  background:
+    radial-gradient(1200px 700px at 82% -10%, oklch(72% 0.13 75 / 0.12), transparent 58%),
+    radial-gradient(1000px 800px at 6% 12%, oklch(64% 0.16 270 / 0.06), transparent 56%),
+    linear-gradient(180deg, oklch(97.5% 0.006 240), oklch(94.5% 0.010 250) 100%);
+}
+html[data-theme="light"][data-section="intelligence"] body {
+  background:
+    radial-gradient(1200px 700px at 82% -10%, oklch(60% 0.18 295 / 0.12), transparent 58%),
+    radial-gradient(1000px 800px at 6% 12%, oklch(70% 0.14 195 / 0.06), transparent 56%),
+    linear-gradient(180deg, oklch(97.5% 0.006 240), oklch(94.5% 0.010 250) 100%);
+}
+
+/* Chrome surfaces: keep the frosted look but on paper instead of ink. */
+html[data-theme="light"] .sidebar {
+  background:
+    linear-gradient(180deg, oklch(99.4% 0.003 235 / 0.90), oklch(96% 0.006 245 / 0.80)),
+    radial-gradient(400px 200px at 0% 0%, oklch(58% 0.15 195 / 0.06), transparent 70%);
+}
+html[data-theme="light"] .topbar {
+  background:
+    linear-gradient(180deg, oklch(99.4% 0.003 235 / 0.92), oklch(96% 0.006 245 / 0.82)),
+    radial-gradient(400px 200px at 0% 0%, oklch(58% 0.15 195 / 0.06), transparent 70%);
+}
+html[data-theme="light"] .drawer {
+  background:
+    linear-gradient(180deg, oklch(99.5% 0.002 235 / 0.98), oklch(97% 0.005 245 / 0.95)),
+    radial-gradient(400px 200px at 0% 0%, oklch(58% 0.15 195 / 0.08), transparent 70%);
+}
+html[data-theme="light"] .drawer-backdrop { background: oklch(45% 0.03 258 / 0.35); }
+
+/* Inputs: light fields instead of dark translucent wells. */
+html[data-theme="light"] input,
+html[data-theme="light"] textarea,
+html[data-theme="light"] select {
+  background: oklch(100% 0 0 / 0.72);
+}
+html[data-theme="light"] input:focus,
+html[data-theme="light"] textarea:focus,
+html[data-theme="light"] select:focus {
+  background: oklch(100% 0 0 / 0.96);
+}
+
+/* Primary button gradient is now mid-saturated on light, so use white ink. */
+html[data-theme="light"] button.primary { color: oklch(99% 0 0); }
+
+/* Tint the frosted embed background so live-sheet cards don't glare. */
+html[data-theme="light"] .embed-frame { background: oklch(100% 0 0 / 0.98); }
+
+/* ── Theme toggle control ────────────────────────────────────────────────── */
+.foot-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.theme-toggle {
+  position: relative;
+  width: 46px; height: 24px;
+  flex-shrink: 0;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: oklch(60% 0.04 220 / 0.06);
+  padding: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color 180ms var(--ease-out), background 180ms var(--ease-out);
+}
+.theme-toggle:hover { border-color: var(--line-warm); background: oklch(82% 0.18 195 / 0.06); }
+.theme-toggle:focus-visible { outline: 2px solid var(--lumen); outline-offset: 2px; }
+.theme-toggle-track { position: absolute; inset: 0; display: block; }
+.theme-toggle-thumb {
+  position: absolute; top: 50%; left: 3px;
+  transform: translateY(-50%);
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  display: grid; place-items: center;
+  color: var(--lumen);
+  background: linear-gradient(180deg, var(--panel-2), var(--panel));
+  box-shadow: 0 1px 3px oklch(0% 0 0 / 0.35), var(--glow-soft);
+  transition: left 240ms var(--ease-out), color 240ms var(--ease-out);
+}
+html[data-theme="light"] .theme-toggle-thumb { left: calc(100% - 21px); color: var(--spore); }
+@media (prefers-reduced-motion: reduce) {
+  .theme-toggle-thumb { transition: none; }
+}
+
+/* ── 21. Reactive ambient background (#4) ────────────────────────────────────
+   The QuantumBackground network responds to live operation vitals that
+   OperationPulse publishes on <html> (--pulse-opacity, --pulse-speed,
+   data-pulse, data-pulse-burst). All values fall back to calm defaults, so the
+   background is unchanged on pages that publish nothing. */
+.qbg {
+  opacity: var(--pulse-opacity, 1);
+  transition: opacity 1200ms var(--ease-out), filter 800ms var(--ease-out);
+}
+/* Speed: livelier network when the operation is busy (shorter durations). */
+.qbg .hypha  { animation-duration: calc(14s / var(--pulse-speed, 1)); }
+.qbg .node   { animation-duration: calc(7s  / var(--pulse-speed, 1)); }
+.qbg .trav   { animation-duration: calc(22s / var(--pulse-speed, 1)); }
+.qbg .trav.b { animation-duration: calc(17s / var(--pulse-speed, 1)); }
+.qbg .trav.c { animation-duration: calc(28s / var(--pulse-speed, 1)); }
+
+/* Attention wash: rooms out of spec warm the field and turn drifting nodes amber. */
+html[data-pulse="alert"] .qbg .node,
+html[data-pulse="alert"] .qbg .spark { fill: var(--spore); }
+html[data-pulse="alert"] .qbg::after {
+  content: "";
+  position: absolute; inset: 0;
+  pointer-events: none;
+  background: radial-gradient(60% 50% at 50% 26%, oklch(80% 0.15 75 / 0.10), transparent 70%);
+  animation: breathe 6s ease-in-out infinite;
+}
+
+/* Harvest flare: a single brightening pulse when a fresh harvest lands. */
+@keyframes qbg-flare {
+  0%   { filter: brightness(1); }
+  18%  { filter: brightness(1.7) saturate(1.25); }
+  100% { filter: brightness(1); }
+}
+html[data-pulse-burst="1"] .qbg { animation: qbg-flare 4s var(--ease-out) 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-pulse-burst="1"] .qbg { animation: none; }
+  html[data-pulse="alert"] .qbg::after { animation: none; }
+}
+
+/* ── 22. Flush label (print) ────────────────────────────────────────────────
+   Screen: a centered preview with size presets + Print button. Print: only the
+   label sheet, monochrome, at the exact stock size (@page injected by
+   PrintLabel). Fixed black-on-white so it prints crisply from any theme. */
+.label-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-5);
+  padding: var(--space-7) var(--space-4);
+}
+.label-toolbar-wrap {
+  width: min(560px, 92vw);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  align-items: center;
+}
+.label-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  width: 100%;
+  flex-wrap: wrap;
+}
+.label-sizes { display: inline-flex; gap: 6px; flex-wrap: wrap; }
+.label-size-btn {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 7px 12px;
+  font-size: 12px;
+  color: var(--text-2);
+  background: oklch(60% 0.04 220 / 0.05);
+  transition: border-color 160ms var(--ease-out), color 160ms var(--ease-out);
+}
+.label-size-btn:hover { color: var(--text); border-color: var(--line-warm); }
+.label-size-btn.active {
+  color: var(--text);
+  border-color: var(--line-warm);
+  box-shadow: inset 0 0 0 1px var(--line-warm);
+}
+.label-hint {
+  color: var(--muted);
+  font-size: var(--text-xs);
+  max-width: 46ch;
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* The label itself — fixed monochrome so print never depends on theme. */
+.label-sheet {
+  box-sizing: border-box;
+  background: #fff;
+  color: #111;
+  border: 1px solid oklch(45% 0.03 258 / 0.3);
+  border-radius: 6px;
+  box-shadow: var(--shadow-lift);
+  padding: 0.12in 0.16in;
+  display: flex;
+  flex-direction: column;
+  gap: 0.03in;
+  font-family: var(--font-sans);
+  overflow: hidden;
+}
+.label-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.label-type {
+  font-size: 8px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: #333;
+}
+.label-grade { font-size: 8px; font-weight: 700; color: #333; }
+.label-strain {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 15px;
+  line-height: 1.05;
+  color: #000;
+}
+.label-species { font-size: 8.5px; font-style: italic; color: #444; margin-top: -1px; }
+.label-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  font-size: 7.5px;
+  color: #333;
+  margin-top: auto;
+}
+.label-meta span { white-space: nowrap; }
+.label-sku-block {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  border-top: 1px solid #000;
+  margin-top: 0.03in;
+  padding-top: 0.03in;
+}
+.label-sku-caption {
+  font-size: 7px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #555;
+  font-weight: 700;
+}
+.label-sku {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  color: #000;
+}
+
+@media print {
+  .qbg, .no-print { display: none !important; }
+  html, body { background: #fff !important; }
+  body::before { display: none !important; }
+  .label-page { min-height: 0; padding: 0; gap: 0; display: block; }
+  .label-sheet {
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    page-break-after: avoid;
+  }
+  .label-sku-block { border-top: 1px solid #000; }
+}

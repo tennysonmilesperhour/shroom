@@ -183,6 +183,7 @@ class HarvestCreate(BaseModel):
     weight_kg: float = 0.0
     dry_weight_kg: float = 0.0
     grade: str = "A"
+    sku: str = ""
     picker_id: int | None = None
     labor_minutes: float = 0.0
     notes: str = ""
@@ -222,6 +223,19 @@ class TaskCreate(BaseModel):
     due_date: date | None = None
     status: str = "open"
     priority: str = "med"
+
+
+class TaskUpdate(BaseModel):
+    """Partial update — only fields explicitly sent are written."""
+
+    title: str | None = None
+    description: str | None = None
+    batch_id: int | None = None
+    room_id: int | None = None
+    assigned_to: int | None = None
+    due_date: date | None = None
+    status: str | None = None
+    priority: str | None = None
 
 
 class TaskOut(TaskCreate):

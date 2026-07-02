@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import SporeMark from "@/components/SporeMark";
+import ThemeToggle from "@/components/ThemeToggle";
 import { NAV_GROUPS, isActive } from "@/lib/nav";
 
 // Mobile shell: sticky top bar + slide-in drawer. Auto-closes on route change,
@@ -144,10 +145,13 @@ export default function MobileNav() {
         </nav>
 
         <div className="drawer-foot">
-          <span className="who">
-            <span className="live-dot" aria-hidden="true" />
-            Live · in-house
-          </span>
+          <div className="foot-row">
+            <span className="who">
+              <span className="live-dot" aria-hidden="true" />
+              Live · in-house
+            </span>
+            <ThemeToggle />
+          </div>
         </div>
       </aside>
     </>

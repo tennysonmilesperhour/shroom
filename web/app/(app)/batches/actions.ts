@@ -38,7 +38,7 @@ const VALID_CONTAINERS = new Set(["tub", "grain_bag", "aio"]);
 
 export async function addBatch(formData: FormData): Promise<EntityResult> {
   const lot_code = String(formData.get("lot_code") ?? "").trim();
-  const strain_id = Number(formData.get("strain_id") ?? NaN);
+  const strain_id = Number(String(formData.get("strain_id") ?? "").trim() || NaN);
   const roomRaw = String(formData.get("room_id") ?? "");
   const room_id = roomRaw ? Number(roomRaw) : null;
   const stage = String(formData.get("stage") ?? "colonization");

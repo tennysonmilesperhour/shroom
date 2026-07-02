@@ -8,7 +8,7 @@ from __future__ import annotations
 import os
 from collections.abc import Generator
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 DB_URL = os.environ.get("SHROOM_DB_URL", "sqlite:///./shroom.db")
@@ -17,6 +17,15 @@ DB_URL = os.environ.get("SHROOM_DB_URL", "sqlite:///./shroom.db")
 connect_args = {"check_same_thread": False} if DB_URL.startswith("sqlite") else {}
 
 engine = create_engine(DB_URL, connect_args=connect_args, future=True)
+
+if DB_URL.startswith("sqlite"):
+    # SQLite ships with foreign-key enforcement OFF per connection; without
+    # this, every FK column in the schema silently accepts invalid ids.
+    @event.listens_for(engine, "connect")
+    def _enable_sqlite_fks(dbapi_connection, _record):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
 
 

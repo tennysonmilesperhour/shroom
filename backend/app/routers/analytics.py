@@ -52,10 +52,31 @@ def dashboard(period_days: int = 30, db: Session = Depends(get_db)):
             models.Harvest.harvested_on >= since
         )
     )
-    total_batches = db.scalar(select(func.count(models.Batch.id))) or 0
-    contaminated = db.scalar(
-        select(func.count(models.Batch.id)).where(models.Batch.contamination_flag.is_(True))
+    # Contamination rate over the period. A batch counts as contaminated if it
+    # carries the flag (set on stage→contaminated or a high-severity log) OR has
+    # any contamination log against it — low/medium sightings never set the flag
+    # but are still contamination events. Denominator is period batches, so the
+    # rate tracks the same window as the rest of the dashboard.
+    period_batch_ids = set(
+        db.scalars(select(models.Batch.id).where(models.Batch.created_at >= since)).all()
     )
+    total_batches = len(period_batch_ids)
+    flagged_ids = set(
+        db.scalars(
+            select(models.Batch.id).where(
+                models.Batch.created_at >= since,
+                models.Batch.contamination_flag.is_(True),
+            )
+        ).all()
+    )
+    logged_ids = set(
+        db.scalars(
+            select(models.ContaminationLog.batch_id).where(
+                models.ContaminationLog.observed_on >= since
+            )
+        ).all()
+    )
+    contaminated = len(flagged_ids | (logged_ids & period_batch_ids))
     open_tasks = db.scalar(
         select(func.count(models.Task.id)).where(models.Task.status != "done")
     )
@@ -99,7 +120,11 @@ def yield_by_strain(db: Session = Depends(get_db)):
              "substrate_kg": 0.0, "batches": 0},
         )
         entry["fresh_kg"] += fresh
-        entry["substrate_kg"] += batch.substrate_weight_kg
+        # Only count substrate from batches that have actually harvested, so
+        # realized biological efficiency isn't diluted by in-progress batches
+        # (colonizing/fruiting) that carry substrate but no yield yet.
+        if batch.harvests:
+            entry["substrate_kg"] += batch.substrate_weight_kg
         entry["batches"] += 1
 
     out = []
@@ -268,7 +293,9 @@ def recall_trace(lot_code: str, db: Session = Depends(get_db)):
 
     harvest_ids = [h.id for h in batch.harvests]
     affected_orders, affected_customers = [], {}
-    total_units = 0.0
+    # Quantities can be in different units per product (g dried vs lb fresh), so
+    # a single scalar total is misleading — bucket by unit instead.
+    units_by_uom: dict[str, float] = defaultdict(float)
 
     if harvest_ids:
         lines = db.scalars(
@@ -277,7 +304,8 @@ def recall_trace(lot_code: str, db: Session = Depends(get_db)):
         for line in lines:
             order = line.order
             cust = order.customer
-            total_units += line.quantity
+            uom = (line.product.unit if line.product and line.product.unit else "unit")
+            units_by_uom[uom] += line.quantity
             affected_orders.append(
                 {
                     "order_number": order.order_number,
@@ -302,7 +330,12 @@ def recall_trace(lot_code: str, db: Session = Depends(get_db)):
         "strain": batch.strain.name if batch.strain else None,
         "stage": batch.stage,
         "harvests": len(harvest_ids),
-        "total_units_distributed": round(total_units, 2),
+        # Distributed quantity bucketed by unit of measure. Summing across units
+        # (g dried vs lb fresh vs each) is not physically meaningful, so the
+        # breakdown is authoritative; total_units_distributed is retained as a
+        # raw line-quantity sum for backward compatibility only.
+        "units_distributed_by_uom": {u: round(q, 2) for u, q in sorted(units_by_uom.items())},
+        "total_units_distributed": round(sum(units_by_uom.values()), 2),
         "affected_order_count": len(affected_orders),
         "affected_customer_count": len(affected_customers),
         "affected_orders": affected_orders,

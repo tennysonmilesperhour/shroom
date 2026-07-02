@@ -7,6 +7,7 @@ import VersionWatcher from "@/components/VersionWatcher";
 import CursorAura from "@/components/CursorAura";
 import ToastProvider from "@/components/ToastProvider";
 import FeedbackPanel from "@/components/FeedbackPanel";
+import ThemeToggle from "@/components/ThemeToggle";
 import { createServiceClient } from "@/utils/supabase/service";
 
 // Open access - no auth gate. SSR pages read with the service-role client
@@ -60,10 +61,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </div>
         <Nav />
         <div className="foot">
-          <span className="who">
-            <span className="live-dot" aria-hidden="true" />
-            Live · in-house
-          </span>
+          <div className="foot-row">
+            <span className="who">
+              <span className="live-dot" aria-hidden="true" />
+              Live · in-house
+            </span>
+            <ThemeToggle />
+          </div>
         </div>
       </aside>
 
