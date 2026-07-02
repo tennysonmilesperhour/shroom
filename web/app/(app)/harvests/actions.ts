@@ -9,6 +9,7 @@ export async function addHarvest(formData: FormData): Promise<EntityResult> {
   const batch_id = Number(String(formData.get("batch_id") ?? "").trim() || NaN);
   const harvested_on = String(formData.get("harvested_on") ?? "").trim();
   const flush_number = Number(formData.get("flush_number") ?? 1);
+  const sku = String(formData.get("sku") ?? "").trim();
   const fresh_g = Number(formData.get("fresh_g") ?? 0);
   const dry_g = Number(formData.get("dry_g") ?? 0);
   const grade = String(formData.get("grade") ?? "A").trim();
@@ -29,6 +30,7 @@ export async function addHarvest(formData: FormData): Promise<EntityResult> {
       batch_id,
       harvested_on,
       flush_number: Number.isFinite(flush_number) ? flush_number : 1,
+      sku,
       weight_kg: fresh_g / 1000,
       dry_weight_kg: dry_g / 1000,
       grade,

@@ -128,6 +128,7 @@ export const ENTITIES: Record<string, EntityDef> = {
       { name: "batch_id", label: "Batch", type: "select", fk: true, required: true },
       { name: "harvested_on", label: "Harvested on", type: "date", required: true },
       { name: "flush_number", label: "Flush", type: "number", min: 1 },
+      { name: "sku", label: "SKU", type: "text", placeholder: "e.g. STG-2605-F1" },
       { name: "weight_kg", label: "Fresh (kg)", type: "number", min: 0, step: "0.001" },
       { name: "dry_weight_kg", label: "Dry (kg)", type: "number", min: 0, step: "0.001" },
       { name: "grade", label: "Grade", type: "select", options: opt("A", "B", "C") },

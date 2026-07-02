@@ -6,7 +6,6 @@ import RadialGauge from "@/components/anim/RadialGauge";
 import Meter from "@/components/anim/Meter";
 import QuickLog, { type QuickLogBatch } from "@/components/QuickLog";
 import RoutinePlanner, { type Routine } from "@/components/RoutinePlanner";
-import MyceliumBloom, { type BloomNode } from "@/components/MyceliumBloom";
 import OperationPulse from "@/components/OperationPulse";
 import { kgToG, money, DRY_FLOOR } from "@/lib/format";
 import { must, maybe, soft } from "@/lib/query";
@@ -75,8 +74,7 @@ interface ActiveBatchPick {
   id: number;
   lot_code: string;
   stage: string;
-  block_count: number | null;
-  strains: { name: string; mushroom_type: string } | null;
+  strains: { name: string } | null;
 }
 
 const num = (v: number | string | null): number => (v == null ? 0 : Number(v));
@@ -161,7 +159,7 @@ export default async function Dashboard() {
     // (same as loadCommandIndex in the layout), so we cast the row shape.
     supabase
       .from("batches")
-      .select("id,lot_code,stage,block_count,strains(name,mushroom_type)")
+      .select("id,lot_code,stage,strains(name)")
       .order("created_at", { ascending: false }),
   ]);
 
@@ -170,22 +168,10 @@ export default async function Dashboard() {
   const startedSeries = batchesWeekly.map((w) => num(w.started));
   const tasksSeries = tasksWeekly.map((w) => num(w.opened));
 
-  const activePicks = ((batchPickRes.data as ActiveBatchPick[] | null) ?? []).filter((b) =>
-    ACTIVE_STAGES.has(b.stage),
-  );
-  const activeBatches: QuickLogBatch[] = activePicks
+  const activeBatches: QuickLogBatch[] = ((batchPickRes.data as ActiveBatchPick[] | null) ?? [])
+    .filter((b) => ACTIVE_STAGES.has(b.stage))
     .slice(0, 60)
     .map((b) => ({ id: b.id, lot_code: b.lot_code, stage: b.stage, strain: b.strains?.name ?? null }));
-
-  // Nodes for the living map (#5): every active lot, placed by stage.
-  const bloomNodes: BloomNode[] = activePicks.map((b) => ({
-    id: b.id,
-    lot_code: b.lot_code,
-    stage: b.stage,
-    strain: b.strains?.name ?? null,
-    type: b.strains?.mushroom_type ?? null,
-    units: b.block_count ?? 0,
-  }));
 
   // Live vitals for the reactive ambient background (#4).
   const vitals = {
@@ -203,8 +189,6 @@ export default async function Dashboard() {
         <div className="eyebrow">Operation</div>
         <h1 className="section">Today&rsquo;s state of the mycelium</h1>
       </div>
-
-      <MyceliumBloom nodes={bloomNodes} />
 
       <RoutinePlanner routines={routineRows as Routine[]} />
 

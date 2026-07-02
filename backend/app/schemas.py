@@ -183,6 +183,7 @@ class HarvestCreate(BaseModel):
     weight_kg: float = 0.0
     dry_weight_kg: float = 0.0
     grade: str = "A"
+    sku: str = ""
     picker_id: int | None = None
     labor_minutes: float = 0.0
     notes: str = ""

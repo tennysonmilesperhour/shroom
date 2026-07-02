@@ -3042,99 +3042,132 @@ html[data-pulse-burst="1"] .qbg { animation: qbg-flare 4s var(--ease-out) 1; }
   html[data-pulse="alert"] .qbg::after { animation: none; }
 }
 
-/* ── 22. Mycelium bloom — dashboard centerpiece (#5) ─────────────────────────
-   Radial living map of active lots: colonizing at the core, harvesting at the
-   rim, sized by units, colored by type. */
-.bloom-wrap {
-  display: grid;
-  grid-template-columns: minmax(280px, 420px) 1fr;
-  gap: var(--space-6);
+/* ── 22. Flush label (print) ────────────────────────────────────────────────
+   Screen: a centered preview with size presets + Print button. Print: only the
+   label sheet, monochrome, at the exact stock size (@page injected by
+   PrintLabel). Fixed black-on-white so it prints crisply from any theme. */
+.label-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  margin-bottom: var(--space-5);
+  gap: var(--space-5);
+  padding: var(--space-7) var(--space-4);
 }
-@media (max-width: 880px) {
-  .bloom-wrap { grid-template-columns: 1fr; gap: var(--space-4); }
-  .bloom-figure { max-width: 360px; margin: 0 auto; }
+.label-toolbar-wrap {
+  width: min(560px, 92vw);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  align-items: center;
 }
-.bloom-figure { position: relative; }
-.bloom { width: 100%; height: auto; display: block; overflow: visible; }
+.label-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  width: 100%;
+  flex-wrap: wrap;
+}
+.label-sizes { display: inline-flex; gap: 6px; flex-wrap: wrap; }
+.label-size-btn {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 7px 12px;
+  font-size: 12px;
+  color: var(--text-2);
+  background: oklch(60% 0.04 220 / 0.05);
+  transition: border-color 160ms var(--ease-out), color 160ms var(--ease-out);
+}
+.label-size-btn:hover { color: var(--text); border-color: var(--line-warm); }
+.label-size-btn.active {
+  color: var(--text);
+  border-color: var(--line-warm);
+  box-shadow: inset 0 0 0 1px var(--line-warm);
+}
+.label-hint {
+  color: var(--muted);
+  font-size: var(--text-xs);
+  max-width: 46ch;
+  text-align: center;
+  line-height: 1.5;
+}
 
-.bloom-ring {
-  stroke: var(--line-soft);
-  stroke-width: 1;
-  stroke-dasharray: 2 6;
-}
-.bloom-hyphae line {
-  stroke: var(--lumen);
-  stroke-width: 0.5;
-  opacity: 0.12;
-}
-.bloom-node {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: bloom-breathe 7s ease-in-out infinite;
-  filter: drop-shadow(0 0 4px currentColor);
-}
-.bloom-node.type-psy     { fill: var(--bruise); color: var(--bruise); }
-.bloom-node.type-fun     { fill: var(--moss);   color: var(--moss); }
-.bloom-node.type-gourmet { fill: var(--spore);  color: var(--spore); }
-.bloom-node.type-other   { fill: var(--lumen);  color: var(--lumen); }
-.bloom.reduced .bloom-node { animation: none; }
-
-@keyframes bloom-breathe {
-  0%, 100% { opacity: 0.75; transform: scale(0.96); }
-  50%      { opacity: 1;    transform: scale(1.06); }
-}
-
-.bloom-core-num {
-  font-family: var(--font-display);
-  font-weight: 360;
-  font-variation-settings: 'opsz' 144, 'SOFT' 40;
-  font-size: 34px;
-  fill: var(--text);
-  font-variant-numeric: tabular-nums;
-}
-.bloom-core-label {
+/* The label itself — fixed monochrome so print never depends on theme. */
+.label-sheet {
+  box-sizing: border-box;
+  background: #fff;
+  color: #111;
+  border: 1px solid oklch(45% 0.03 258 / 0.3);
+  border-radius: 6px;
+  box-shadow: var(--shadow-lift);
+  padding: 0.12in 0.16in;
+  display: flex;
+  flex-direction: column;
+  gap: 0.03in;
   font-family: var(--font-sans);
-  font-size: 8.5px;
+  overflow: hidden;
+}
+.label-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.label-type {
+  font-size: 8px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  fill: var(--muted);
-  font-weight: 600;
+  font-weight: 700;
+  color: #333;
 }
-
-.bloom-legend {
-  list-style: none;
-  margin: 0 0 var(--space-4);
-  padding: 0;
-  display: grid;
+.label-grade { font-size: 8px; font-weight: 700; color: #333; }
+.label-strain {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 15px;
+  line-height: 1.05;
+  color: #000;
+}
+.label-species { font-size: 8.5px; font-style: italic; color: #444; margin-top: -1px; }
+.label-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  font-size: 7.5px;
+  color: #333;
+  margin-top: auto;
+}
+.label-meta span { white-space: nowrap; }
+.label-sku-block {
+  display: flex;
+  align-items: baseline;
   gap: 6px;
-  max-width: 320px;
+  border-top: 1px solid #000;
+  margin-top: 0.03in;
+  padding-top: 0.03in;
 }
-.bloom-legend li {
-  display: grid;
-  grid-template-columns: 12px 1fr auto;
-  align-items: center;
-  gap: 10px;
-  font-size: var(--text-sm);
-  color: var(--text-2);
-  padding: 4px 0;
-  border-bottom: 1px solid var(--line-soft);
+.label-sku-caption {
+  font-size: 7px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #555;
+  font-weight: 700;
 }
-.bloom-dot { width: 9px; height: 9px; border-radius: 50%; box-shadow: 0 0 8px currentColor; }
-.bloom-dot.ring-colonization  { background: var(--indigo);  color: var(--indigo); }
-.bloom-dot.ring-spawn_to_bulk { background: var(--lumen-2); color: var(--lumen-2); }
-.bloom-dot.ring-fruiting      { background: var(--moss);    color: var(--moss); }
-.bloom-dot.ring-harvesting    { background: var(--spore);   color: var(--spore); }
-.bloom-legend-count { color: var(--text); font-weight: 600; }
+.label-sku {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  color: #000;
+}
 
-.bloom-types {
-  display: flex; flex-wrap: wrap; gap: 14px;
-  font-size: var(--text-xs);
-  color: var(--muted);
+@media print {
+  .qbg, .no-print { display: none !important; }
+  html, body { background: #fff !important; }
+  body::before { display: none !important; }
+  .label-page { min-height: 0; padding: 0; gap: 0; display: block; }
+  .label-sheet {
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    page-break-after: avoid;
+  }
+  .label-sku-block { border-top: 1px solid #000; }
 }
-.bloom-types span { display: inline-flex; align-items: center; gap: 6px; }
-.bloom-swatch { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
-.bloom-swatch.type-psy     { background: var(--bruise); }
-.bloom-swatch.type-fun     { background: var(--moss); }
-.bloom-swatch.type-gourmet { background: var(--spore); }

@@ -42,6 +42,7 @@ interface HarvestRow {
   id: number;
   harvested_on: string;
   flush_number: number;
+  sku: string | null;
   weight_kg: number;
   dry_weight_kg: number;
   dry_ratio_pct: number | null;
@@ -322,10 +323,12 @@ export default async function BatchDetailPage({
               <tr>
                 <th scope="col">Date</th>
                 <th scope="col" className="right">Flush</th>
+                <th scope="col">SKU</th>
                 <th scope="col" className="right">Fresh (g)</th>
                 <th scope="col" className="right">Dry (g)</th>
                 <th scope="col" className="right">Ratio</th>
                 <th scope="col">Grade</th>
+                <th scope="col">Label</th>
               </tr>
             </thead>
             <tbody>
@@ -333,10 +336,21 @@ export default async function BatchDetailPage({
                 <tr key={h.id}>
                   <td>{h.harvested_on}</td>
                   <td className="right">F{h.flush_number}</td>
+                  <td className="mono">{h.sku?.trim() || <span className="muted">—</span>}</td>
                   <td className="right">{Math.round(h.weight_kg * 1000)}</td>
                   <td className="right">{Math.round(h.dry_weight_kg * 1000)}</td>
                   <td className="right">{h.dry_ratio_pct ?? "—"}%</td>
                   <td><Badge tone="muted">{h.grade ?? "—"}</Badge></td>
+                  <td>
+                    <a
+                      href={`/label/harvest/${h.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="row-anchor"
+                    >
+                      Print ↗
+                    </a>
+                  </td>
                 </tr>
               ))}
             </tbody>

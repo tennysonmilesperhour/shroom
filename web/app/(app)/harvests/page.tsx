@@ -47,6 +47,7 @@ interface BaseHarvestRow {
   batch_id: number;
   harvested_on: string;
   flush_number: number | null;
+  sku: string | null;
   weight_kg: number | null;
   dry_weight_kg: number | null;
   grade: string | null;
@@ -147,9 +148,11 @@ export default async function HarvestsPage() {
                 <th scope="col">Strain</th>
                 <th scope="col">Lot</th>
                 <th scope="col" className="right">Flush</th>
+                <th scope="col">SKU</th>
                 <th scope="col" className="right">Fresh (g)</th>
                 <th scope="col" className="right">Dry (g)</th>
                 <th scope="col" className="right">Ratio</th>
+                <th scope="col">Label</th>
                 <th scope="col" className="actions-col"><span className="sr-only">Actions</span></th>
               </tr>
             </thead>
@@ -179,10 +182,25 @@ export default async function HarvestsPage() {
                     )}
                   </td>
                   <td className="right">F{r.flush_number}</td>
+                  <td className="mono">
+                    {baseHarvestById.get(r.harvest_id)?.sku?.trim() || (
+                      <span className="muted">—</span>
+                    )}
+                  </td>
                   <td className="right">{r.fresh_g}</td>
                   <td className="right">{r.dry_g}</td>
                   <td className="right">
                     {r.dry_ratio_pct}%{r.below_floor ? " ⚠" : ""}
+                  </td>
+                  <td>
+                    <a
+                      href={`/label/harvest/${r.harvest_id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="row-anchor"
+                    >
+                      Print ↗
+                    </a>
                   </td>
                   <td className="actions-col">
                     {(() => {
