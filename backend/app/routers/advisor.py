@@ -23,7 +23,7 @@ from ..database import get_db
 
 router = APIRouter(tags=["advisor"])
 
-ADVISOR_MODEL = os.environ.get("SHROOM_ADVISOR_MODEL", "claude-sonnet-4-6")
+ADVISOR_MODEL = os.environ.get("SHROOM_ADVISOR_MODEL", "claude-sonnet-4-5")
 
 
 def build_grow_context(db: Session) -> str:

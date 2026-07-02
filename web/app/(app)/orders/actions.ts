@@ -7,7 +7,7 @@ import type { EntityResult } from "@/components/EntityForm";
 
 export async function addOrder(formData: FormData): Promise<EntityResult> {
   const order_number = String(formData.get("order_number") ?? "").trim();
-  const customer_id = Number(formData.get("customer_id") ?? NaN);
+  const customer_id = Number(String(formData.get("customer_id") ?? "").trim() || NaN);
   const channel = String(formData.get("channel") ?? "wholesale").trim();
   const order_date = String(formData.get("order_date") ?? "").trim();
   const financial_status = String(formData.get("financial_status") ?? "pending").trim();

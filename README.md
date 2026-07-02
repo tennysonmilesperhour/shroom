@@ -198,5 +198,5 @@ POST /api/advisor/ask                             live-context AI grow advisor
 |---|---|---|
 | `SHROOM_DB_URL` | Database URL | `sqlite:///./shroom.db` |
 | `ANTHROPIC_API_KEY` | Enables the live AI advisor (optional) | unset → advisor returns context only |
-| `SHROOM_ADVISOR_MODEL` | Advisor model id | `claude-sonnet-4-6` |
+| `SHROOM_ADVISOR_MODEL` | Advisor model id | `claude-sonnet-4-5` |
 | `PORT` | Server port | `8000` |

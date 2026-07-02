@@ -287,7 +287,9 @@ class InventoryItem(Base):
 
     @property
     def needs_reorder(self) -> bool:
-        return self.quantity_on_hand <= self.reorder_threshold
+        # A zero threshold means "not tracked for reorder" — otherwise every
+        # untracked item is permanently flagged low.
+        return self.reorder_threshold > 0 and self.quantity_on_hand <= self.reorder_threshold
 
 
 class Customer(Base):

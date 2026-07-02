@@ -217,7 +217,11 @@ views.recall = async () => {
     $('recall-result').innerHTML = `
       <div class="grid kpis">
         <div class="card kpi"><div class="label">Harvests</div><div class="value">${t.harvests}</div></div>
-        <div class="card kpi"><div class="label">Units out</div><div class="value">${t.total_units_distributed}</div></div>
+        <div class="card kpi"><div class="label">Units out</div><div class="value">${
+          Object.keys(t.units_distributed_by_uom || {}).length
+            ? Object.entries(t.units_distributed_by_uom).map(([u, q]) => `${q} ${u}`).join(' · ')
+            : t.total_units_distributed
+        }</div></div>
         <div class="card kpi"><div class="label">Orders hit</div><div class="value">${t.affected_order_count}</div></div>
         <div class="card kpi"><div class="label">Customers hit</div><div class="value">${t.affected_customer_count}</div></div>
       </div>

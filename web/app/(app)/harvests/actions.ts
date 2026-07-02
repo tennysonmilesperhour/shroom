@@ -6,7 +6,7 @@ import { enqueueSync } from "@/lib/sync";
 import type { EntityResult } from "@/components/EntityForm";
 
 export async function addHarvest(formData: FormData): Promise<EntityResult> {
-  const batch_id = Number(formData.get("batch_id") ?? NaN);
+  const batch_id = Number(String(formData.get("batch_id") ?? "").trim() || NaN);
   const harvested_on = String(formData.get("harvested_on") ?? "").trim();
   const flush_number = Number(formData.get("flush_number") ?? 1);
   const fresh_g = Number(formData.get("fresh_g") ?? 0);

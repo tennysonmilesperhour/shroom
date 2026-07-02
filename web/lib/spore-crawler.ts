@@ -17,7 +17,7 @@
 // `spore_crawl_runs` for observability.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { normalizeUrl } from "@/lib/external";
+import { normalizeUrl, isPublicHttpUrl } from "@/lib/external";
 
 const STOCK_SIGNALS = [
   /in\s*stock/i,
@@ -75,12 +75,15 @@ interface Listing {
 }
 
 async function fetchText(url: string): Promise<string | null> {
+  // SSRF guard: only fetch public http(s) hosts. Redirects are not followed so
+  // a public URL can't bounce the server into a private/link-local address.
+  if (!isPublicHttpUrl(url)) return null;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
     const res = await fetch(url, {
       signal: controller.signal,
-      redirect: "follow",
+      redirect: "manual",
       headers: {
         // A descriptive UA; many storefronts reject blank agents.
         "user-agent": "ShroomOS-SporeCrawler/1.0 (+sourcing-bot)",

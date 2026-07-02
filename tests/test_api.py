@@ -113,3 +113,46 @@ def test_circular_economy(client):
     ce = client.get("/api/analytics/circular-economy").json()
     assert ce["spent_substrate_kg"] > 0
     assert ce["estimated_co2e_diverted_kg"] > 0
+
+
+def test_task_patch_is_partial(client):
+    """A PATCH with a single field must not reset the task's other fields."""
+    created = client.post(
+        "/api/tasks",
+        json={"title": "Dunk & reset SG F2", "description": "note", "priority": "high"},
+    )
+    assert created.status_code == 201
+    tid = created.json()["id"]
+    patched = client.patch(f"/api/tasks/{tid}", json={"status": "done"})
+    assert patched.status_code == 200
+    body = patched.json()
+    assert body["status"] == "done"
+    # These must survive the partial update rather than revert to schema defaults.
+    assert body["priority"] == "high"
+    assert body["description"] == "note"
+
+
+def test_recall_units_by_uom(client):
+    """Recall reports distributed quantity bucketed by unit of measure."""
+    t = client.get("/api/analytics/recall/STG-2605").json()
+    assert t["units_distributed_by_uom"].get("g") == 28
+
+
+def test_strain_lineage_and_bad_parent(client):
+    """Lineage walk works, and an unknown lineage parent is rejected (which also
+    forecloses the self-referential infinite-loop path)."""
+    parent = client.post("/api/strains", json={"name": "Lineage Parent"})
+    assert parent.status_code == 201
+    pid = parent.json()["id"]
+    child = client.post(
+        "/api/strains", json={"name": "Lineage Child", "lineage_parent_id": pid}
+    )
+    assert child.status_code == 201
+    cid = child.json()["id"]
+    lineage = client.get(f"/api/strains/{cid}/lineage").json()
+    assert any(a["id"] == pid for a in lineage["ancestors"])
+
+    bad = client.post(
+        "/api/strains", json={"name": "Orphan", "lineage_parent_id": 999999}
+    )
+    assert bad.status_code == 400

@@ -7,7 +7,7 @@ import type { EntityResult } from "@/components/EntityForm";
 
 export async function addPurchaseOrder(formData: FormData): Promise<EntityResult> {
   const reference = String(formData.get("reference") ?? "").trim();
-  const vendor_id = Number(formData.get("vendor_id") ?? NaN);
+  const vendor_id = Number(String(formData.get("vendor_id") ?? "").trim() || NaN);
   const status = String(formData.get("status") ?? "ordered").trim();
   const ordered_at = String(formData.get("ordered_at") ?? "").trim();
   const expected_at = String(formData.get("expected_at") ?? "").trim();

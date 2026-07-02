@@ -45,6 +45,14 @@ function buildPatch(entity: EntityDef, formData: FormData): Record<string, unkno
       patch[f.name] = val.trim() === "" ? null : Number(val);
       continue;
     }
+    if (f.type === "select") {
+      // Enum select. If the stored value isn't among this form's options, the
+      // browser renders the empty "—" fallback; submitting that would blank a
+      // column the user never intended to change. Treat empty as "unchanged".
+      if (val.trim() === "") continue;
+      patch[f.name] = val;
+      continue;
+    }
     patch[f.name] = val;
   }
   return patch;
