@@ -3001,3 +3001,140 @@ html[data-theme="light"] .theme-toggle-thumb { left: calc(100% - 21px); color: v
 @media (prefers-reduced-motion: reduce) {
   .theme-toggle-thumb { transition: none; }
 }
+
+/* ── 21. Reactive ambient background (#4) ────────────────────────────────────
+   The QuantumBackground network responds to live operation vitals that
+   OperationPulse publishes on <html> (--pulse-opacity, --pulse-speed,
+   data-pulse, data-pulse-burst). All values fall back to calm defaults, so the
+   background is unchanged on pages that publish nothing. */
+.qbg {
+  opacity: var(--pulse-opacity, 1);
+  transition: opacity 1200ms var(--ease-out), filter 800ms var(--ease-out);
+}
+/* Speed: livelier network when the operation is busy (shorter durations). */
+.qbg .hypha  { animation-duration: calc(14s / var(--pulse-speed, 1)); }
+.qbg .node   { animation-duration: calc(7s  / var(--pulse-speed, 1)); }
+.qbg .trav   { animation-duration: calc(22s / var(--pulse-speed, 1)); }
+.qbg .trav.b { animation-duration: calc(17s / var(--pulse-speed, 1)); }
+.qbg .trav.c { animation-duration: calc(28s / var(--pulse-speed, 1)); }
+
+/* Attention wash: rooms out of spec warm the field and turn drifting nodes amber. */
+html[data-pulse="alert"] .qbg .node,
+html[data-pulse="alert"] .qbg .spark { fill: var(--spore); }
+html[data-pulse="alert"] .qbg::after {
+  content: "";
+  position: absolute; inset: 0;
+  pointer-events: none;
+  background: radial-gradient(60% 50% at 50% 26%, oklch(80% 0.15 75 / 0.10), transparent 70%);
+  animation: breathe 6s ease-in-out infinite;
+}
+
+/* Harvest flare: a single brightening pulse when a fresh harvest lands. */
+@keyframes qbg-flare {
+  0%   { filter: brightness(1); }
+  18%  { filter: brightness(1.7) saturate(1.25); }
+  100% { filter: brightness(1); }
+}
+html[data-pulse-burst="1"] .qbg { animation: qbg-flare 4s var(--ease-out) 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-pulse-burst="1"] .qbg { animation: none; }
+  html[data-pulse="alert"] .qbg::after { animation: none; }
+}
+
+/* ── 22. Mycelium bloom — dashboard centerpiece (#5) ─────────────────────────
+   Radial living map of active lots: colonizing at the core, harvesting at the
+   rim, sized by units, colored by type. */
+.bloom-wrap {
+  display: grid;
+  grid-template-columns: minmax(280px, 420px) 1fr;
+  gap: var(--space-6);
+  align-items: center;
+  margin-bottom: var(--space-5);
+}
+@media (max-width: 880px) {
+  .bloom-wrap { grid-template-columns: 1fr; gap: var(--space-4); }
+  .bloom-figure { max-width: 360px; margin: 0 auto; }
+}
+.bloom-figure { position: relative; }
+.bloom { width: 100%; height: auto; display: block; overflow: visible; }
+
+.bloom-ring {
+  stroke: var(--line-soft);
+  stroke-width: 1;
+  stroke-dasharray: 2 6;
+}
+.bloom-hyphae line {
+  stroke: var(--lumen);
+  stroke-width: 0.5;
+  opacity: 0.12;
+}
+.bloom-node {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: bloom-breathe 7s ease-in-out infinite;
+  filter: drop-shadow(0 0 4px currentColor);
+}
+.bloom-node.type-psy     { fill: var(--bruise); color: var(--bruise); }
+.bloom-node.type-fun     { fill: var(--moss);   color: var(--moss); }
+.bloom-node.type-gourmet { fill: var(--spore);  color: var(--spore); }
+.bloom-node.type-other   { fill: var(--lumen);  color: var(--lumen); }
+.bloom.reduced .bloom-node { animation: none; }
+
+@keyframes bloom-breathe {
+  0%, 100% { opacity: 0.75; transform: scale(0.96); }
+  50%      { opacity: 1;    transform: scale(1.06); }
+}
+
+.bloom-core-num {
+  font-family: var(--font-display);
+  font-weight: 360;
+  font-variation-settings: 'opsz' 144, 'SOFT' 40;
+  font-size: 34px;
+  fill: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.bloom-core-label {
+  font-family: var(--font-sans);
+  font-size: 8.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  fill: var(--muted);
+  font-weight: 600;
+}
+
+.bloom-legend {
+  list-style: none;
+  margin: 0 0 var(--space-4);
+  padding: 0;
+  display: grid;
+  gap: 6px;
+  max-width: 320px;
+}
+.bloom-legend li {
+  display: grid;
+  grid-template-columns: 12px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--text-sm);
+  color: var(--text-2);
+  padding: 4px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+.bloom-dot { width: 9px; height: 9px; border-radius: 50%; box-shadow: 0 0 8px currentColor; }
+.bloom-dot.ring-colonization  { background: var(--indigo);  color: var(--indigo); }
+.bloom-dot.ring-spawn_to_bulk { background: var(--lumen-2); color: var(--lumen-2); }
+.bloom-dot.ring-fruiting      { background: var(--moss);    color: var(--moss); }
+.bloom-dot.ring-harvesting    { background: var(--spore);   color: var(--spore); }
+.bloom-legend-count { color: var(--text); font-weight: 600; }
+
+.bloom-types {
+  display: flex; flex-wrap: wrap; gap: 14px;
+  font-size: var(--text-xs);
+  color: var(--muted);
+}
+.bloom-types span { display: inline-flex; align-items: center; gap: 6px; }
+.bloom-swatch { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
+.bloom-swatch.type-psy     { background: var(--bruise); }
+.bloom-swatch.type-fun     { background: var(--moss); }
+.bloom-swatch.type-gourmet { background: var(--spore); }
