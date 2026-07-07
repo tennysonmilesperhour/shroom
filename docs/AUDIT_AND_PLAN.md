@@ -116,6 +116,7 @@ The plan is sequenced so that each phase rests on the one before it. Two **keyst
 4.2 **Ship the flagship innovations from the README roadmap** that are already scaffolded: computer-vision contamination early-warning, the demand-driven production planner, and the strain-portfolio optimizer. These are the features no SMB competitor has.
 4.3 Multi-user/roles/org isolation if you're selling beyond one operation (builds on Phase 0.3).
 4.4 Grow web test coverage to cover the traceability spine and the create/edit flows.
+4.5 _(Added in second pass — see Part 4)_ Caching & performance pass (Prompt 5.1), Advisor v2 with streaming + entity deep links (Prompt 5.2 — the best fusion of the AI feature with the cross-linking priority; requires Keystone 1), and reports/traceability drill-through + date ranges + CSV export (Prompt 5.3).
 
 **Suggested order of attack:** Phase 0 → Phase 1 → Phase 2 → Phase 3, with Phase 4 items slotted in opportunistically. Phases 1 and 2 are the ones that directly deliver the "intuitive, beautiful, cross-linked, easy-to-input" experience you described, and they're built on the two keystones, so build those keystones first.
 
@@ -547,6 +548,140 @@ sync; the /sync screen accurately describes behavior; typecheck/lint/build pass.
 
 ---
 
+## Part 4 — Second-pass review addendum
+
+_A follow-up review pass over the surfaces the first audit didn't cover in depth: the API routes, the shared mutation libs, the dashboard, reports, and traceability._
+
+### 4.1 New findings
+
+**F1 — Zero caching; the layout re-fetches ~800 rows on every navigation.**
+Every page is `export const dynamic = "force-dynamic"`, and the shared app layout (`web/app/(app)/layout.tsx`) rebuilds the command-palette index — four queries × 200 rows (batches, strains, customers, orders) — **on every single page view**. The dashboard adds eight more parallel queries, one of which fetches *all* batch rows just to count them in JS. At current scale it works; at any real scale (or on Vercel cold paths) every click pays five-plus round trips to Supabase before paint. The fix is targeted caching, not a rearchitecture: cache the palette index and slow-moving tables (strains, guides, vendors, rooms) with `unstable_cache` + tag revalidation triggered from the existing mutation actions, and keep `force-dynamic` only where freshness genuinely matters (dashboard vitals, environment).
+
+**F2 — The advisor is a real differentiator running at a fraction of its potential.**
+`web/app/api/advisor/route.ts` is sensibly hardened for casual misuse (server-side key, question length cap, injection blocklist, rate limiter), but: it's **single-turn** (no conversation memory), **non-streaming** (the user stares at a spinner for the full generation), its context dump omits tasks/orders/customers entirely, the in-memory rate limiter resets per serverless instance (near-useless on Vercel — the code comment admits it), and the IP key trusts a spoofable `x-forwarded-for`. The strategic miss: advisor answers mention lots, strains, and rooms **as plain text**. Once `<EntityRef>` exists (Prompt 1.1), the advisor should resolve those mentions into deep links — "SG F2 stalled on CO₂ (see **QB-042** →)" — which turns the advisor into a navigation surface and directly serves the click-a-node-to-jump goal. This is the single highest-leverage fusion of the AI feature and the UX priority.
+
+**F3 — Reports and traceability have great data and no onward flow.**
+`reports/page.tsx` (strain scoreboard, circular economy, commerce KPIs, customer LTV) and `traceability/page.tsx` (which nicely pre-traces the latest lot) are read-only cul-de-sacs: scoreboard strains, best-seller products, LTV customers, and recall-trace results are all **unlinked text**; there are no date-range filters (ties into the missing URL state, Prompt 1.4) and no CSV export — a real gap for a compliance tool whose recall trace exists to be *handed to someone*.
+→ *Action: the EntityRef sweep (Prompt 1.3) must explicitly include the reports scoreboard/LTV/best-seller rows and the traceability trace results; the rest is Prompt 5.3.*
+
+**F4 — Cron auth is opt-in by omission (confirmed).** `/api/cron/spore-crawl` only checks the bearer token if `CRON_SECRET` is set; unset in Vercel = publicly triggerable crawler. Folded into Prompt 0.3's acceptance criteria.
+
+**F5 — Solid pieces worth naming:** `crud.ts`'s partial-edit handling (the `__fields` allowlist so unrendered fields are never blanked, blank-number = "leave unchanged") is careful, reusable work — Keystone 2 should build on it, not replace it. The in-app `FeedbackPanel` → `feedback_notes` loop (screen-tagged feedback) is a quiet gem; consider surfacing the collected notes somewhere an operator will actually see them.
+
+### 4.2 Additional handoff prompts
+
+### Prompt 5.1 — Caching & performance pass
+
+```
+Context: This Next.js 15 + Supabase app marks every page `force-dynamic` and
+does all reads server-side via createServiceClient(). The shared layout
+(web/app/(app)/layout.tsx) rebuilds a command-palette index — 4 queries x 200
+rows (batches/strains/customers/orders) — on EVERY page navigation. The
+dashboard (web/app/(app)/page.tsx) runs 8 more parallel queries, including
+fetching all batch rows just to count stages in JS. Mutations flow through
+web/lib/crud.ts and per-route actions.ts, all of which already call
+revalidatePath — so tag-based invalidation has natural hook points.
+
+Task:
+1. Wrap the palette index loader in unstable_cache with cache tags per entity
+   (e.g. "strains", "batches"), revalidated via revalidateTag from the create/
+   update/delete actions in crud.ts and the per-route actions. Target: a page
+   navigation does ZERO palette queries when nothing changed.
+2. Apply the same tag-cache treatment to slow-moving reference reads used
+   across pages (strains list for pickers, rooms, vendors, reference guides).
+   Keep force-dynamic ONLY where freshness matters per-request (dashboard
+   vitals, environment status, sync status).
+3. Replace fetch-all-rows-to-count patterns with head:true count queries or a
+   small view (dashboard batch stage counts, task status counts).
+4. Measure before/after: log or note Supabase query counts per navigation for
+   dashboard, batches list, and a detail page.
+
+Constraints: do not change visible behavior or data freshness anywhere a user
+would notice staleness after their OWN write (their mutation must revalidate
+the tags it touches). typecheck/lint/build pass.
+Acceptance: navigations no longer re-run the 4 palette queries; a create/edit/
+delete still shows up immediately; dashboard query count is reduced; notes on
+the measured improvement are in the PR description.
+```
+
+### Prompt 5.2 — Advisor v2: streaming, memory, and entity deep links
+
+```
+Context: web/app/api/advisor/route.ts is a server-side AI grow advisor: it
+assembles a live-operation context block (active batches, recent harvests,
+environment, issue log, low stock) and calls the Anthropic Messages API
+non-streaming, single-turn. The UI is web/app/(app)/advisor/page.tsx. Hardening
+exists (server-side key, 500-char cap, injection blocklist, in-memory rate
+limiter keyed on spoofable x-forwarded-for that resets per serverless
+instance). The app has a canonical entity-linking layer: hrefFor() in
+web/lib/links.ts and <EntityRef> in web/components/EntityRef.tsx — advisor
+answers currently mention lots/strains/rooms as PLAIN TEXT, which wastes the
+app's biggest navigation asset.
+
+Task:
+1. STREAMING: switch the route to the Anthropic streaming API and stream tokens
+   to the client (SSE or ReadableStream); render progressively in the advisor
+   UI with the existing design language. Keep the non-streaming JSON error
+   contract for failures.
+2. ENTITY DEEP LINKS (the headline feature): after/while rendering, resolve
+   entity mentions in the answer to links. Robust approach: build a mention map
+   server-side from the SAME context data (lot_code -> batch id, strain name ->
+   strain id, room name -> room id) and have the client linkify exact matches
+   via EntityRef. Do NOT ask the model to emit URLs. An advisor answer that
+   says lot "QB-042" must arrive as a working link to /batches/<id>.
+3. CONVERSATION MEMORY: keep a short rolling history (last ~6 turns) client-side
+   and send it as messages[], so follow-ups work. Cap total tokens sensibly.
+4. CONTEXT GAPS: add open tasks and recent orders/customers summaries to
+   buildContext() so business questions are answerable too.
+5. RATE LIMITING: replace the per-instance Map with a durable limiter (a tiny
+   Supabase table with a window column is fine — no new infra dependency), and
+   note in a comment that IP keying is best-effort.
+6. Make the model configurable as it is now (SHROOM_ADVISOR_MODEL env var), and
+   consult the claude-api reference for the current recommended default model
+   id rather than hardcoding an old one.
+
+Acceptance: answers stream in; entity mentions in answers are clickable
+EntityRef links that navigate correctly; follow-up questions retain context;
+rate limiting survives across instances; typecheck/lint/build pass.
+```
+
+### Prompt 5.3 — Reports & traceability: drill-through, date ranges, export
+
+```
+Context: web/app/(app)/reports/page.tsx renders strain scoreboard, dry-ratio
+rollup, circular-economy, commerce KPIs, best sellers, and customer LTV —
+all as read-only, unlinked, all-time aggregates. web/app/(app)/traceability/
+page.tsx does a one-click FSMA-204 recall trace (recall_trace RPC via
+traceLot) and helpfully pre-traces the latest lot, but its results are also
+dead text and there is no export — a problem for a compliance feature whose
+output exists to be handed to a regulator or buyer. The app has <EntityRef>
+(web/components/EntityRef.tsx) for canonical entity links and URL search-param
+state conventions established on the list pages (see the filters work in the
+nav/breadcrumbs PR).
+
+Task:
+1. DRILL-THROUGH: every entity in reports (scoreboard strains, best-seller
+   products, LTV customers) and every node in the traceability trace output
+   (lot -> batch, harvests, orders, customers) becomes an <EntityRef> link.
+2. DATE RANGES: add a URL-param date-range control (this quarter / YTD / all /
+   custom) to reports, applied to the time-based aggregates. Where a backing
+   view is all-time-only, either parameterize the query or compute the windowed
+   aggregate from the underlying tables — do not silently show all-time data
+   under a date label.
+3. EXPORT: add CSV export for (a) each reports table and (b) the full recall
+   trace (a route handler that streams text/csv is fine). The recall CSV must
+   include lot, harvest dates, order numbers, customer names/contacts — the
+   fields someone actually needs during a recall.
+4. Keep the editorial design language; reuse PageHeader/DataTable if the
+   consolidation prompt has landed, otherwise match existing markup patterns.
+
+Acceptance: every report/trace entity navigates on click; date-range state
+lives in the URL and survives refresh; CSV downloads open correctly in a
+spreadsheet; typecheck/lint/build pass.
+```
+
+---
+
 ## Appendix — Quick reference: files that matter most
 
 | Concern | Key files |
@@ -561,3 +696,6 @@ sync; the /sync screen accurately describes behavior; typecheck/lint/build pass.
 | Schema | `supabase/migrations/*` (note the timestamp collisions) |
 | Sync loop | `web/lib/sync.ts`, `web/app/(app)/sync/actions.ts`, `sheet_sync_queue` |
 | Deploy / CI | `web/vercel.json`, `web/next.config.mjs`, `.github/workflows/*` |
+| Advisor | `web/app/api/advisor/route.ts`, `web/app/(app)/advisor/page.tsx` |
+| Reports / recall | `web/app/(app)/reports/page.tsx`, `web/app/(app)/traceability/*`, `recall_trace` RPC |
+| Perf hotspots | `web/app/(app)/layout.tsx` (palette index per-nav), `force-dynamic` everywhere |
