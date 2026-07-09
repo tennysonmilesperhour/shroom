@@ -265,4 +265,83 @@ views.advisor = async () => {
   $('adv-go').addEventListener('click', () => ask($('adv-q').value));
 };
 
+// --- Sheet Sync (two-way: Excel / Google Sheet <-> app) ---
+// POST helper that surfaces the API's error detail instead of swallowing it.
+const POST_CHECKED = async (path, body) => {
+  const r = await fetch(`/api${path}`, {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body || {}),
+  });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data.detail || `${path} -> ${r.status}`);
+  return data;
+};
+
+views.sync = async () => {
+  const root = $('sync');
+  root.innerHTML = '<div class="loading">Checking sync configuration…</div>';
+  const kindLabel = {
+    google_sheet: 'Google Sheet (live, cell-level)',
+    drive_xlsx: 'Excel .xlsx on Google Drive',
+    local_xlsx: 'Local .xlsx file',
+  };
+  const render = (s) => {
+    const rt = s.read_source, wt = s.write_target;
+    const rows = Object.entries(s.pushable_rows || {})
+      .map(([k, v]) => `<div class="env-row"><span>${k}</span><span class="badge ${v ? 'green' : 'muted'}">${v} rows</span></div>`).join('');
+    const badge = (ok, yes, no) => `<span class="badge ${ok ? 'green' : 'amber'}">${ok ? yes : no}</span>`;
+    root.innerHTML = `
+      <h2 class="section">Sheet Sync</h2>
+      <p class="lead">Two-way bridge between the app and your Master Cultivation Reference —
+        an Excel workbook or a Google Sheet as the single source of truth.</p>
+      <div class="grid two">
+        <div class="card">
+          <h3>Pull — Sheet → App</h3>
+          <div class="env-row"><span>Read source</span>${badge(rt.configured, kindLabel[rt.kind] || rt.kind, 'not configured')}</div>
+          <div class="muted" style="margin:6px 0 12px">${rt.ref || 'Set MASTER_SHEET_PATH or MASTER_SHEET_FILE_ID on the server.'}</div>
+          <button class="primary" id="sync-pull">Import from sheet</button>
+        </div>
+        <div class="card">
+          <h3>Push — App → Sheet</h3>
+          <div class="env-row"><span>Write target</span>${badge(wt.configured, kindLabel[wt.kind] || wt.kind, 'not configured')}</div>
+          <div class="env-row"><span>Writable</span>${badge(wt.writable, 'ready', 'needs credentials')}</div>
+          <div class="env-row"><span>Live mirror on create</span>${badge(s.mirror_enabled, 'on', 'off')}</div>
+          <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+            <button class="primary" id="sync-push">Push to sheet</button>
+            <button id="sync-download">Download .xlsx</button>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:16px">
+        <h3>What the app would push</h3>
+        ${rows || '<div class="muted">No data yet.</div>'}
+      </div>
+      <div class="card" style="margin-top:16px" id="sync-log"><span class="muted">Actions and results appear here.</span></div>`;
+
+    const log = (html, cls = '') => { $('sync-log').innerHTML = `<div class="${cls}">${html}</div>`; };
+    const busy = (btn, fn) => async () => {
+      const label = btn.textContent; btn.disabled = true; btn.textContent = '…';
+      try { await fn(); } catch (e) { log(`<b>Error:</b> ${e.message}`, 'badge red'); }
+      finally { btn.disabled = false; btn.textContent = label; views.sync(); }
+    };
+
+    $('sync-pull').addEventListener('click', busy($('sync-pull'), async () => {
+      const r = await POST_CHECKED('/sync/pull');
+      log(`Imported from sheet → app: <b>${JSON.stringify(r.imported)}</b>`);
+    }));
+    $('sync-push').addEventListener('click', busy($('sync-push'), async () => {
+      const r = await POST_CHECKED('/sync/push');
+      log(`Pushed app → ${r.target.kind}: <b>${JSON.stringify(r.written)}</b>`);
+    }));
+    $('sync-download').addEventListener('click', () => {
+      window.location = '/api/sync/workbook.xlsx';
+    });
+  };
+  try {
+    render(await API('/sync/status'));
+  } catch (e) {
+    root.innerHTML = `<h2 class="section">Sheet Sync</h2><div class="card badge red">Could not load status: ${e.message}</div>`;
+  }
+};
+
 views.dashboard();

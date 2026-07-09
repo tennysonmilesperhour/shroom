@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from .. import models, schemas
 from ..database import get_db
+from ..sheet import mirror
 
 router = APIRouter(tags=["operations"])
 
@@ -47,6 +48,7 @@ def create_harvest(payload: schemas.HarvestCreate, db: Session = Depends(get_db)
         batch.stage = "harvesting"
     db.commit()
     db.refresh(harvest)
+    mirror.mirror("harvests", harvest)  # best-effort live append to the sheet
     return harvest
 
 

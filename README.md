@@ -150,6 +150,30 @@ python -m backend.app.sheet.importer --target supabase
 Imports are idempotent (upsert on natural keys / content hashes), so they can run
 on a schedule. Full tab→table mapping: [`supabase/SHEET_MAPPING.md`](supabase/SHEET_MAPPING.md).
 
+### Two-way sync — changes in the app flow back to the sheet
+
+The sheet is no longer read-only to the app: the **Sheet Sync** view (and the
+`/api/sync/*` endpoints) push the app's data *back* into the workbook, in the
+same tab/column layout the importer reads — so it round-trips.
+
+| Direction | Endpoint | What it does |
+|-----------|----------|--------------|
+| Sheet → App | `POST /api/sync/pull` | Import the workbook into the DB (the importer). |
+| App → Sheet | `POST /api/sync/push` | Rewrite the owned tabs (Strain Library, Grow Cycle Log, Harvest Tracker, Buyers & Pricing) from the DB. |
+| App → file | `GET /api/sync/workbook.xlsx` | Download the app's data as a Master-Reference-layout `.xlsx`. |
+| live | *(automatic)* | With `SHEET_SYNC_MIRROR=1`, creating a strain/batch/harvest/customer in the app **appends that row to the sheet** immediately. |
+
+Three write backends are auto-selected from the environment (see
+`backend/.env.example`), so the source of truth can be an **Excel `.xlsx`** (local
+or on Drive) or a **native Google Sheet** (live, cell-level via the Sheets API):
+
+* `MASTER_SHEET_GOOGLE_ID` → a Google Sheet (recommended for true two-way sync)
+* `MASTER_SHEET_FILE_ID` → an `.xlsx` on Drive (download-modify-reupload)
+* `MASTER_SHEET_PATH` → a local `.xlsx`
+
+Writes need Google credentials with write scope (`drive.file` + `spreadsheets`);
+reads work with a read-only token or a local file.
+
 ---
 
 ## 4. Architecture
@@ -160,7 +184,7 @@ backend/app/
   models.py          Domain model — cultivation, ops, business, traceability spine
   schemas.py         Pydantic v2 request/response contracts
   seed.py            Realistic Quantum Blue Mycology demo dataset
-  sheet/             Live importer: Master Cultivation Reference .xlsx -> both stores
+  sheet/             Two-way sync: import (parse/sinks) + export (layout/export/writer/mirror)
   main.py            FastAPI app; mounts /api routers + serves the SPA
   routers/
     cultivation.py   strains, recipes, rooms, batches, lifecycle, contamination
@@ -169,8 +193,9 @@ backend/app/
     business.py      customers, products, multi-channel orders
     analytics.py     dashboard, yield, dry-ratio, recall, circular-economy, labor
     advisor.py       server-side AI advisor with live grow context
-frontend/            no-build vanilla-JS dashboard (8 tabs)
-tests/               12 end-to-end API tests
+    sync.py          two-way sheet sync: status / pull / push / download
+frontend/            no-build vanilla-JS dashboard (9 tabs)
+tests/               end-to-end API + sheet import/export tests
 ```
 
 **Traceability spine:** `Strain → Batch(lot_code) → Harvest → OrderLine → Order →
