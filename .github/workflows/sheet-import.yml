@@ -1,12 +1,14 @@
 name: Sheet import
 
-# Manual sync of the Master Cultivation Reference .xlsx (the single source of
-# truth) into the Supabase the web app reads. Triggered on demand — by the
-# operator from the GitHub UI, or by the in-app "Sync from sheet" button on
-# /sync (which calls the GitHub workflow-dispatch API). No schedule: the sheet
-# syncs when a human asks it to.
+# Sync of the Master Cultivation Reference .xlsx (the single source of truth)
+# into the Supabase the web app reads. Runs:
+#   - daily on a schedule, so sheet edits reach the app without anyone asking;
+#   - on demand — from the GitHub UI, or the in-app "Sync from sheet" button on
+#     /sync (which calls the GitHub workflow-dispatch API).
+# The importer upserts on natural keys, so repeated runs update rows in place.
 #
-# Required repository secrets:
+# Required repository secrets (without these every run fails with
+# "No workbook source configured"):
 #   GOOGLE_SERVICE_ACCOUNT_JSON - service-account key JSON with Drive read scope,
 #                                 with the workbook shared to its email
 #   SUPABASE_URL                - https://<ref>.supabase.co
@@ -15,6 +17,9 @@ name: Sheet import
 #   MASTER_SHEET_FILE_ID        - overrides the default Drive file id
 
 on:
+  schedule:
+    # Daily at 09:00 UTC. Keeps the app current with the sheet automatically.
+    - cron: "0 9 * * *"
   workflow_dispatch:
     inputs:
       target:
