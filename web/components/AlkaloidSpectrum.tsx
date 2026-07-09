@@ -4,50 +4,62 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   hueColor,
-  potencyRadius,
   polarPoint,
   evidenceLabel,
+  POTENCY_MIN,
+  POTENCY_MAX,
   type SpectrumStrain,
 } from "@/lib/spectrum";
 
 const SIZE = 360;
 const CX = SIZE / 2;
 const CY = SIZE / 2;
-const INNER_R = 34; // empty hub
-const OUTER_R = 150; // plotting edge
-const RING_IN = 154;
-const RING_OUT = 168; // colored hue ring band
+const OUTER_R = 150; // plotting edge / wedge tip reaches here at max potency
+const HUB_R = 7; // tiny center cap where wedges converge
 
-// Colored hue ring: many wedges so angle === oklch hue.
-const RING_SEGMENTS = 72;
-
-function ringWedge(i: number): { d: string; fill: string } {
-  const a0 = (i / RING_SEGMENTS) * 360;
-  const a1 = ((i + 1) / RING_SEGMENTS) * 360;
-  // pad slightly to avoid hairline seams
-  const p0in = polarPoint(a0, 0, CX, CY, RING_IN, RING_IN);
-  const p1in = polarPoint(a1, 0, CX, CY, RING_IN, RING_IN);
-  const p0out = polarPoint(a0, 0, CX, CY, RING_OUT, RING_OUT);
-  const p1out = polarPoint(a1, 0, CX, CY, RING_OUT, RING_OUT);
-  const d = [
-    `M ${p0in.x} ${p0in.y}`,
-    `L ${p0out.x} ${p0out.y}`,
-    `A ${RING_OUT} ${RING_OUT} 0 0 0 ${p1out.x} ${p1out.y}`,
-    `L ${p1in.x} ${p1in.y}`,
-    `A ${RING_IN} ${RING_IN} 0 0 1 ${p0in.x} ${p0in.y}`,
-    "Z",
-  ].join(" ");
-  const mid = (a0 + a1) / 2;
-  return { d, fill: hueColor(mid, 70, 0.16) };
-}
+// Gap between neighbouring wedges, in degrees, so each slice reads as its own triangle.
+const WEDGE_GAP = 1.4;
+// Weakest strains still get a visible nib so every wedge is clickable.
+const RADIUS_FLOOR = 0.18;
+// <1 expands the differences between the clustered mid-potency strains.
+const RADIUS_GAMMA = 0.7;
 
 // Potency reference rings (% dry weight) drawn as dashed circles.
 const POTENCY_GUIDES = [0.5, 1.0, 1.5, 2.0, 2.5];
+
+/** Pie/coxcomb slice from the center out to `rOut`, spanning [a0, a1] degrees. */
+function wedgePath(a0: number, a1: number, rOut: number): string {
+  const p0 = polarPoint(a0, 0, CX, CY, rOut, rOut);
+  const p1 = polarPoint(a1, 0, CX, CY, rOut, rOut);
+  return [
+    `M ${CX} ${CY}`,
+    `L ${p0.x} ${p0.y}`,
+    `A ${rOut} ${rOut} 0 0 0 ${p1.x} ${p1.y}`,
+    "Z",
+  ].join(" ");
+}
 
 export default function AlkaloidSpectrum({ strains }: { strains: SpectrumStrain[] }) {
   const router = useRouter();
   const [activeId, setActiveId] = useState<number | null>(null);
   const active = strains.find((s) => s.id === activeId) ?? null;
+
+  // Sort by hue so the wedges sweep through the colour spectrum (gentle → intense),
+  // matching the character scale beneath the wheel.
+  const ordered = [...strains].sort((a, b) => a.hue - b.hue);
+  const per = 360 / ordered.length;
+
+  // Radial scale: anchor the top of the scale to the strongest strain on hand so
+  // the most potent wedge reaches the rim (less empty space), then apply a gamma
+  // curve to pull the bunched mid-potency strains apart (more length contrast).
+  const totals = ordered.map((s) => s.totalPct).filter((v): v is number => v != null);
+  const scaleMax = Math.max(totals.length ? Math.max(...totals) : POTENCY_MAX, POTENCY_MIN + 0.1);
+
+  const displayFrac = (pct: number | null): number => {
+    if (pct == null) return RADIUS_FLOOR;
+    const t = Math.min(1, Math.max(0, (pct - POTENCY_MIN) / (scaleMax - POTENCY_MIN)));
+    return RADIUS_FLOOR + (1 - RADIUS_FLOOR) * Math.pow(t, RADIUS_GAMMA);
+  };
 
   return (
     <div className="spectrum">
@@ -55,7 +67,7 @@ export default function AlkaloidSpectrum({ strains }: { strains: SpectrumStrain[
         <svg
           viewBox={`0 0 ${SIZE} ${SIZE}`}
           role="img"
-          aria-label="Strain spectrum: angle encodes reported character, distance from center encodes measured potency."
+          aria-label="Strain spectrum: each colored wedge is a strain; wedge length encodes measured potency, color encodes reported character."
         >
           <defs>
             <radialGradient id="spectrum-hub" cx="50%" cy="50%" r="50%">
@@ -67,11 +79,48 @@ export default function AlkaloidSpectrum({ strains }: { strains: SpectrumStrain[
           {/* field */}
           <circle cx={CX} cy={CY} r={OUTER_R} fill="url(#spectrum-hub)" stroke="var(--line)" />
 
-          {/* potency guide rings */}
-          {POTENCY_GUIDES.map((pct) => {
-            const r = INNER_R + potencyRadius(pct) * (OUTER_R - INNER_R);
+          {/* strain wedges — each an equal-angle slice colored by its hue */}
+          {ordered.map((s, i) => {
+            const a0 = i * per + WEDGE_GAP / 2;
+            const a1 = (i + 1) * per - WEDGE_GAP / 2;
+            const rData = displayFrac(s.totalPct) * OUTER_R;
+            const isActive = s.id === activeId;
+            const color = hueColor(s.hue, 74, 0.18);
             return (
-              <g key={pct}>
+              <a
+                key={s.id}
+                href={`/strains/${s.id}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  router.push(`/strains/${s.id}`);
+                }}
+                onMouseEnter={() => setActiveId(s.id)}
+                onMouseLeave={() => setActiveId((cur) => (cur === s.id ? null : cur))}
+                onFocus={() => setActiveId(s.id)}
+                onBlur={() => setActiveId((cur) => (cur === s.id ? null : cur))}
+                className="spectrum-wedge"
+                aria-label={`${s.name}, ${s.potencyTier ?? "potency unknown"}, ${s.totalPct ?? "?"}% total tryptamine`}
+              >
+                {/* ghost slice to the edge — gives the full pie + a generous hit area */}
+                <path d={wedgePath(a0, a1, OUTER_R)} fill={color} opacity={isActive ? 0.22 : 0.12} />
+                {/* solid slice whose length is the measured potency */}
+                <path
+                  d={wedgePath(a0, a1, rData)}
+                  fill={color}
+                  opacity={isActive ? 1 : 0.85}
+                  stroke={isActive ? "var(--text)" : "transparent"}
+                  strokeWidth={isActive ? 1.5 : 0}
+                  strokeLinejoin="round"
+                />
+              </a>
+            );
+          })}
+
+          {/* potency guide rings (drawn over the wedges, non-interactive) */}
+          {POTENCY_GUIDES.filter((pct) => pct <= scaleMax + 1e-6).map((pct) => {
+            const r = displayFrac(pct) * OUTER_R;
+            return (
+              <g key={pct} style={{ pointerEvents: "none" }}>
                 <circle
                   cx={CX}
                   cy={CY}
@@ -87,59 +136,19 @@ export default function AlkaloidSpectrum({ strains }: { strains: SpectrumStrain[
             );
           })}
 
-          {/* colored hue ring */}
-          {Array.from({ length: RING_SEGMENTS }, (_, i) => {
-            const { d, fill } = ringWedge(i);
-            return <path key={i} d={d} fill={fill} opacity={0.85} />;
-          })}
-
-          {/* character anchor labels around the ring */}
-          <text x={CX + OUTER_R + 6} y={CY + 4} className="spectrum-axis" textAnchor="start">
-            gentle
-          </text>
-          <text x={CX} y={CY - OUTER_R - 18} className="spectrum-axis" textAnchor="middle">
-            balanced · bright
-          </text>
-          <text x={CX - OUTER_R - 6} y={CY + 4} className="spectrum-axis" textAnchor="end">
-            intense
-          </text>
-
-          {/* strain dots */}
-          {strains.map((s) => {
-            const { x, y } = polarPoint(s.hue, potencyRadius(s.totalPct), CX, CY, INNER_R, OUTER_R);
-            const isActive = s.id === activeId;
-            return (
-              <a
-                key={s.id}
-                href={`/strains/${s.id}`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  router.push(`/strains/${s.id}`);
-                }}
-                onMouseEnter={() => setActiveId(s.id)}
-                onMouseLeave={() => setActiveId((cur) => (cur === s.id ? null : cur))}
-                onFocus={() => setActiveId(s.id)}
-                onBlur={() => setActiveId((cur) => (cur === s.id ? null : cur))}
-                className="spectrum-dot"
-                aria-label={`${s.name}, ${s.potencyTier ?? "potency unknown"}, ${s.totalPct ?? "?"}% total tryptamine`}
-              >
-                <circle
-                  cx={x}
-                  cy={y}
-                  r={isActive ? 9 : 6.5}
-                  fill={hueColor(s.hue, 74, 0.18)}
-                  stroke={isActive ? "var(--text)" : "oklch(98% 0 0 / 0.55)"}
-                  strokeWidth={isActive ? 2 : 1}
-                />
-                {isActive && (
-                  <text x={x} y={y - 13} className="spectrum-dot-label" textAnchor="middle">
-                    {s.name}
-                  </text>
-                )}
-              </a>
-            );
-          })}
+          {/* center cap hides the converging wedge tips */}
+          <circle cx={CX} cy={CY} r={HUB_R} fill="url(#spectrum-hub)" stroke="var(--line)" style={{ pointerEvents: "none" }} />
         </svg>
+
+        {/* character scale — color → reported character, well-aligned with the wheel's spectrum */}
+        <figcaption className="spectrum-scale">
+          <span className="spectrum-scale-bar" aria-hidden />
+          <span className="spectrum-scale-labels">
+            <span>gentle</span>
+            <span>balanced · bright</span>
+            <span>intense</span>
+          </span>
+        </figcaption>
       </figure>
 
       <div className="spectrum-side">
@@ -173,20 +182,20 @@ export default function AlkaloidSpectrum({ strains }: { strains: SpectrumStrain[
             </>
           ) : (
             <p className="muted" style={{ margin: 0 }}>
-              Hover or focus a node to read its profile. Click to open the strain.
+              Hover or focus a wedge to read its profile. Click to open the strain.
             </p>
           )}
         </div>
 
         <dl className="spectrum-legend">
           <div>
-            <dt>Distance from center</dt>
+            <dt>Wedge length</dt>
             <dd>
-              Measured total tryptamine (% dry weight) — <em>lab-grounded</em>. Outer = stronger.
+              Measured total tryptamine (% dry weight) — <em>lab-grounded</em>. Longer = stronger.
             </dd>
           </div>
           <div>
-            <dt>Angle / color</dt>
+            <dt>Wedge color</dt>
             <dd>
               Reported experiential character — <em>anecdotal</em>. Amber = gentle, cyan = bright/balanced,
               violet = intense.
