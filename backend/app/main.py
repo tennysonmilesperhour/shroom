@@ -13,7 +13,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from .database import init_db
-from .routers import advisor, analytics, business, cultivation, environment, operations
+from .routers import (
+    advisor,
+    analytics,
+    business,
+    cultivation,
+    environment,
+    operations,
+    sync,
+)
 
 
 @asynccontextmanager
@@ -43,7 +51,7 @@ def health() -> dict:
     return {"status": "ok", "service": "shroom-os"}
 
 
-for module in (cultivation, environment, operations, business, analytics, advisor):
+for module in (cultivation, environment, operations, business, analytics, advisor, sync):
     app.include_router(module.router, prefix="/api")
 
 # Serve the SPA last so /api routes take precedence.
