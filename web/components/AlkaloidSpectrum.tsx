@@ -19,10 +19,10 @@ const HUB_R = 7; // tiny center cap where wedges converge
 
 // Gap between neighbouring wedges, in degrees, so each slice reads as its own triangle.
 const WEDGE_GAP = 1.4;
-// Weakest strains still get a visible nib so every wedge is clickable.
-const RADIUS_FLOOR = 0.18;
+// Weakest strain still fills this much of the radius, so the wheel isn't hollow.
+const RADIUS_FLOOR = 0.32;
 // <1 expands the differences between the clustered mid-potency strains.
-const RADIUS_GAMMA = 0.7;
+const RADIUS_GAMMA = 0.8;
 
 // Potency reference rings (% dry weight) drawn as dashed circles.
 const POTENCY_GUIDES = [0.5, 1.0, 1.5, 2.0, 2.5];
@@ -49,15 +49,19 @@ export default function AlkaloidSpectrum({ strains }: { strains: SpectrumStrain[
   const ordered = [...strains].sort((a, b) => a.hue - b.hue);
   const per = 360 / ordered.length;
 
-  // Radial scale: anchor the top of the scale to the strongest strain on hand so
-  // the most potent wedge reaches the rim (less empty space), then apply a gamma
-  // curve to pull the bunched mid-potency strains apart (more length contrast).
+  // Radial scale: spread the wedges across the *actual* potency range on hand
+  // rather than the fixed 0.4–2.6% window, so the weakest strain starts at the
+  // floor and the strongest reaches the rim — the full radius does work, giving
+  // maximum length contrast and little empty space. A gamma curve further pulls
+  // the clustered mid-potency strains apart.
   const totals = ordered.map((s) => s.totalPct).filter((v): v is number => v != null);
-  const scaleMax = Math.max(totals.length ? Math.max(...totals) : POTENCY_MAX, POTENCY_MIN + 0.1);
+  const dataMin = totals.length ? Math.min(...totals) : POTENCY_MIN;
+  const dataMax = totals.length ? Math.max(...totals) : POTENCY_MAX;
+  const span = Math.max(dataMax - dataMin, 0.1);
 
   const displayFrac = (pct: number | null): number => {
     if (pct == null) return RADIUS_FLOOR;
-    const t = Math.min(1, Math.max(0, (pct - POTENCY_MIN) / (scaleMax - POTENCY_MIN)));
+    const t = Math.min(1, Math.max(0, (pct - dataMin) / span));
     return RADIUS_FLOOR + (1 - RADIUS_FLOOR) * Math.pow(t, RADIUS_GAMMA);
   };
 
@@ -117,7 +121,7 @@ export default function AlkaloidSpectrum({ strains }: { strains: SpectrumStrain[
           })}
 
           {/* potency guide rings (drawn over the wedges, non-interactive) */}
-          {POTENCY_GUIDES.filter((pct) => pct <= scaleMax + 1e-6).map((pct) => {
+          {POTENCY_GUIDES.filter((pct) => pct >= dataMin - 1e-6 && pct <= dataMax + 1e-6).map((pct) => {
             const r = displayFrac(pct) * OUTER_R;
             return (
               <g key={pct} style={{ pointerEvents: "none" }}>
