@@ -2,7 +2,7 @@
 
 This is the *contract* between the two sync directions. The importer
 (``parse.py``) reads these tabs; the exporter (``export.py``) and the live
-mirror (``mirror.py``) write them. Keeping the tab name, header row, and the
+auto-push (``autosync.py``) write them. Keeping the tab name, header row, and the
 DB-row projection in one place is what guarantees a value written back by the
 app lands where the parser will read it again — i.e. a true round-trip.
 
@@ -60,6 +60,19 @@ def _status_text(active: bool) -> str:
     return "Active" if active else "Inactive"
 
 
+def _norm_key(value: object) -> str:
+    """Normalize a cell for key matching: dates -> ISO, everything else a
+    trimmed lowercase string, and an int-valued float -> its int text so a
+    Flush of 1 matches whether the sheet stored 1 or 1.0."""
+    if value is None:
+        return ""
+    if isinstance(value, date):
+        return value.isoformat()
+    if isinstance(value, float) and value.is_integer():
+        value = int(value)
+    return str(value).strip().lower()
+
+
 @dataclass(frozen=True)
 class TabSpec:
     key: str
@@ -68,6 +81,15 @@ class TabSpec:
     entity: type
     order_by: Callable
     row: Callable[[object], list]
+    # Header labels that form the natural key for a non-destructive upsert:
+    # a matching row on the sheet is updated in place, a new one is appended,
+    # and rows/columns the app doesn't recognize are left untouched.
+    key_cols: tuple[str, ...] = ()
+
+    def key_of(self, row: list) -> tuple:
+        """The normalized natural key of a projected row (for matching)."""
+        idx = [self.header.index(c) for c in self.key_cols]
+        return tuple(_norm_key(row[i]) for i in idx)
 
 
 # --------------------------------------------------------------------------- #
@@ -138,7 +160,7 @@ def _customer_row(c: "models.Customer") -> list:
 
 
 # --------------------------------------------------------------------------- #
-# The registry — ordered; drives both full export and the per-entity mirror.
+# The registry — ordered; drives full export and the keyed upsert push.
 # --------------------------------------------------------------------------- #
 TABS: list[TabSpec] = [
     TabSpec(
@@ -149,6 +171,7 @@ TABS: list[TabSpec] = [
         entity=models.Strain,
         order_by=lambda: models.Strain.name,
         row=_strain_row,
+        key_cols=("Strain",),
     ),
     TabSpec(
         key="batches",
@@ -158,6 +181,7 @@ TABS: list[TabSpec] = [
         entity=models.Batch,
         order_by=lambda: models.Batch.lot_code,
         row=_batch_row,
+        key_cols=("Tub", "Flush"),
     ),
     TabSpec(
         key="harvests",
@@ -167,6 +191,7 @@ TABS: list[TabSpec] = [
         entity=models.Harvest,
         order_by=lambda: models.Harvest.harvested_on,
         row=_harvest_row,
+        key_cols=("Tub", "Flush"),
     ),
     TabSpec(
         key="customers",
@@ -175,10 +200,11 @@ TABS: list[TabSpec] = [
         entity=models.Customer,
         order_by=lambda: models.Customer.name,
         row=_customer_row,
+        key_cols=("Name",),
     ),
 ]
 
-# Fast lookup for the mirror (entity key -> spec).
+# Fast lookup by entity key -> spec.
 BY_KEY: dict[str, TabSpec] = {t.key: t for t in TABS}
 
 

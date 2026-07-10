@@ -380,3 +380,20 @@ class FoodSafetyLog(Base):
     passed: Mapped[bool] = mapped_column(Boolean, default=True)
     corrective_action: Mapped[str] = mapped_column(Text, default="")
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class SyncState(Base):
+    """Singleton bookkeeping for sheet sync so the UI can show 'N unsynced
+    changes' and 'last synced at' instead of leaving the operator guessing.
+
+    ``dirty_count`` is bumped whenever an owned entity is created/updated in the
+    app and reset to 0 on a successful push; the timestamps record the last
+    push (App -> Sheet) and pull (Sheet -> App).
+    """
+
+    __tablename__ = "sync_state"
+
+    id: Mapped[int] = mapped_column(primary_key=True, default=1)
+    dirty_count: Mapped[int] = mapped_column(Integer, default=0)
+    last_pushed_at: Mapped[datetime | None] = mapped_column(DateTime)
+    last_pulled_at: Mapped[datetime | None] = mapped_column(DateTime)

@@ -60,15 +60,19 @@ def build_tables(db: Session) -> list[Table]:
     return [build_table(db, spec) for spec in layout.TABS]
 
 
-def push(db: Session, writer) -> dict[str, int]:
-    """Write every owned tab (header + all rows) through ``writer``.
+def push(db: Session, writer) -> dict[str, dict]:
+    """Upsert every owned tab through ``writer`` (non-destructive: rows are
+    matched on the tab's natural key and updated in place, new ones appended,
+    unmanaged rows/columns left intact).
 
-    Returns a per-tab row count. The writer decides the destination (a local
-    .xlsx, an .xlsx re-uploaded to Drive, or a live Google Sheet).
+    Returns per-tab ``{"updated", "appended", "rows"}``. The writer decides the
+    destination (a local .xlsx, an .xlsx re-uploaded to Drive, or a Google Sheet).
     """
-    counts: dict[str, int] = {}
+    counts: dict[str, dict] = {}
     for table in build_tables(db):
-        writer.replace_tab(table.tab, table.header, table.rows)
-        counts[table.spec.key] = len(table.rows)
+        result = writer.upsert_tab(
+            table.tab, table.header, table.rows, table.spec.key_cols
+        )
+        counts[table.spec.key] = {**result, "rows": len(table.rows)}
     writer.commit()
     return counts

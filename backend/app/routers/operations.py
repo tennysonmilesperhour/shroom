@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from .. import models, schemas
 from ..database import get_db
-from ..sheet import mirror
+from ..sheet import autosync
 
 router = APIRouter(tags=["operations"])
 
@@ -48,7 +48,7 @@ def create_harvest(payload: schemas.HarvestCreate, db: Session = Depends(get_db)
         batch.stage = "harvesting"
     db.commit()
     db.refresh(harvest)
-    mirror.mirror("harvests", harvest)  # best-effort live append to the sheet
+    autosync.notify(db)  # mark dirty; auto-push to the sheet if enabled
     return harvest
 
 

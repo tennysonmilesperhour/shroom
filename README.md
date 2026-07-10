@@ -159,9 +159,13 @@ same tab/column layout the importer reads — so it round-trips.
 | Direction | Endpoint | What it does |
 |-----------|----------|--------------|
 | Sheet → App | `POST /api/sync/pull` | Import the workbook into the DB (the importer). |
-| App → Sheet | `POST /api/sync/push` | Rewrite the owned tabs (Strain Library, Grow Cycle Log, Harvest Tracker, Buyers & Pricing) from the DB. |
+| App → Sheet | `POST /api/sync/push` | **Non-destructive** keyed upsert of the owned tabs (Strain Library, Grow Cycle Log, Harvest Tracker, Buyers & Pricing): matching rows are updated in place, new ones appended, and operator-added rows/columns left untouched. |
 | App → file | `GET /api/sync/workbook.xlsx` | Download the app's data as a Master-Reference-layout `.xlsx`. |
-| live | *(automatic)* | With `SHEET_SYNC_MIRROR=1`, creating a strain/batch/harvest/customer in the app **appends that row to the sheet** immediately. |
+| status | `GET /api/sync/status` | Read/write config, plus **unsynced-change count** and last push/pull times so the UI can show how far behind the sheet is. |
+| live | *(automatic)* | With `SHEET_SYNC_AUTO=1`, creating/updating an entity schedules a **debounced, coalesced** push — a burst of edits becomes one write. |
+
+The push is a natural-key upsert, so it's safe to run repeatedly and never
+duplicates rows or clobbers columns you maintain by hand on the sheet.
 
 Three write backends are auto-selected from the environment (see
 `backend/.env.example`), so the source of truth can be an **Excel `.xlsx`** (local
@@ -171,7 +175,7 @@ or on Drive) or a **native Google Sheet** (live, cell-level via the Sheets API):
 * `MASTER_SHEET_FILE_ID` → an `.xlsx` on Drive (download-modify-reupload)
 * `MASTER_SHEET_PATH` → a local `.xlsx`
 
-Writes need Google credentials with write scope (`drive.file` + `spreadsheets`);
+Writes need Google credentials with write scope (`drive` + `spreadsheets`);
 reads work with a read-only token or a local file.
 
 ---
@@ -184,7 +188,7 @@ backend/app/
   models.py          Domain model — cultivation, ops, business, traceability spine
   schemas.py         Pydantic v2 request/response contracts
   seed.py            Realistic Quantum Blue Mycology demo dataset
-  sheet/             Two-way sync: import (parse/sinks) + export (layout/export/writer/mirror)
+  sheet/             Two-way sync: import (parse/sinks) + export (layout/export/writer) + autosync/state
   main.py            FastAPI app; mounts /api routers + serves the SPA
   routers/
     cultivation.py   strains, recipes, rooms, batches, lifecycle, contamination

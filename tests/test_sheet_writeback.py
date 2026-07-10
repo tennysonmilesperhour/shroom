@@ -1,4 +1,4 @@
-"""Tests for the reverse sync direction: App -> Sheet (export/writer/mirror).
+"""Tests for the reverse sync direction: App -> Sheet (export/writer/autosync).
 
 The core guarantee is a *round-trip*: data the app writes into a workbook must
 come back out through the same parser the importer uses. If that holds, a change
@@ -21,7 +21,7 @@ from sqlalchemy.orm import sessionmaker
 
 from backend.app import models
 from backend.app.database import Base
-from backend.app.sheet import export, layout, mirror, parse, writer
+from backend.app.sheet import autosync, export, layout, parse, state, writer
 
 
 # --------------------------------------------------------------------------- #
@@ -207,44 +207,91 @@ def test_append_row_creates_tab_with_header(tmp_path):
 
 
 # --------------------------------------------------------------------------- #
-# Mirror — opt-in, best-effort, never fatal
+# Non-destructive upsert — the core "not clunky/destructive" guarantee
 # --------------------------------------------------------------------------- #
-def test_mirror_disabled_by_default(monkeypatch, seeded):
-    monkeypatch.delenv("SHEET_SYNC_MIRROR", raising=False)
-    strain = seeded.query(models.Strain).first()
-    assert mirror.mirror("strains", strain) == {"mirrored": False, "reason": "disabled"}
+def test_upsert_updates_in_place_no_duplicates(seeded, tmp_path):
+    path = tmp_path / "up.xlsx"
+    w = writer.XlsxWriter(str(path))
+    export.push(seeded, w); w.close()
+
+    # Change the strain in the app, push again — the row is updated, not duped.
+    sg = seeded.query(models.Strain).filter_by(name="Stargazer").one()
+    sg.vendor = "NewVendor"
+    seeded.commit()
+    w = writer.XlsxWriter(str(path))
+    result = export.push(seeded, w); w.close()
+
+    assert result["strains"]["updated"] == 2  # both strains matched & updated
+    assert result["strains"]["appended"] == 0
+    ws = load_workbook(path)["Strain Library"]
+    names = [ws.cell(row=r, column=1).value for r in range(2, ws.max_row + 1)]
+    assert names.count("Stargazer") == 1                     # not duplicated
+    vendor_col = ws[1].index(next(c for c in ws[1] if c.value == "Vendor")) + 1
+    sg_row = names.index("Stargazer") + 2
+    assert ws.cell(row=sg_row, column=vendor_col).value == "NewVendor"
 
 
-def test_mirror_appends_when_enabled(monkeypatch, seeded, tmp_path):
-    path = tmp_path / "live.xlsx"
-    monkeypatch.setenv("SHEET_SYNC_MIRROR", "1")
-    monkeypatch.setenv("MASTER_SHEET_PATH", str(path))
-    # No Drive/Google env, so resolve_writer picks the local .xlsx.
+def test_upsert_preserves_operator_columns_and_rows(seeded, tmp_path):
+    from openpyxl import Workbook
+    path = tmp_path / "op.xlsx"
+    wb = Workbook(); ws = wb.active; ws.title = "Strain Library"
+    spec = layout.BY_KEY["strains"]
+    ws.append(list(spec.header) + ["Operator Note"])
+    ws.append(["Stargazer", "Active", "old", None, "", 7, "Yes", "", "", "KEEP ME"])
+    ws.append(["ManualOnly", "Active", "x", None, "", 5, "Yes", "", "", "hand-added"])
+    wb.save(path)
+
+    w = writer.XlsxWriter(str(path))
+    export.push(seeded, w); w.close()
+
+    ws = load_workbook(path)["Strain Library"]
+    grid = {row[0]: row for row in ws.iter_rows(values_only=True)}
+    assert grid["Stargazer"][-1] == "KEEP ME"       # operator column preserved
+    assert "ManualOnly" in grid                       # operator row untouched
+    assert grid["ManualOnly"][-1] == "hand-added"
+
+
+# --------------------------------------------------------------------------- #
+# Sync-state + auto-push
+# --------------------------------------------------------------------------- #
+def test_mark_dirty_and_pushed(seeded):
+    assert state.snapshot(seeded)["dirty_count"] == 0
+    state.mark_dirty(seeded, 3)
+    assert state.snapshot(seeded)["dirty_count"] == 3
+    state.mark_pushed(seeded)
+    snap = state.snapshot(seeded)
+    assert snap["dirty_count"] == 0
+    assert snap["last_pushed_at"] is not None
+
+
+def test_autosync_disabled_marks_dirty_without_pushing(monkeypatch, seeded, tmp_path):
+    monkeypatch.delenv("SHEET_SYNC_AUTO", raising=False)
+    monkeypatch.setenv("MASTER_SHEET_PATH", str(tmp_path / "should_not_exist.xlsx"))
+    autosync.notify(seeded)
+    assert state.snapshot(seeded)["dirty_count"] == 1
+    assert not (tmp_path / "should_not_exist.xlsx").exists()  # no push happened
+
+
+def test_autosync_run_push_writes_and_clears_dirty(monkeypatch, seeded, tmp_path):
+    target = tmp_path / "auto.xlsx"
+    monkeypatch.setenv("MASTER_SHEET_PATH", str(target))
     monkeypatch.delenv("MASTER_SHEET_GOOGLE_ID", raising=False)
     monkeypatch.delenv("MASTER_SHEET_FILE_ID", raising=False)
+    state.mark_dirty(seeded, 2)
 
-    strain = seeded.query(models.Strain).filter_by(name="Stargazer").one()
-    result = mirror.mirror("strains", strain)
-    assert result["mirrored"] is True
+    # run_push opens its own session; point it at this test's engine.
+    factory = sessionmaker(bind=seeded.get_bind(), future=True)
+    counts = autosync.run_push(session_factory=factory)
+    assert counts["strains"]["appended"] == 2
+    assert target.exists()
+    seeded.expire_all()
+    assert state.snapshot(seeded)["dirty_count"] == 0
 
-    wb = load_workbook(path)
-    ws = wb["Strain Library"]
-    assert ws.cell(row=2, column=1).value == "Stargazer"
 
-
-def test_mirror_never_raises_on_bad_target(monkeypatch, seeded):
-    monkeypatch.setenv("SHEET_SYNC_MIRROR", "1")
-    # Point at a Google Sheet with no credentials -> resolve_writer raises,
-    # but mirror must swallow it and report, not blow up the request.
-    monkeypatch.setenv("MASTER_SHEET_GOOGLE_ID", "does-not-matter")
-    monkeypatch.delenv("GOOGLE_SERVICE_ACCOUNT_JSON", raising=False)
-    monkeypatch.delenv("GOOGLE_OAUTH_TOKEN", raising=False)
-    monkeypatch.delenv("GOOGLE_ACCESS_TOKEN", raising=False)
-
-    strain = seeded.query(models.Strain).first()
-    result = mirror.mirror("strains", strain)
-    assert result["mirrored"] is False
-    assert "error" in result
+def test_autosync_run_push_noop_without_target(monkeypatch):
+    for var in ("MASTER_SHEET_GOOGLE_ID", "MASTER_SHEET_FILE_ID", "MASTER_SHEET_PATH"):
+        monkeypatch.delenv(var, raising=False)
+    assert autosync.run_push() is None  # no target -> best-effort no-op
 
 
 # --------------------------------------------------------------------------- #
@@ -287,7 +334,8 @@ def test_status_reports_no_target_when_unconfigured(client, monkeypatch):
     assert r.status_code == 200
     body = r.json()
     assert body["write_target"]["configured"] is False
-    assert body["mirror_enabled"] is False
+    assert body["auto_push"] is False
+    assert body["sync_state"]["dirty_count"] == 0
 
 
 def test_status_read_source_honors_google_id(client, monkeypatch):
@@ -315,8 +363,13 @@ def test_push_then_download_over_api(client, monkeypatch, tmp_path):
     monkeypatch.delenv("MASTER_SHEET_FILE_ID", raising=False)
     push = client.post("/api/sync/push")
     assert push.status_code == 200, push.text
-    assert push.json()["written"]["strains"] == 1
+    assert push.json()["written"]["strains"]["rows"] == 1
     assert target.exists()
+
+    # Creating the strain marked the app dirty; the push cleared it.
+    st = client.get("/api/sync/status").json()["sync_state"]
+    assert st["dirty_count"] == 0
+    assert st["last_pushed_at"] is not None
 
     # …and the download endpoint returns a real .xlsx too.
     dl = client.get("/api/sync/workbook.xlsx")

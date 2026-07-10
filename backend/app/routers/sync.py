@@ -18,7 +18,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from ..database import get_db
-from ..sheet import export, layout, mirror, writer
+from ..sheet import autosync, export, layout, state, writer
 from ..sheet.importer import import_to_sqlite
 from ..sheet.parse import parse_workbook
 from ..sheet.source import describe_source, resolve_workbook
@@ -50,14 +50,15 @@ def status(db: Session = Depends(get_db)) -> dict:
     return {
         "read_source": describe_source(),
         "write_target": writer.describe_target(),
-        "mirror_enabled": mirror.enabled(),
+        "auto_push": autosync.enabled(),
+        "sync_state": state.snapshot(db),
         "pushable_rows": counts,
         "has_data": any(counts.values()),
     }
 
 
 @router.post("/pull")
-def pull(payload: PullRequest | None = None) -> dict:
+def pull(payload: PullRequest | None = None, db: Session = Depends(get_db)) -> dict:
     """Import the Master Cultivation Reference sheet into the app DB."""
     payload = payload or PullRequest()
     try:
@@ -70,6 +71,7 @@ def pull(payload: PullRequest | None = None) -> dict:
 
     parsed = parse_workbook(wb)
     counts = import_to_sqlite(parsed)
+    state.mark_pulled(db)
     return {"status": "ok", "direction": "sheet->app", "imported": counts}
 
 
@@ -90,6 +92,7 @@ def push(payload: PushRequest | None = None, db: Session = Depends(get_db)) -> d
         raise HTTPException(502, f"Push failed: {exc}")
     finally:
         w.close()
+    state.mark_pushed(db)  # app and sheet are now in sync; clear the dirty count
     return {"status": "ok", "direction": "app->sheet",
             "target": writer.describe_target(), "written": counts}
 
