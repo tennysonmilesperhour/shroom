@@ -49,18 +49,19 @@ def _norm(value: object) -> str:
     return str(value).strip().lower() if value not in (None, "") else ""
 
 
-def _match_col(labels_norm: list[str], target: str) -> int:
+def _match_col(labels_norm: list[str], target: str, taken: set[int] = frozenset()) -> int:
     """Index of ``target`` in a header row: exact (normalized) match first, then
     a substring match so "Flush" finds "Flush #" and "Tub" finds "Tub ID".
-    Returns -1 when absent (the caller then allocates a new column)."""
+    Columns in ``taken`` are skipped so two owned labels can't collide onto the
+    same column (the caller then allocates a fresh one). Returns -1 when absent."""
     t = _norm(target)
     if not t:
         return -1
     for i, label in enumerate(labels_norm):
-        if label == t:
+        if i not in taken and label == t:
             return i
     for i, label in enumerate(labels_norm):
-        if label and (t in label or label in t):
+        if i not in taken and label and (t in label or label in t):
             return i
     return -1
 
@@ -145,14 +146,17 @@ class _WorkbookWriter:
         labels, header_row = self._find_or_write_header(ws, header, key_cols)
 
         # Column (1-based) for each owned label; allocate missing ones at the end
-        # so we never overwrite an operator column we don't recognize.
+        # so we never overwrite an operator column we don't recognize. `taken`
+        # stops two labels from claiming the same fuzzy-matched column.
         colpos: dict[str, int] = {}
+        taken: set[int] = set()
         for label in header:
-            j = _match_col(labels, label)
+            j = _match_col(labels, label, taken)
             if j < 0:
                 j = len(labels)
                 labels.append(_norm(label))
                 ws.cell(row=header_row, column=j + 1, value=label)
+            taken.add(j)
             colpos[label] = j + 1
 
         key_at = [header.index(c) for c in key_cols]
@@ -353,8 +357,9 @@ class GoogleSheetsWriter:
         labels = [_norm(v) for v in values[header_idx]]
         colpos: dict[str, int] = {}
         header_updates: list[dict] = []
+        taken: set[int] = set()
         for label in header:
-            j = _match_col(labels, label)
+            j = _match_col(labels, label, taken)
             if j < 0:
                 j = len(labels)
                 labels.append(_norm(label))
@@ -362,6 +367,7 @@ class GoogleSheetsWriter:
                     "range": self._a1_cell(tab, header_idx, j),
                     "values": [[label]],
                 })
+            taken.add(j)
             colpos[label] = j
 
         lo, hi = min(colpos.values()), max(colpos.values())
@@ -380,28 +386,29 @@ class GoogleSheetsWriter:
 
         data = list(header_updates)
         appends: list[list[str]] = []
-        next_ri = len(values)
         updated = appended = 0
         for row in rows:
             k = tuple(layout._norm_key(row[p]) for p in key_at)
-            span = [""] * (hi - lo + 1)
-            for label, value in zip(header, row):
-                span[colpos[label] - lo] = layout.cell_to_str(value)
+            cells = {label: layout.cell_to_str(value) for label, value in zip(header, row)}
             ri = existing.get(k)
             if ri is None:
-                existing[k] = next_ri
-                next_ri += 1
-                appended += 1
-                # Pad so the span sits at the right columns when appended.
+                # A brand-new row: append the owned columns as one contiguous
+                # span (no operator cells exist in a new row to preserve).
+                span = [""] * (hi - lo + 1)
+                for label, value in cells.items():
+                    span[colpos[label] - lo] = value
                 appends.append([""] * lo + span)
+                existing[k] = -1  # mark seen so a duplicate key in this batch appends once
+                appended += 1
             else:
+                # Update in place, one cell per owned column, so operator
+                # columns interspersed between ours are never overwritten.
+                for label, value in cells.items():
+                    data.append({
+                        "range": self._a1_cell(tab, ri, colpos[label]),
+                        "values": [[value]],
+                    })
                 updated += 1
-            row_at = existing[k]
-            if ri is not None:
-                data.append({
-                    "range": self._a1_span(tab, row_at, lo, hi),
-                    "values": [span],
-                })
         if data:
             self.client.post(
                 f"{self.base}/values:batchUpdate",
@@ -417,10 +424,6 @@ class GoogleSheetsWriter:
 
     def _a1_cell(self, tab: str, row_idx0: int, col_idx0: int) -> str:
         cell = f"{_col_letter(col_idx0)}{row_idx0 + 1}"
-        return self.a1_range(tab, cell)
-
-    def _a1_span(self, tab: str, row_idx0: int, lo: int, hi: int) -> str:
-        cell = f"{_col_letter(lo)}{row_idx0 + 1}:{_col_letter(hi)}{row_idx0 + 1}"
         return self.a1_range(tab, cell)
 
     def commit(self) -> None:

@@ -251,6 +251,27 @@ def test_upsert_preserves_operator_columns_and_rows(seeded, tmp_path):
     assert grid["ManualOnly"][-1] == "hand-added"
 
 
+def test_upsert_preserves_operator_column_between_owned_columns(seeded, tmp_path):
+    # An operator column inserted *between* two owned columns must survive an
+    # update — we write owned cells individually, never a blanking span.
+    from openpyxl import Workbook
+    path = tmp_path / "mid.xlsx"
+    wb = Workbook(); ws = wb.active; ws.title = "Strain Library"
+    hdr = ["Strain", "Status", "Operator Mid", "Vendor", "Inoculated",
+           "Potency", "Ease", "Grow Again", "Tub/Bag ID", "Notes"]
+    ws.append(hdr)
+    ws.append(["Stargazer", "Active", "MID KEEP", "old", None, "", 7, "Yes", "", ""])
+    wb.save(path)
+
+    w = writer.XlsxWriter(str(path))
+    export.push(seeded, w); w.close()
+
+    ws = load_workbook(path)["Strain Library"]
+    row = next(r for r in ws.iter_rows(values_only=True) if r[0] == "Stargazer")
+    assert row[2] == "MID KEEP"        # interspersed operator column untouched
+    assert row[3] == "Sporeworks"      # owned Vendor column still updated
+
+
 # --------------------------------------------------------------------------- #
 # Sync-state + auto-push
 # --------------------------------------------------------------------------- #

@@ -50,7 +50,10 @@ def notify(db: Session, n: int = 1) -> None:
     except Exception as exc:  # a bookkeeping failure must not fail the request
         log.warning("sync dirty-mark failed: %s", exc)
     if enabled():
-        _schedule()
+        try:
+            _schedule()
+        except Exception as exc:  # e.g. thread exhaustion starting the timer
+            log.warning("auto-push schedule failed: %s", exc)
 
 
 def _schedule() -> None:
@@ -97,8 +100,9 @@ def run_push(session_factory=None) -> dict | None:
         log.warning("auto-push could not open target: %s", exc)
         return None
 
-    db = session_factory()
+    db = None
     try:
+        db = session_factory()
         counts = export.push(db, w)
         state.mark_pushed(db)
         return counts
@@ -106,5 +110,8 @@ def run_push(session_factory=None) -> dict | None:
         log.warning("auto-push failed: %s", exc)
         return None
     finally:
+        # Close the writer even if opening the session raised, so a Drive/Sheets
+        # client is never leaked.
         w.close()
-        db.close()
+        if db is not None:
+            db.close()
