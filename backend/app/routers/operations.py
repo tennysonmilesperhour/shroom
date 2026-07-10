@@ -113,6 +113,64 @@ def adjust_inventory(item_id: int, delta: float, db: Session = Depends(get_db)):
     return item
 
 
+# --------------------- Stage supply usage estimates ----------------------- #
+def _validate_estimate(payload, db: Session) -> None:
+    if payload.stage is not None and payload.stage not in models.STAGES:
+        raise HTTPException(400, f"stage must be one of {models.STAGES}")
+    if payload.basis is not None and payload.basis not in models.SUPPLY_BASES:
+        raise HTTPException(400, f"basis must be one of {models.SUPPLY_BASES}")
+    if payload.inventory_item_id is not None and not db.get(
+        models.InventoryItem, payload.inventory_item_id
+    ):
+        raise HTTPException(400, "Unknown inventory_item_id")
+
+
+@router.get("/stage-supply-estimates", response_model=list[schemas.StageSupplyEstimateOut])
+def list_stage_supply_estimates(stage: str | None = None, db: Session = Depends(get_db)):
+    stmt = select(models.StageSupplyEstimate).order_by(
+        models.StageSupplyEstimate.stage, models.StageSupplyEstimate.supply_name
+    )
+    if stage:
+        stmt = stmt.where(models.StageSupplyEstimate.stage == stage)
+    return db.scalars(stmt).all()
+
+
+@router.post("/stage-supply-estimates", response_model=schemas.StageSupplyEstimateOut, status_code=201)
+def create_stage_supply_estimate(
+    payload: schemas.StageSupplyEstimateCreate, db: Session = Depends(get_db)
+):
+    _validate_estimate(payload, db)
+    est = models.StageSupplyEstimate(**payload.model_dump())
+    db.add(est)
+    db.commit()
+    db.refresh(est)
+    return est
+
+
+@router.patch("/stage-supply-estimates/{estimate_id}", response_model=schemas.StageSupplyEstimateOut)
+def update_stage_supply_estimate(
+    estimate_id: int, payload: schemas.StageSupplyEstimateUpdate, db: Session = Depends(get_db)
+):
+    est = db.get(models.StageSupplyEstimate, estimate_id)
+    if not est:
+        raise HTTPException(404, "Estimate not found")
+    _validate_estimate(payload, db)
+    for key, value in payload.model_dump(exclude_unset=True).items():
+        setattr(est, key, value)
+    db.commit()
+    db.refresh(est)
+    return est
+
+
+@router.delete("/stage-supply-estimates/{estimate_id}", status_code=204)
+def delete_stage_supply_estimate(estimate_id: int, db: Session = Depends(get_db)):
+    est = db.get(models.StageSupplyEstimate, estimate_id)
+    if not est:
+        raise HTTPException(404, "Estimate not found")
+    db.delete(est)
+    db.commit()
+
+
 # ----------------------------- Food safety -------------------------------- #
 @router.get("/food-safety", response_model=list[schemas.FoodSafetyOut])
 def list_food_safety(db: Session = Depends(get_db)):

@@ -344,6 +344,121 @@ def recall_trace(lot_code: str, db: Session = Depends(get_db)):
 
 
 # --------------------------------------------------------------------------- #
+# Stage-driven supply usage — infer burn of untracked consumables
+# --------------------------------------------------------------------------- #
+def _stages_reached(batch) -> set[str]:
+    """Every stage a batch has passed through.
+
+    Combines explicitly logged StageEvents with the linear assumption that a
+    batch at a given main-path stage has been through every earlier stage on
+    that path. Off-path states (e.g. ``contaminated``) contribute only what was
+    actually logged.
+    """
+    reached = {e.stage for e in batch.stage_events}
+    if batch.stage in models.STAGE_LIFECYCLE:
+        idx = models.STAGE_LIFECYCLE.index(batch.stage)
+        reached.update(models.STAGE_LIFECYCLE[: idx + 1])
+    return reached
+
+
+@router.get("/analytics/supply-usage")
+def supply_usage(db: Session = Depends(get_db)):
+    """Infer how much of each supply has been used from batch/stage throughput.
+
+    Multiplies per-stage usage estimates by the number of batches (or blocks)
+    that reached each stage, so consumables that are never counted per use —
+    isopropyl alcohol, gloves, filter discs — get a running total. For wear
+    items with a replace-every-N-batches cadence it also forecasts the next
+    replacement, the thing there was otherwise no way to track.
+    """
+    batches = db.scalars(select(models.Batch)).all()
+    estimates = db.scalars(
+        select(models.StageSupplyEstimate).where(
+            models.StageSupplyEstimate.active.is_(True)
+        )
+    ).all()
+
+    # Which batches (and thus how many blocks) reached each stage.
+    stage_batches: dict[str, list] = defaultdict(list)
+    for b in batches:
+        for st in _stages_reached(b):
+            stage_batches[st].append(b)
+    stage_completions = {st: len(bs) for st, bs in stage_batches.items()}
+
+    # Group estimates by supply so one supply used across several stages rolls up.
+    supplies: dict[str, dict] = {}
+    for est in estimates:
+        bs = stage_batches.get(est.stage, [])
+        n_batches = len(bs)
+        n_blocks = sum(b.block_count for b in bs)
+        basis_count = n_blocks if est.basis == "block" else n_batches
+        used = round(est.avg_qty * basis_count, 3)
+
+        entry = supplies.setdefault(
+            est.supply_name,
+            {
+                "supply_name": est.supply_name,
+                "unit": est.unit,
+                "inventory_item_id": est.inventory_item_id,
+                "on_hand": None,
+                "inferred_used": 0.0,
+                "by_stage": [],
+                "replacement": None,
+            },
+        )
+        # Keep the first non-null inventory link if any estimate row provides one.
+        if entry["inventory_item_id"] is None and est.inventory_item_id is not None:
+            entry["inventory_item_id"] = est.inventory_item_id
+        entry["inferred_used"] = round(entry["inferred_used"] + used, 3)
+        entry["by_stage"].append(
+            {
+                "stage": est.stage,
+                "basis": est.basis,
+                "avg_qty": est.avg_qty,
+                "batches": n_batches,
+                "blocks": n_blocks,
+                "used": used,
+            }
+        )
+
+        if est.replace_after_batches:
+            n = est.replace_after_batches
+            since = n_batches % n
+            if n_batches == 0:
+                until_next = n
+            elif since == 0:
+                until_next = 0  # sitting exactly on a replace boundary → due now
+            else:
+                until_next = n - since
+            entry["replacement"] = {
+                "stage": est.stage,
+                "replace_after_batches": n,
+                "completions": n_batches,
+                "batches_since_last": since,
+                "batches_until_next": until_next,
+                "replacements_due": n_batches // n,
+                "due_now": n_batches > 0 and since == 0,
+            }
+
+    # Attach on-hand from linked inventory items.
+    inv_ids = {e["inventory_item_id"] for e in supplies.values() if e["inventory_item_id"]}
+    if inv_ids:
+        items = db.scalars(
+            select(models.InventoryItem).where(models.InventoryItem.id.in_(inv_ids))
+        ).all()
+        on_hand = {i.id: i.quantity_on_hand for i in items}
+        for e in supplies.values():
+            if e["inventory_item_id"] in on_hand:
+                e["on_hand"] = on_hand[e["inventory_item_id"]]
+
+    return {
+        "batches_considered": len(batches),
+        "stage_completions": stage_completions,
+        "supplies": sorted(supplies.values(), key=lambda s: s["supply_name"].lower()),
+    }
+
+
+# --------------------------------------------------------------------------- #
 # INNOVATION #3 — Spent-substrate circular economy & carbon ledger
 # --------------------------------------------------------------------------- #
 @router.get("/analytics/circular-economy")

@@ -210,7 +210,9 @@ GET  /api/analytics/dry-ratio                     fresh/dry ratios + 7.5% flags
 GET  /api/analytics/batches/{id}/yield-forecast   predictive yield (innovation #2)
 GET  /api/analytics/recall/{lot_code}             FSMA-204 recall trace (innovation #5)
 GET  /api/analytics/circular-economy              spent-substrate ledger (innovation #3)
+GET  /api/analytics/supply-usage                  inferred burn of untracked supplies + replace-by
 GET  /api/analytics/picker-productivity           labor lbs/hr (MycoSense-style)
+GET  /api/stage-supply-estimates                  per-stage avg supply-usage estimates (CRUD)
 GET  /api/environment/status                      room targets vs. latest + alerts
 GET  /api/strains/{id}/lineage                    genetic genealogy (innovation #4)
 POST /api/batches/{id}/advance                    move a lot through its lifecycle

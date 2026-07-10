@@ -155,17 +155,44 @@ def seed() -> None:
            temp_c=20.2, humidity=90, co2_ppm=1250, fae_per_hr=2, source="sensor"))
 
     # --- Inventory ------------------------------------------------------- #
+    grain_bags = models.InventoryItem(name="Sterilized grain bags (3lb)", category="spawn", unit="bag",
+                                      quantity_on_hand=6, reorder_threshold=10, unit_cost=6.5, supplier="North Spore")
+    ipa = models.InventoryItem(name="70% isopropyl alcohol", category="chemical", unit="L",
+                               quantity_on_hand=3, reorder_threshold=4, unit_cost=5.0, supplier="Costco")
     db.add_all([
-        models.InventoryItem(name="Sterilized grain bags (3lb)", category="spawn", unit="bag",
-                             quantity_on_hand=6, reorder_threshold=10, unit_cost=6.5, supplier="North Spore"),
+        grain_bags,
         models.InventoryItem(name="Coco coir bricks", category="substrate", unit="brick",
                              quantity_on_hand=22, reorder_threshold=8, unit_cost=3.2, supplier="Local Hydro"),
         models.InventoryItem(name="Liquid culture syringes", category="spawn", unit="syringe",
                              quantity_on_hand=4, reorder_threshold=5, unit_cost=18.0, supplier="Spore Depot"),
         models.InventoryItem(name="Mylar dry bags + desiccant", category="packaging", unit="kit",
                              quantity_on_hand=120, reorder_threshold=50, unit_cost=0.45, supplier="Uline"),
-        models.InventoryItem(name="70% isopropyl alcohol", category="chemical", unit="L",
-                             quantity_on_hand=3, reorder_threshold=4, unit_cost=5.0, supplier="Costco"),
+        ipa,
+    ])
+    db.flush()
+
+    # --- Stage supply usage estimates ------------------------------------ #
+    # Average burn per stage-completion, so consumables we never count per use
+    # (IPA, gloves, filter discs) get inferred from batch throughput — and the
+    # flow-hood IPA, swapped every ~50 batches, gets a replacement forecast.
+    db.add_all([
+        models.StageSupplyEstimate(
+            stage="inoculation", supply_name="70% isopropyl alcohol", inventory_item_id=ipa.id,
+            unit="L", avg_qty=0.05, basis="batch", replace_after_batches=50,
+            notes="Flow-hood + tool wipe-down at every inoculation; jug swapped ~every 50 batches."),
+        models.StageSupplyEstimate(
+            stage="spawn_to_bulk", supply_name="70% isopropyl alcohol", inventory_item_id=ipa.id,
+            unit="L", avg_qty=0.08, basis="batch",
+            notes="Surface + glove sterilization when opening bags to spawn."),
+        models.StageSupplyEstimate(
+            stage="inoculation", supply_name="Sterilized grain bags (3lb)", inventory_item_id=grain_bags.id,
+            unit="bag", avg_qty=1, basis="block", notes="One grain bag inoculated per block."),
+        models.StageSupplyEstimate(
+            stage="inoculation", supply_name="Nitrile gloves", unit="pair", avg_qty=2, basis="batch",
+            notes="Untracked — inferred from inoculation count only."),
+        models.StageSupplyEstimate(
+            stage="fruiting", supply_name="Filter discs", unit="disc", avg_qty=1, basis="block",
+            notes="Untracked fruiting-chamber polyfil discs, one per block."),
     ])
 
     # --- Tasks ----------------------------------------------------------- #

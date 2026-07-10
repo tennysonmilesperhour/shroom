@@ -264,6 +264,41 @@ class InventoryOut(InventoryCreate):
 
 
 # --------------------------------------------------------------------------- #
+# Stage supply estimates (inferred consumption of untracked supplies)
+# --------------------------------------------------------------------------- #
+class StageSupplyEstimateCreate(BaseModel):
+    stage: str
+    supply_name: str
+    inventory_item_id: int | None = None
+    unit: str = "unit"
+    avg_qty: float = 0.0
+    basis: str = "batch"
+    replace_after_batches: int | None = None
+    notes: str = ""
+    active: bool = True
+
+
+class StageSupplyEstimateUpdate(BaseModel):
+    """Partial update — only fields explicitly sent are written."""
+
+    stage: str | None = None
+    supply_name: str | None = None
+    inventory_item_id: int | None = None
+    unit: str | None = None
+    avg_qty: float | None = None
+    basis: str | None = None
+    replace_after_batches: int | None = None
+    notes: str | None = None
+    active: bool | None = None
+
+
+class StageSupplyEstimateOut(StageSupplyEstimateCreate):
+    model_config = ORM
+    id: int
+    created_at: datetime | None = None
+
+
+# --------------------------------------------------------------------------- #
 # Business backend
 # --------------------------------------------------------------------------- #
 class CustomerCreate(BaseModel):
