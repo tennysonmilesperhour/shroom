@@ -3,6 +3,7 @@ import { createServiceClient } from "@/utils/supabase/service";
 import { must } from "@/lib/query";
 import MarkSyncedButton from "./MarkSyncedButton";
 import SyncFromSheetButton from "./SyncFromSheetButton";
+import PushToSheetButton from "./PushToSheetButton";
 
 export const dynamic = "force-dynamic";
 
@@ -134,18 +135,24 @@ export default async function SyncPage() {
         </div>
       </Card>
 
-      <Card title="Clear the pending queue (website → sheet)">
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <MarkSyncedButton />
+      <Card title="Push to the sheet (website → sheet)">
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <PushToSheetButton />
           <p className="muted" style={{ margin: 0, fontSize: 13 }}>
-            This marks the pending ops below as synced — it clears the local
-            queue but does <strong>not</strong> itself write the Master
-            Cultivation Reference workbook. Use it once the write-back job (the
-            Python exporter, <code>POST /api/sync/push</code>) has actually
-            pushed these rows to the sheet, so the counter reflects reality.
-            Until that job is wired to this button, pressing it only
-            acknowledges the ops locally.
+            Writes the app&rsquo;s current data back into the{" "}
+            <strong>Master Cultivation Reference</strong> — a non-destructive
+            keyed upsert (owned rows updated in place, new ones appended,
+            hand-maintained columns left untouched). Runs the Python exporter via
+            GitHub Actions and clears the pending queue when it lands.
           </p>
+          <hr style={{ border: 0, borderTop: "1px solid var(--line)", margin: "2px 0" }} />
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <MarkSyncedButton />
+            <p className="muted" style={{ margin: 0, fontSize: 12 }}>
+              Manual override: mark the pending ops below as synced without
+              running a push — for when the sheet was reconciled by hand.
+            </p>
+          </div>
         </div>
       </Card>
 

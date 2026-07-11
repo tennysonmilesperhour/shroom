@@ -142,6 +142,28 @@ def test_export_roundtrips_through_the_parser(seeded, tmp_path):
     assert customers["Daniel Childs"].channel == "distributor"
 
 
+def test_exporter_cli_writes_a_parseable_workbook(seeded, tmp_path, monkeypatch):
+    """The `python -m ...exporter` CLI reads the configured DB and writes a
+    Master-Reference workbook the parser can read back — the batch/CI path the
+    in-app "Push to sheet" button triggers."""
+    from sqlalchemy.orm import sessionmaker
+    from backend.app.sheet import exporter
+
+    # Point the CLI's session factory at the seeded fixture's engine.
+    monkeypatch.setattr(
+        exporter, "SessionLocal", sessionmaker(bind=seeded.get_bind(), future=True))
+
+    out = tmp_path / "cli.xlsx"
+    rc = exporter.main(["--path", str(out)])
+    assert rc == 0
+    assert out.exists()
+
+    wb = load_workbook(out, read_only=True, data_only=True)
+    parsed = parse.parse_workbook(wb)
+    assert {"Stargazer", "Penis Envy"} <= {s.name for s in parsed.strains}
+    assert "T-01-F1" in {b.lot_code for b in parsed.batches}
+
+
 def test_full_loop_export_then_reimport_into_a_fresh_db(seeded, tmp_path, session):
     """Export DB #1 -> sheet -> import into DB #2. The cultivation spine and
     strains survive the whole loop."""

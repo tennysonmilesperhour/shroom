@@ -84,3 +84,51 @@ export async function requestSheetSync(): Promise<SyncActionResult> {
     message: "Sync started — pulling the latest from the sheet. Give it about a minute.",
   };
 }
+
+/** Push the app's data back into the Master Cultivation Reference (app → sheet).
+ *
+ * The write itself runs in the Python exporter (a non-destructive keyed upsert),
+ * so this triggers the `sheet-export.yml` GitHub Actions workflow rather than
+ * re-implementing the workbook write here — the same dispatch pattern the pull
+ * button uses. The workflow, on success, clears the pending queue, so the
+ * "Pending ops" counter settles on its own once the job finishes (~a minute).
+ */
+export async function pushToSheet(): Promise<SyncActionResult> {
+  const token = process.env.GITHUB_DISPATCH_TOKEN;
+  const repo = process.env.GITHUB_REPO ?? "tennysonmilesperhour/shroom";
+  const ref = process.env.GITHUB_SYNC_REF ?? "main";
+  if (!token) {
+    return {
+      ok: false,
+      message:
+        "Write-back isn't wired up yet — set GITHUB_DISPATCH_TOKEN plus the sheet-export secrets (SHROOM_DB_URL, GOOGLE_SERVICE_ACCOUNT_JSON with write scope, and a MASTER_SHEET_* target). See .github/workflows/sheet-export.yml.",
+    };
+  }
+
+  const resp = await fetch(
+    `https://api.github.com/repos/${repo}/actions/workflows/sheet-export.yml/dispatches`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+      },
+      body: JSON.stringify({ ref, inputs: { mark_synced: true } }),
+    },
+  );
+
+  if (!resp.ok) {
+    const detail = (await resp.text()).slice(0, 300);
+    return {
+      ok: false,
+      message: `Couldn't start the push (GitHub ${resp.status}). ${detail}`.trim(),
+    };
+  }
+
+  return {
+    ok: true,
+    message:
+      "Push started — writing the app's data back to the sheet. The pending queue clears itself when it finishes (~a minute).",
+  };
+}
