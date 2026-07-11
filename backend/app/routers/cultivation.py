@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from .. import models, schemas
 from ..database import get_db
-from ..sheet import mirror
+from ..sheet import autosync
 
 router = APIRouter(tags=["cultivation"])
 
@@ -28,7 +28,7 @@ def create_strain(payload: schemas.StrainCreate, db: Session = Depends(get_db)):
     db.add(strain)
     db.commit()
     db.refresh(strain)
-    mirror.mirror("strains", strain)  # best-effort live append to the sheet
+    autosync.notify(db)  # mark dirty; auto-push to the sheet if enabled
     return strain
 
 
@@ -121,7 +121,7 @@ def create_batch(payload: schemas.BatchCreate, db: Session = Depends(get_db)):
     )
     db.commit()
     db.refresh(batch)
-    mirror.mirror("batches", batch)  # best-effort live append to the sheet
+    autosync.notify(db)  # mark dirty; auto-push to the sheet if enabled
     return batch
 
 

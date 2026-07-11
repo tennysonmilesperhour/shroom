@@ -277,70 +277,120 @@ const POST_CHECKED = async (path, body) => {
   return data;
 };
 
+const SYNC_KIND = {
+  google_sheet: 'Google Sheet (live)',
+  drive_xlsx: 'Excel .xlsx on Drive',
+  local_xlsx: 'Local .xlsx file',
+};
+const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+const relTime = (iso) => {
+  if (!iso) return 'never';
+  const secs = Math.round((Date.now() - new Date(iso).getTime()) / 1000);
+  if (secs < 60) return 'just now';
+  if (secs < 3600) return `${Math.floor(secs / 60)}m ago`;
+  if (secs < 86400) return `${Math.floor(secs / 3600)}h ago`;
+  return new Date(iso).toLocaleDateString();
+};
+// "1 strain, 2 harvests updated · 1 batch added" from the push result.
+const summarizePush = (written) => {
+  const upd = [], add = [];
+  const nice = { strains: 'strain', batches: 'batch', harvests: 'harvest', customers: 'buyer' };
+  for (const [k, v] of Object.entries(written || {})) {
+    if (v.updated) upd.push(plural(v.updated, nice[k] || k));
+    if (v.appended) add.push(plural(v.appended, nice[k] || k));
+  }
+  if (!upd.length && !add.length) return 'Nothing to push — app and sheet already match.';
+  const parts = [];
+  if (upd.length) parts.push(`${upd.join(', ')} updated`);
+  if (add.length) parts.push(`${add.join(', ')} added`);
+  return parts.join(' · ');
+};
+const summarizePull = (imported) => {
+  const nice = { strains: 'strain', batches: 'batch', harvests: 'harvest', customers: 'buyer' };
+  const parts = Object.entries(imported || {})
+    .filter(([, v]) => v).map(([k, v]) => plural(v, nice[k] || k));
+  return parts.length ? `Imported ${parts.join(', ')} from the sheet.` : 'Sheet had no new rows to import.';
+};
+
+// Persistent log that survives panel refreshes (the old code wiped it on every
+// re-render, so actions looked like they did nothing).
+const syncLog = (html, cls = 'muted') => {
+  const box = $('sync-log');
+  if (box) box.innerHTML = `<div class="${cls}">${html}</div>`;
+};
+
+const renderSyncPanel = (s) => {
+  const panel = $('sync-panel');
+  if (!panel) return;
+  const rt = s.read_source, wt = s.write_target, st = s.sync_state || {};
+  const badge = (ok, yes, no) => `<span class="badge ${ok ? 'green' : 'amber'}">${ok ? yes : no}</span>`;
+  const rows = Object.entries(s.pushable_rows || {})
+    .map(([k, v]) => `<div class="env-row"><span>${k}</span><span class="badge ${v ? 'green' : 'muted'}">${v}</span></div>`).join('');
+  const canPull = rt.configured;
+  const canPush = wt.configured && wt.writable;
+  const dirty = st.dirty_count || 0;
+  panel.innerHTML = `
+    <div class="card" style="margin-bottom:16px">
+      <div class="env-row"><span>Unsynced app changes</span>
+        <span class="badge ${dirty ? 'amber' : 'green'}">${dirty ? plural(dirty, 'change') + ' pending' : 'all pushed'}</span></div>
+      <div class="env-row"><span>Last pushed to sheet</span><span class="muted">${relTime(st.last_pushed_at)}</span></div>
+      <div class="env-row"><span>Last imported from sheet</span><span class="muted">${relTime(st.last_pulled_at)}</span></div>
+      <div class="env-row"><span>Auto-push on change</span>${badge(s.auto_push, 'on', 'off — push manually')}</div>
+    </div>
+    <div class="grid two">
+      <div class="card">
+        <h3>Pull — Sheet → App</h3>
+        <div class="env-row"><span>Read source</span>${badge(rt.configured, SYNC_KIND[rt.kind] || rt.kind, 'not configured')}</div>
+        <div class="muted" style="margin:6px 0 12px;word-break:break-all">${rt.ref || 'Set MASTER_SHEET_PATH or MASTER_SHEET_GOOGLE_ID on the server.'}</div>
+        <button class="primary" id="sync-pull" ${canPull ? '' : 'disabled title="No read source configured"'}>Import from sheet</button>
+      </div>
+      <div class="card">
+        <h3>Push — App → Sheet</h3>
+        <div class="env-row"><span>Write target</span>${badge(wt.configured, SYNC_KIND[wt.kind] || wt.kind, 'not configured')}</div>
+        <div class="env-row"><span>Writable</span>${badge(wt.writable, 'ready', 'needs credentials')}</div>
+        <div class="muted" style="margin:6px 0 12px">${canPush ? 'Updates matching rows in place — your other columns are left untouched.' : 'Configure a writable target on the server to push.'}</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="primary" id="sync-push" ${canPush ? '' : 'disabled title="No writable target configured"'}>Push to sheet</button>
+          <button id="sync-download">Download .xlsx</button>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h3>Row counts</h3>
+      ${rows || '<div class="muted">No data yet.</div>'}
+    </div>`;
+
+  const refresh = async () => { try { renderSyncPanel(await API('/sync/status')); } catch (e) { /* keep last panel */ } };
+  const busy = (btn, fn) => async () => {
+    const label = btn.textContent; btn.disabled = true; btn.textContent = '…';
+    try { await fn(); } catch (e) { syncLog(`<b>Error:</b> ${e.message}`, 'badge red'); }
+    finally { await refresh(); }   // refresh only the panel — never the log
+  };
+
+  const pull = $('sync-pull'), push = $('sync-push'), dl = $('sync-download');
+  if (canPull) pull.addEventListener('click', busy(pull, async () => {
+    syncLog('Importing from sheet…'); const r = await POST_CHECKED('/sync/pull');
+    syncLog(summarizePull(r.imported), 'badge green');
+  }));
+  if (canPush) push.addEventListener('click', busy(push, async () => {
+    syncLog('Pushing to sheet…'); const r = await POST_CHECKED('/sync/push');
+    syncLog(`${summarizePush(r.written)} <span class="muted">→ ${SYNC_KIND[r.target.kind] || r.target.kind}</span>`, 'badge green');
+  }));
+  dl.addEventListener('click', () => { window.location = '/api/sync/workbook.xlsx'; });
+};
+
 views.sync = async () => {
   const root = $('sync');
-  root.innerHTML = '<div class="loading">Checking sync configuration…</div>';
-  const kindLabel = {
-    google_sheet: 'Google Sheet (live, cell-level)',
-    drive_xlsx: 'Excel .xlsx on Google Drive',
-    local_xlsx: 'Local .xlsx file',
-  };
-  const render = (s) => {
-    const rt = s.read_source, wt = s.write_target;
-    const rows = Object.entries(s.pushable_rows || {})
-      .map(([k, v]) => `<div class="env-row"><span>${k}</span><span class="badge ${v ? 'green' : 'muted'}">${v} rows</span></div>`).join('');
-    const badge = (ok, yes, no) => `<span class="badge ${ok ? 'green' : 'amber'}">${ok ? yes : no}</span>`;
-    root.innerHTML = `
-      <h2 class="section">Sheet Sync</h2>
-      <p class="lead">Two-way bridge between the app and your Master Cultivation Reference —
-        an Excel workbook or a Google Sheet as the single source of truth.</p>
-      <div class="grid two">
-        <div class="card">
-          <h3>Pull — Sheet → App</h3>
-          <div class="env-row"><span>Read source</span>${badge(rt.configured, kindLabel[rt.kind] || rt.kind, 'not configured')}</div>
-          <div class="muted" style="margin:6px 0 12px">${rt.ref || 'Set MASTER_SHEET_PATH or MASTER_SHEET_FILE_ID on the server.'}</div>
-          <button class="primary" id="sync-pull">Import from sheet</button>
-        </div>
-        <div class="card">
-          <h3>Push — App → Sheet</h3>
-          <div class="env-row"><span>Write target</span>${badge(wt.configured, kindLabel[wt.kind] || wt.kind, 'not configured')}</div>
-          <div class="env-row"><span>Writable</span>${badge(wt.writable, 'ready', 'needs credentials')}</div>
-          <div class="env-row"><span>Live mirror on create</span>${badge(s.mirror_enabled, 'on', 'off')}</div>
-          <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
-            <button class="primary" id="sync-push">Push to sheet</button>
-            <button id="sync-download">Download .xlsx</button>
-          </div>
-        </div>
-      </div>
-      <div class="card" style="margin-top:16px">
-        <h3>What the app would push</h3>
-        ${rows || '<div class="muted">No data yet.</div>'}
-      </div>
-      <div class="card" style="margin-top:16px" id="sync-log"><span class="muted">Actions and results appear here.</span></div>`;
-
-    const log = (html, cls = '') => { $('sync-log').innerHTML = `<div class="${cls}">${html}</div>`; };
-    const busy = (btn, fn) => async () => {
-      const label = btn.textContent; btn.disabled = true; btn.textContent = '…';
-      try { await fn(); } catch (e) { log(`<b>Error:</b> ${e.message}`, 'badge red'); }
-      finally { btn.disabled = false; btn.textContent = label; views.sync(); }
-    };
-
-    $('sync-pull').addEventListener('click', busy($('sync-pull'), async () => {
-      const r = await POST_CHECKED('/sync/pull');
-      log(`Imported from sheet → app: <b>${JSON.stringify(r.imported)}</b>`);
-    }));
-    $('sync-push').addEventListener('click', busy($('sync-push'), async () => {
-      const r = await POST_CHECKED('/sync/push');
-      log(`Pushed app → ${r.target.kind}: <b>${JSON.stringify(r.written)}</b>`);
-    }));
-    $('sync-download').addEventListener('click', () => {
-      window.location = '/api/sync/workbook.xlsx';
-    });
-  };
+  root.innerHTML = `
+    <h2 class="section">Sheet Sync</h2>
+    <p class="lead">Two-way bridge between the app and your Master Cultivation Reference —
+      an Excel workbook or a Google Sheet as the single source of truth.</p>
+    <div id="sync-panel"><div class="loading">Checking sync configuration…</div></div>
+    <div class="card" style="margin-top:16px" id="sync-log"><span class="muted">Actions and results appear here.</span></div>`;
   try {
-    render(await API('/sync/status'));
+    renderSyncPanel(await API('/sync/status'));
   } catch (e) {
-    root.innerHTML = `<h2 class="section">Sheet Sync</h2><div class="card badge red">Could not load status: ${e.message}</div>`;
+    $('sync-panel').innerHTML = `<div class="card badge red">Could not load status: ${e.message}</div>`;
   }
 };
 

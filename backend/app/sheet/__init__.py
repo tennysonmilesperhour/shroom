@@ -6,8 +6,8 @@ truth for both the FastAPI reference DB and the Supabase web app.
 * Sheet -> App:  source (Drive / local) -> parse -> sinks (SQLite + Supabase).
   Run it with ``python -m backend.app.sheet.importer``.
 * App -> Sheet:  export (DB -> layout rows) -> writer (local .xlsx / Drive .xlsx
-  / Google Sheets). Driven by the ``/api/sync`` endpoints and the live
-  ``mirror`` hook on create.
+  / Google Sheets), a non-destructive keyed upsert. Driven by the ``/api/sync``
+  endpoints and the debounced ``autosync`` push on create/update.
 """
 from .export import build_tables, push
 from .parse import ParsedWorkbook, parse_workbook

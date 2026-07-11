@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from .. import models, schemas
 from ..database import get_db
-from ..sheet import mirror
+from ..sheet import autosync
 
 router = APIRouter(tags=["business"])
 
@@ -27,7 +27,7 @@ def create_customer(payload: schemas.CustomerCreate, db: Session = Depends(get_d
     db.add(customer)
     db.commit()
     db.refresh(customer)
-    mirror.mirror("customers", customer)  # best-effort live append to the sheet
+    autosync.notify(db)  # mark dirty; auto-push to the sheet if enabled
     return customer
 
 

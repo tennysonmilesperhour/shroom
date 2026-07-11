@@ -1,7 +1,7 @@
 """Sinks for the reverse direction: write app data *into* a workbook/sheet.
 
 Three interchangeable backends implement the same tiny interface so the
-exporter (``export.push``) and the live mirror (``mirror``) don't care where
+exporter (``export.push``) and the auto-push (``autosync``) don't care where
 the bytes end up:
 
 * :class:`XlsxWriter`        — a local .xlsx (openpyxl). Offline, fully tested,
@@ -35,9 +35,45 @@ from . import layout, source
 @runtime_checkable
 class SheetWriter(Protocol):
     def replace_tab(self, tab: str, header: list[str], rows: list[list]) -> None: ...
+    def upsert_tab(self, tab: str, header: list[str], rows: list[list],
+                   key_cols: tuple[str, ...]) -> dict: ...
     def append_row(self, tab: str, header: list[str], row: list) -> None: ...
     def commit(self) -> None: ...
     def close(self) -> None: ...
+
+
+# --------------------------------------------------------------------------- #
+# Header-matching helpers (shared by every backend's upsert)
+# --------------------------------------------------------------------------- #
+def _norm(value: object) -> str:
+    return str(value).strip().lower() if value not in (None, "") else ""
+
+
+def _match_col(labels_norm: list[str], target: str, taken: set[int] = frozenset()) -> int:
+    """Index of ``target`` in a header row: exact (normalized) match first, then
+    a substring match so "Flush" finds "Flush #" and "Tub" finds "Tub ID".
+    Columns in ``taken`` are skipped so two owned labels can't collide onto the
+    same column (the caller then allocates a fresh one). Returns -1 when absent."""
+    t = _norm(target)
+    if not t:
+        return -1
+    for i, label in enumerate(labels_norm):
+        if i not in taken and label == t:
+            return i
+    for i, label in enumerate(labels_norm):
+        if i not in taken and label and (t in label or label in t):
+            return i
+    return -1
+
+
+def _col_letter(idx0: int) -> str:
+    """0-based column index -> A1 column letters (0->A, 26->AA)."""
+    idx0 += 1
+    out = ""
+    while idx0:
+        idx0, rem = divmod(idx0 - 1, 26)
+        out = chr(65 + rem) + out
+    return out
 
 
 # --------------------------------------------------------------------------- #
@@ -78,6 +114,72 @@ class _WorkbookWriter:
     def append_row(self, tab: str, header: list[str], row: list) -> None:
         ws = self._sheet(tab, header, create=True)
         ws.append(list(row))
+
+    # -- non-destructive upsert -------------------------------------------- #
+    def _find_or_write_header(self, ws, header, key_cols) -> tuple[list[str], int]:
+        """Locate the header row (tolerating banner rows above it, like the
+        importer) or write one. Returns (normalized labels, 1-based row)."""
+        maxrow, maxcol = ws.max_row, ws.max_column
+        for r in range(1, min(maxrow, 15) + 1):
+            labels = [_norm(ws.cell(row=r, column=c).value) for c in range(1, maxcol + 1)]
+            if all(_match_col(labels, c) >= 0 for c in key_cols):
+                return labels, r
+        empty = all(
+            ws.cell(row=r, column=c).value is None
+            for r in range(1, maxrow + 1) for c in range(1, maxcol + 1)
+        )
+        hr = 1 if empty else maxrow + 2  # never overwrite existing content
+        for j, label in enumerate(header, start=1):
+            ws.cell(row=hr, column=j, value=label)
+        return [_norm(l) for l in header], hr
+
+    def upsert_tab(self, tab: str, header: list[str], rows: list[list],
+                   key_cols: tuple[str, ...]) -> dict:
+        """Update matching rows in place and append new ones, keyed on
+        ``key_cols`` — never clears the tab, so operator-added rows and columns
+        survive. Falls back to replace when no key is defined."""
+        if not key_cols:
+            self.replace_tab(tab, header, rows)
+            return {"updated": 0, "appended": len(rows)}
+
+        ws = self.wb[tab] if tab in self.wb.sheetnames else self.wb.create_sheet(title=tab)
+        labels, header_row = self._find_or_write_header(ws, header, key_cols)
+
+        # Column (1-based) for each owned label; allocate missing ones at the end
+        # so we never overwrite an operator column we don't recognize. `taken`
+        # stops two labels from claiming the same fuzzy-matched column.
+        colpos: dict[str, int] = {}
+        taken: set[int] = set()
+        for label in header:
+            j = _match_col(labels, label, taken)
+            if j < 0:
+                j = len(labels)
+                labels.append(_norm(label))
+                ws.cell(row=header_row, column=j + 1, value=label)
+            taken.add(j)
+            colpos[label] = j + 1
+
+        key_at = [header.index(c) for c in key_cols]
+        key_cols_at = [colpos[c] for c in key_cols]
+        existing: dict[tuple, int] = {}
+        for r in range(header_row + 1, ws.max_row + 1):
+            k = tuple(layout._norm_key(ws.cell(row=r, column=ci).value) for ci in key_cols_at)
+            if any(k):
+                existing.setdefault(k, r)
+
+        updated = appended = 0
+        for row in rows:
+            k = tuple(layout._norm_key(row[p]) for p in key_at)
+            target = existing.get(k)
+            if target is None:
+                target = ws.max_row + 1
+                existing[k] = target
+                appended += 1
+            else:
+                updated += 1
+            for label, value in zip(header, row):
+                ws.cell(row=target, column=colpos[label], value=value)
+        return {"updated": updated, "appended": appended}
 
     def to_bytes(self) -> bytes:
         buf = io.BytesIO()
@@ -213,6 +315,116 @@ class GoogleSheetsWriter:
             json={"values": values},
         )
         resp.raise_for_status()
+
+    def _read_values(self, tab: str) -> list[list[str]]:
+        resp = self.client.get(
+            f"{self.base}/values/{self.a1_range(tab)}",
+            params={"majorDimension": "ROWS"},
+        )
+        resp.raise_for_status()
+        return resp.json().get("values", [])
+
+    def upsert_tab(self, tab: str, header: list[str], rows: list[list],
+                   key_cols: tuple[str, ...]) -> dict:
+        """Keyed upsert against a live Sheet: update matching rows in place,
+        append new ones, and leave unmanaged rows/columns intact. Owned columns
+        are written as one contiguous span per row so operator columns to the
+        right are preserved (see append fallback when there's no header yet)."""
+        if not key_cols:
+            self.replace_tab(tab, header, rows)
+            return {"updated": 0, "appended": len(rows)}
+
+        self._ensure_tab(tab)
+        values = self._read_values(tab)
+
+        header_idx = None
+        for i, rowvals in enumerate(values[:15]):
+            labels = [_norm(v) for v in rowvals]
+            if all(_match_col(labels, c) >= 0 for c in key_cols):
+                header_idx = i
+                break
+
+        # No header found -> fresh tab: append header + every row.
+        if header_idx is None:
+            body = [list(header)] + [[layout.cell_to_str(c) for c in r] for r in rows]
+            self.client.post(
+                f"{self.base}/values/{self.a1_range(tab, 'A1')}:append",
+                params={"valueInputOption": "USER_ENTERED", "insertDataOption": "INSERT_ROWS"},
+                json={"values": body},
+            ).raise_for_status()
+            return {"updated": 0, "appended": len(rows)}
+
+        labels = [_norm(v) for v in values[header_idx]]
+        colpos: dict[str, int] = {}
+        header_updates: list[dict] = []
+        taken: set[int] = set()
+        for label in header:
+            j = _match_col(labels, label, taken)
+            if j < 0:
+                j = len(labels)
+                labels.append(_norm(label))
+                header_updates.append({
+                    "range": self._a1_cell(tab, header_idx, j),
+                    "values": [[label]],
+                })
+            taken.add(j)
+            colpos[label] = j
+
+        lo, hi = min(colpos.values()), max(colpos.values())
+        key_at = [header.index(c) for c in key_cols]
+        key_cols_pos = [colpos[c] for c in key_cols]
+
+        existing: dict[tuple, int] = {}
+        for ri in range(header_idx + 1, len(values)):
+            rowvals = values[ri]
+            k = tuple(
+                layout._norm_key(rowvals[p] if p < len(rowvals) else "")
+                for p in key_cols_pos
+            )
+            if any(k):
+                existing.setdefault(k, ri)
+
+        data = list(header_updates)
+        appends: list[list[str]] = []
+        updated = appended = 0
+        for row in rows:
+            k = tuple(layout._norm_key(row[p]) for p in key_at)
+            cells = {label: layout.cell_to_str(value) for label, value in zip(header, row)}
+            ri = existing.get(k)
+            if ri is None:
+                # A brand-new row: append the owned columns as one contiguous
+                # span (no operator cells exist in a new row to preserve).
+                span = [""] * (hi - lo + 1)
+                for label, value in cells.items():
+                    span[colpos[label] - lo] = value
+                appends.append([""] * lo + span)
+                existing[k] = -1  # mark seen so a duplicate key in this batch appends once
+                appended += 1
+            else:
+                # Update in place, one cell per owned column, so operator
+                # columns interspersed between ours are never overwritten.
+                for label, value in cells.items():
+                    data.append({
+                        "range": self._a1_cell(tab, ri, colpos[label]),
+                        "values": [[value]],
+                    })
+                updated += 1
+        if data:
+            self.client.post(
+                f"{self.base}/values:batchUpdate",
+                json={"valueInputOption": "USER_ENTERED", "data": data},
+            ).raise_for_status()
+        if appends:
+            self.client.post(
+                f"{self.base}/values/{self.a1_range(tab, 'A1')}:append",
+                params={"valueInputOption": "USER_ENTERED", "insertDataOption": "INSERT_ROWS"},
+                json={"values": appends},
+            ).raise_for_status()
+        return {"updated": updated, "appended": appended}
+
+    def _a1_cell(self, tab: str, row_idx0: int, col_idx0: int) -> str:
+        cell = f"{_col_letter(col_idx0)}{row_idx0 + 1}"
+        return self.a1_range(tab, cell)
 
     def commit(self) -> None:
         pass
