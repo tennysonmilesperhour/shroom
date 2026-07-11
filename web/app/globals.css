@@ -2282,12 +2282,48 @@ body::after {
   animation: qtoast-in 320ms var(--ease-out);
 }
 .qtoast-mark {
+  position: relative;
   width: 9px; height: 9px; border-radius: 50%; margin-top: 6px; flex: none;
   background: var(--lumen); box-shadow: 0 0 10px var(--lumen);
+  color: var(--lumen); /* drives the bloom tint below */
 }
-.qtoast.moss  .qtoast-mark { background: var(--moss);  box-shadow: 0 0 10px var(--moss); }
-.qtoast.ember .qtoast-mark { background: var(--ember); box-shadow: 0 0 10px var(--ember); }
-.qtoast.spore .qtoast-mark { background: var(--spore); box-shadow: 0 0 10px var(--spore); }
+.qtoast.moss  .qtoast-mark { background: var(--moss);  box-shadow: 0 0 10px var(--moss);  color: var(--moss); }
+.qtoast.ember .qtoast-mark { background: var(--ember); box-shadow: 0 0 10px var(--ember); color: var(--ember); }
+.qtoast.spore .qtoast-mark { background: var(--spore); box-shadow: 0 0 10px var(--spore); color: var(--spore); }
+
+/* Signature confirmation: a single bioluminescent bloom radiates from the mark
+   when a toast appears — the operation the operator just did, landing. Tone-tinted
+   (green for success, red for error, amber/cyan otherwise). Transform+opacity
+   only, so it's GPU-cheap; silenced under reduced-motion. */
+.qtoast-mark::after {
+  content: "";
+  position: absolute; top: 50%; left: 50%;
+  width: 9px; height: 9px; margin: -4.5px 0 0 -4.5px;
+  border-radius: 50%;
+  background: radial-gradient(circle, currentColor 0%, transparent 68%);
+  opacity: 0;
+  transform: scale(0.6);
+  animation: spore-bloom 1150ms var(--ease-out) 60ms both;
+  pointer-events: none;
+}
+@keyframes spore-bloom {
+  0%   { opacity: 0.5;  transform: scale(0.6); }
+  65%  { opacity: 0.14; }
+  100% { opacity: 0;    transform: scale(6.4); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .qtoast-mark::after { animation: none; display: none; }
+}
+
+/* Reusable in-place confirmation: a single moss ring blooms outward from a
+   control the instant its action succeeds — a quiet "done" right where the
+   operator clicked, echoing the toast's bloom. Add the class for ~900ms. */
+@keyframes action-bloom {
+  0%   { box-shadow: 0 0 0 0   color-mix(in oklch, var(--moss) 55%, transparent); }
+  100% { box-shadow: 0 0 0 16px color-mix(in oklch, var(--moss) 0%,  transparent); }
+}
+.action-bloom { animation: action-bloom 900ms var(--ease-out); }
+@media (prefers-reduced-motion: reduce) { .action-bloom { animation: none; } }
 .qtoast-text { flex: 1; min-width: 0; }
 .qtoast-title {
   font-family: var(--font-display);

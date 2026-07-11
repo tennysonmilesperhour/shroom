@@ -221,7 +221,7 @@ export async function advanceBatchStage(batchId: number): Promise<EntityResult> 
   const supabase = createServiceClient();
   const { data: current, error: readErr } = await supabase
     .from("batches")
-    .select("stage,lot_code")
+    .select("stage,lot_code,colonized_on,fruiting_on,spent_on")
     .eq("id", batchId)
     .single();
   if (readErr || !current) return { ok: false, message: readErr?.message ?? "Not found." };
@@ -234,9 +234,11 @@ export async function advanceBatchStage(batchId: number): Promise<EntityResult> 
   }
   const today = new Date().toISOString().slice(0, 10);
   const update: Record<string, unknown> = { stage: next };
-  if (next === "colonization") update.colonized_on = today;
-  else if (next === "fruiting") update.fruiting_on = today;
-  else if (next === "spent") update.spent_on = today;
+  // Only stamp a milestone that isn't already recorded, so re-advancing (or a
+  // date set at creation) never overwrites the real date. Mirrors moveBatchStage.
+  if (next === "colonization" && !current.colonized_on) update.colonized_on = today;
+  else if (next === "fruiting" && !current.fruiting_on) update.fruiting_on = today;
+  else if (next === "spent" && !current.spent_on) update.spent_on = today;
 
   const { error } = await supabase.from("batches").update(update).eq("id", batchId);
   if (error) return { ok: false, message: error.message };

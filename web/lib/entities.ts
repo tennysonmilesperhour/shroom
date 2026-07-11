@@ -10,6 +10,7 @@
 import type { SyncEntity } from "@/lib/sync";
 import type { ConvertKind } from "@/lib/format";
 import { STAGE_ORDER, STAGE_LABEL } from "@/lib/stages";
+import { channelOptions } from "@/lib/channels";
 
 export type FieldType =
   | "text"
@@ -173,7 +174,7 @@ export const ENTITIES: Record<string, EntityDef> = {
         name: "channel",
         label: "Channel",
         type: "select",
-        options: opt("wholesale", "distributor", "csa", "farmers_market", "restaurant", "dtc"),
+        options: channelOptions,
       },
       {
         name: "status",
@@ -206,13 +207,29 @@ export const ENTITIES: Record<string, EntityDef> = {
         name: "channel",
         label: "Channel",
         type: "select",
-        options: opt("wholesale", "distributor", "csa", "farmers_market", "restaurant", "dtc"),
+        options: channelOptions,
       },
       { name: "order_date", label: "Order date", type: "date", required: true },
       { name: "fulfillment_date", label: "Fulfillment date", type: "date" },
+      // Payment + fulfillment are what the list badges and KPIs read; expose
+      // them here so an order's shown status is actually editable (they match
+      // AddOrderForm). `status` is kept for the order lifecycle / cancellation
+      // (the analytics views exclude cancelled orders on it).
+      {
+        name: "financial_status",
+        label: "Payment",
+        type: "select",
+        options: opt("pending", "paid", "refunded"),
+      },
+      {
+        name: "fulfillment_status",
+        label: "Fulfillment",
+        type: "select",
+        options: opt("unfulfilled", "partial", "fulfilled"),
+      },
       {
         name: "status",
-        label: "Status",
+        label: "Order status",
         type: "select",
         options: opt("draft", "confirmed", "fulfilled", "cancelled"),
       },

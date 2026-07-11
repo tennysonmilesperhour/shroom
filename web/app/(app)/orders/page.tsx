@@ -54,8 +54,11 @@ export default async function OrdersPage() {
     ),
   ]);
 
-  const grossYtd = orders.reduce((s, o) => s + lineTotal(o.order_lines), 0);
-  const avg = orders.length > 0 ? grossYtd / orders.length : 0;
+  // Exclude cancelled orders from revenue, matching the analytics views
+  // (v_commerce_kpis / v_customer_ltv) so every revenue surface agrees.
+  const liveOrders = orders.filter((o) => o.status !== "cancelled");
+  const grossYtd = liveOrders.reduce((s, o) => s + lineTotal(o.order_lines), 0);
+  const avg = liveOrders.length > 0 ? grossYtd / liveOrders.length : 0;
 
   return (
     <>
@@ -140,6 +143,8 @@ export default async function OrdersPage() {
                         channel: o.channel,
                         order_date: o.order_date,
                         fulfillment_date: o.fulfillment_date,
+                        financial_status: o.financial_status,
+                        fulfillment_status: o.fulfillment_status,
                         status: o.status,
                         notes: o.notes,
                       }}
