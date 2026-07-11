@@ -1,0 +1,74 @@
+name: Sheet export
+
+# Reverse sync: write the app's current data back into the Master Cultivation
+# Reference (App -> Sheet). This is the batch counterpart of POST /api/sync/push
+# and the job the in-app "Push to sheet" button on /sync triggers via the GitHub
+# workflow-dispatch API.
+#
+# Dispatch-only on purpose — a write to the canonical workbook should be a
+# deliberate act, never a silent schedule. The push is a NON-DESTRUCTIVE keyed
+# upsert: owned rows are matched on their natural key and updated in place, new
+# ones appended, and any columns/rows maintained by hand on the sheet are left
+# untouched. Safe to run repeatedly.
+#
+# Required repository secrets:
+#   SHROOM_DB_URL             - SQLAlchemy URL for the DATA TO PUSH. For the live
+#                               app this is the Supabase Postgres connection
+#                               string (e.g. postgresql+psycopg://...pooler...).
+#   GOOGLE_SERVICE_ACCOUNT_JSON - service-account key with drive + spreadsheets
+#                               WRITE scope, with the workbook shared to its email
+#   One write target:
+#     MASTER_SHEET_GOOGLE_ID  - a native Google Sheet id (recommended), or
+#     MASTER_SHEET_FILE_ID    - an .xlsx file id on Google Drive
+#   For the "clear the queue on success" step (optional but recommended):
+#     SUPABASE_URL              - https://<ref>.supabase.co
+#     SUPABASE_SERVICE_ROLE_KEY - service-role key (bypasses RLS; keep secret)
+
+on:
+  workflow_dispatch:
+    inputs:
+      mark_synced:
+        description: "Clear the pending sync queue after a successful push"
+        type: boolean
+        default: true
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+
+      - name: Push app data into the sheet
+        env:
+          SHROOM_DB_URL: ${{ secrets.SHROOM_DB_URL }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          MASTER_SHEET_GOOGLE_ID: ${{ secrets.MASTER_SHEET_GOOGLE_ID }}
+          MASTER_SHEET_FILE_ID: ${{ secrets.MASTER_SHEET_FILE_ID }}
+        run: python -m backend.app.sheet.exporter
+
+      # The pending queue is the log of app-side edits waiting to reach the
+      # sheet. The push above sent the current DB state, so once it succeeds the
+      # queue is reconciled — clear it (PostgREST PATCH, service role) so the
+      # in-app "Pending ops" counter reflects reality.
+      - name: Clear pending sync queue
+        if: ${{ success() && inputs.mark_synced }}
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+            echo "Supabase secrets not set — skipping queue clear."; exit 0
+          fi
+          now="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          curl -fsS -X PATCH \
+            "$SUPABASE_URL/rest/v1/sheet_sync_queue?synced_at=is.null" \
+            -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+            -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: return=minimal" \
+            -d "{\"synced_at\": \"$now\"}"
+          echo "Pending queue cleared."

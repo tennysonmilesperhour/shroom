@@ -3,6 +3,7 @@
 import { useId } from "react";
 import EntityForm from "@/components/EntityForm";
 import { addOrder } from "./actions";
+import { SALES_CHANNELS, channelLabel } from "@/lib/channels";
 
 interface CustomerOption {
   id: number;
@@ -37,12 +38,9 @@ export default function AddOrderForm({ customers }: AddOrderFormProps) {
       <div>
         <label htmlFor={ids.channel}>Channel</label>
         <select id={ids.channel} name="channel" defaultValue="wholesale">
-          <option value="wholesale">wholesale</option>
-          <option value="distributor">distributor</option>
-          <option value="retail">retail</option>
-          <option value="wellness">wellness</option>
-          <option value="market">market</option>
-          <option value="online">online</option>
+          {SALES_CHANNELS.map((c) => (
+            <option key={c} value={c}>{channelLabel(c)}</option>
+          ))}
         </select>
       </div>
       <div>

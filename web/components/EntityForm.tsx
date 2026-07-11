@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, type ReactNode, type FormEvent } from "react";
+import { useRef, useState, useTransition, type ReactNode, type FormEvent } from "react";
 import { useToast } from "@/components/ToastProvider";
 
 export interface EntityResult {
@@ -25,8 +25,10 @@ export default function EntityForm({
   resetOnSuccess = true,
 }: EntityFormProps) {
   const [result, setResult] = useState<EntityResult | null>(null);
+  const [bloom, setBloom] = useState(false);
   const [pending, startTransition] = useTransition();
   const { push } = useToast();
+  const bloomTimer = useRef<number | undefined>(undefined);
 
   function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -36,6 +38,13 @@ export default function EntityForm({
       const r = await action(data);
       setResult(r);
       if (r.ok && resetOnSuccess) form.reset();
+      if (r.ok) {
+        // One-shot success bloom on the button, echoing the toast.
+        setBloom(false);
+        window.clearTimeout(bloomTimer.current);
+        requestAnimationFrame(() => setBloom(true));
+        bloomTimer.current = window.setTimeout(() => setBloom(false), 900);
+      }
       push({
         title: r.ok ? "Saved" : "Couldn’t save",
         body: r.message ?? (r.ok ? undefined : "Something went wrong."),
@@ -48,7 +57,12 @@ export default function EntityForm({
     <form onSubmit={onSubmit} className="form-grid">
       {children}
       <div className="actions full">
-        <button type="submit" className="primary" data-ripple disabled={pending}>
+        <button
+          type="submit"
+          className={`primary${bloom ? " action-bloom" : ""}`}
+          data-ripple
+          disabled={pending}
+        >
           {pending ? "Saving…" : submitLabel}
         </button>
         {result && (

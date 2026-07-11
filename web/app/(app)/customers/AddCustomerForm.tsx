@@ -3,6 +3,7 @@
 import { useId } from "react";
 import EntityForm from "@/components/EntityForm";
 import { addCustomer } from "./actions";
+import { SALES_CHANNELS, channelLabel } from "@/lib/channels";
 
 export default function AddCustomerForm() {
   const nameId = useId();
@@ -25,12 +26,9 @@ export default function AddCustomerForm() {
       <div>
         <label htmlFor={channelId}>Channel</label>
         <select id={channelId} name="channel" defaultValue="wholesale">
-          <option value="wholesale">wholesale</option>
-          <option value="distributor">distributor</option>
-          <option value="retail">retail</option>
-          <option value="wellness">wellness</option>
-          <option value="market">market</option>
-          <option value="online">online</option>
+          {SALES_CHANNELS.map((c) => (
+            <option key={c} value={c}>{channelLabel(c)}</option>
+          ))}
         </select>
       </div>
       <div>

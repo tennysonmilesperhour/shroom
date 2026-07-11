@@ -80,8 +80,16 @@ export async function updateEntity(
   }
 
   const supabase = createServiceClient();
-  const { error } = await supabase.from(entity.table).update(patch).eq("id", id);
+  // .select() so PostgREST reports the affected rows — an update whose filter
+  // matches nothing returns no error, which would otherwise read as success.
+  const { data, error } = await supabase
+    .from(entity.table)
+    .update(patch)
+    .eq("id", id)
+    .select("id");
   if (error) return { ok: false, message: error.message };
+  if (!data || data.length === 0)
+    return { ok: false, message: "This record no longer exists — reload the page." };
 
   if (entity.sync) await enqueueSync(supabase, entity.sync, id, "update", patch);
   revalidatePath(entity.listPath);
@@ -98,7 +106,11 @@ export async function deleteEntity(key: string, id: number): Promise<EntityResul
   if (!Number.isFinite(id)) return { ok: false, message: "Invalid record." };
 
   const supabase = createServiceClient();
-  const { error } = await supabase.from(entity.table).delete().eq("id", id);
+  const { data, error } = await supabase
+    .from(entity.table)
+    .delete()
+    .eq("id", id)
+    .select("id");
   if (error) {
     // Most failures here are FK constraints (e.g. a strain still has batches).
     return {
@@ -108,6 +120,8 @@ export async function deleteEntity(key: string, id: number): Promise<EntityResul
         : error.message,
     };
   }
+  if (!data || data.length === 0)
+    return { ok: false, message: "This record no longer exists — reload the page." };
 
   if (entity.sync) await enqueueSync(supabase, entity.sync, id, "delete", {});
   revalidatePath(entity.listPath);
