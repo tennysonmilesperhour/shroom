@@ -146,6 +146,53 @@ views.harvests = async () => {
     </table></div>`;
 };
 
+// --- Supplies (inferred usage of untracked consumables) ---
+views.supplies = async () => {
+  const root = $('supplies');
+  root.innerHTML = '<div class="loading">Inferring supply usage…</div>';
+  const u = await API('/analytics/supply-usage');
+  const num = (n) => Number(n).toLocaleString(undefined, { maximumFractionDigits: 3 });
+  const stageChips = Object.entries(u.stage_completions)
+    .sort((a, b) => b[1] - a[1])
+    .map(([s, n]) => `<span class="badge muted">${s}: ${n}</span>`).join(' ');
+
+  const card = (s) => {
+    const rep = s.replacement;
+    let repHtml = '';
+    if (rep) {
+      const due = rep.due_now;
+      repHtml = `<div class="env-row"><span>Replace every ${rep.replace_after_batches} batches</span>
+        <span class="badge ${due ? 'red' : rep.batches_until_next <= 5 ? 'amber' : 'green'}">${
+          due ? 'due now' : `${rep.batches_until_next} to go`}</span></div>`;
+    }
+    const stageRows = s.by_stage.map((b) => `<div class="env-row"><span>${b.stage}
+      <span class="muted">(${num(b.avg_qty)}/${b.basis})</span></span>
+      <span>${num(b.used)} ${s.unit}</span></div>`).join('');
+    return `<div class="card" style="margin-bottom:12px">
+      <div class="env-row" style="border:none;padding-bottom:4px">
+        <h3 style="margin:0">${s.supply_name}
+          ${s.on_hand == null ? '<span class="badge amber">untracked</span>'
+            : `<span class="badge blue">on hand ${num(s.on_hand)} ${s.unit}</span>`}</h3>
+        <span class="value" style="font-size:1.15rem">${num(s.inferred_used)}<span class="unit"> ${s.unit} used</span></span>
+      </div>
+      ${repHtml}
+      ${stageRows}
+    </div>`;
+  };
+
+  root.innerHTML = `<h2 class="section">Supply Usage (inferred)</h2>
+    <p class="lead">Average burn per stage × batches that reached each stage — so consumables we never
+      count per use (isopropyl alcohol, gloves, filter discs) get a running total, and wear items get a
+      replace-by forecast. Estimates, not meter readings.</p>
+    <div class="card" style="margin-bottom:16px">
+      <h3>Throughput</h3>
+      <div class="muted" style="margin-bottom:8px">${u.batches_considered} batches considered · stages reached:</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">${stageChips}</div>
+    </div>
+    ${u.supplies.length ? u.supplies.map(card).join('')
+      : '<div class="card muted">No stage supply estimates configured yet.</div>'}`;
+};
+
 // --- Environment ---
 views.environment = async () => {
   const root = $('environment');

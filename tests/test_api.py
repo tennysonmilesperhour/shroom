@@ -109,6 +109,52 @@ def test_advisor_graceful_without_key(client):
             os.environ["ANTHROPIC_API_KEY"] = saved
 
 
+def test_supply_usage_infers_untracked(client):
+    """Stage estimates × batches-that-reached-each-stage infers supply burn,
+    and the flow-hood IPA carries a replace-every-50-batches forecast."""
+    r = client.get("/api/analytics/supply-usage").json()
+    total = r["batches_considered"]
+    # Every batch passes through inoculation, so its completion count == total.
+    assert r["stage_completions"]["inoculation"] == total
+
+    ipa = next(s for s in r["supplies"] if s["supply_name"] == "70% isopropyl alcohol")
+    # Linked to the tracked inventory item, so on-hand rides along.
+    assert ipa["on_hand"] == 3.0
+    inoc = next(b for b in ipa["by_stage"] if b["stage"] == "inoculation")
+    assert inoc["batches"] == total
+    assert abs(inoc["used"] - round(0.05 * total, 3)) < 1e-6
+    rep = ipa["replacement"]
+    assert rep["replace_after_batches"] == 50
+    assert rep["completions"] == total
+    assert rep["batches_until_next"] == 50 - (total % 50)
+
+    # A block-based, untracked supply is inferred with no inventory link.
+    gloves = next(s for s in r["supplies"] if s["supply_name"] == "Nitrile gloves")
+    assert gloves["on_hand"] is None
+    assert gloves["inferred_used"] > 0
+
+
+def test_stage_supply_estimate_crud(client):
+    created = client.post("/api/stage-supply-estimates", json={
+        "stage": "colonization", "supply_name": "Agar plates",
+        "unit": "plate", "avg_qty": 0.5, "basis": "batch",
+    })
+    assert created.status_code == 201
+    eid = created.json()["id"]
+    listing = client.get("/api/stage-supply-estimates").json()
+    assert any(e["id"] == eid for e in listing)
+
+    bad_stage = client.post("/api/stage-supply-estimates", json={
+        "stage": "not_a_stage", "supply_name": "x"})
+    assert bad_stage.status_code == 400
+    bad_basis = client.post("/api/stage-supply-estimates", json={
+        "stage": "fruiting", "supply_name": "x", "basis": "wrong"})
+    assert bad_basis.status_code == 400
+
+    assert client.delete(f"/api/stage-supply-estimates/{eid}").status_code == 204
+    assert eid not in [e["id"] for e in client.get("/api/stage-supply-estimates").json()]
+
+
 def test_circular_economy(client):
     ce = client.get("/api/analytics/circular-economy").json()
     assert ce["spent_substrate_kg"] > 0

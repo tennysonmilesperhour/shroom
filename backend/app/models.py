@@ -35,6 +35,12 @@ from .database import Base
 # Stages mirror Isaac's grain-bag-to-tub workflow: inoculate grain -> colonize
 # in the dark -> spawn to bulk/tub -> fruiting -> flush harvests -> spent.
 STAGES = ["inoculation", "colonization", "spawn_to_bulk", "fruiting", "harvesting", "spent", "contaminated"]
+# Ordered biological main path (excludes the off-path "contaminated" state). A
+# batch sitting at a given stage is assumed to have passed through every earlier
+# stage on this path — the assumption behind inferring stage-driven supply burn.
+STAGE_LIFECYCLE = ["inoculation", "colonization", "spawn_to_bulk", "fruiting", "harvesting", "spent"]
+# How a stage estimate scales: a flat amount per batch, or per block/unit.
+SUPPLY_BASES = ["batch", "block"]
 ROOM_TYPES = ["lab", "incubation", "pasteurization", "fruiting", "cold_storage", "packaging"]
 SALES_CHANNELS = ["wholesale", "distributor", "csa", "farmers_market", "restaurant", "retail", "online"]
 CONTAM_TYPES = ["trichoderma", "cobweb", "bacterial_blotch", "green_mold", "wet_spot", "other"]
@@ -293,6 +299,39 @@ class InventoryItem(Base):
         # A zero threshold means "not tracked for reorder" — otherwise every
         # untracked item is permanently flagged low.
         return self.reorder_threshold > 0 and self.quantity_on_hand <= self.reorder_threshold
+
+
+class StageSupplyEstimate(Base):
+    """Average supply consumption attributed to completing a batch stage.
+
+    This is the bridge from *tracked* batch throughput to *untracked* supply
+    burn. Many consumables — isopropyl alcohol, gloves, filter discs, agar — are
+    never counted per use, but we know roughly how much each stage eats and how
+    many batches passed through each stage. Multiplying the two infers total
+    usage. For wear items swapped on a fixed cadence (``replace_after_batches``
+    — e.g. flow-hood IPA replaced every 50 batches) it also forecasts the next
+    replacement, the one signal there was otherwise no way to track.
+    """
+
+    __tablename__ = "stage_supply_estimates"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    stage: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
+    supply_name: Mapped[str] = mapped_column(String(120), nullable=False)
+    # Optional link to a tracked inventory item; when set the report shows
+    # on-hand beside inferred usage. Left null for genuinely untracked supplies.
+    inventory_item_id: Mapped[int | None] = mapped_column(ForeignKey("inventory_items.id"))
+    unit: Mapped[str] = mapped_column(String(20), default="unit")
+    avg_qty: Mapped[float] = mapped_column(Float, default=0.0)
+    # "batch": avg_qty per batch reaching the stage. "block": scales by block_count.
+    basis: Mapped[str] = mapped_column(String(10), default="batch")
+    # Wear items replaced every N batches through this stage (null = pure consumable).
+    replace_after_batches: Mapped[int | None] = mapped_column(Integer)
+    notes: Mapped[str] = mapped_column(Text, default="")
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+    inventory_item = relationship("InventoryItem")
 
 
 class Customer(Base):
