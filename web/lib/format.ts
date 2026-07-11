@@ -4,11 +4,38 @@
 export const cToF = (c: number | null | undefined) =>
   c == null ? null : Math.round((c * 9) / 5 + 32);
 
+export const fToC = (f: number | null | undefined) =>
+  f == null ? null : Math.round((((f - 32) * 5) / 9) * 10) / 10;
+
 export const kgToG = (kg: number | null | undefined) =>
   kg == null ? 0 : Math.round(kg * 1000);
 
+export const LB_PER_KG = 2.20462;
+
 export const kgToLb = (kg: number | null | undefined) =>
-  kg == null ? 0 : Math.round(kg * 2.20462 * 10) / 10;
+  kg == null ? 0 : Math.round(kg * LB_PER_KG * 10) / 10;
+
+export const lbToKg = (lb: number | null | undefined) =>
+  lb == null ? 0 : Math.round((lb / LB_PER_KG) * 1000) / 1000;
+
+// Some columns store one unit but are entered/shown in another (kg↔lb, °C↔°F).
+// A field declares a `convert` kind; the edit form shows the display unit and
+// the crud layer converts back to the stored unit on save. Keeping storage in
+// the canonical unit means all downstream math (bio-efficiency, in-spec bands)
+// is untouched — only the operator-facing surface changes.
+export type ConvertKind = "kg_to_lb" | "c_to_f";
+
+export function convertToDisplay(kind: ConvertKind, stored: number): number {
+  if (kind === "kg_to_lb") return kgToLb(stored);
+  if (kind === "c_to_f") return cToF(stored) ?? stored;
+  return stored;
+}
+
+export function convertToStore(kind: ConvertKind, shown: number): number {
+  if (kind === "kg_to_lb") return lbToKg(shown);
+  if (kind === "c_to_f") return fToC(shown) ?? shown;
+  return shown;
+}
 
 export const money = (n: number | null | undefined) =>
   `$${(n ?? 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;

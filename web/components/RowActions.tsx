@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useToast } from "@/components/ToastProvider";
 import { deleteEntity } from "@/lib/crud";
 import EditDialog from "@/components/EditDialog";
+import Portal from "@/components/Portal";
 import type { Option } from "@/lib/entities";
 
 interface RowActionsProps {
@@ -133,6 +134,7 @@ export default function RowActions({
       )}
 
       {confirming && (
+        <Portal>
         <div className="modal-overlay" role="presentation" onClick={() => setConfirming(false)}>
           <div
             className="modal-panel confirm"
@@ -158,6 +160,7 @@ export default function RowActions({
             </div>
           </div>
         </div>
+        </Portal>
       )}
     </div>
   );

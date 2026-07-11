@@ -243,10 +243,31 @@ def _non_blank_count(row: list) -> int:
 _CONTAINER_PAREN = re.compile(
     r"\s*\([^)]*\b(?:bag|grain|aio|tub|monotub|jar)\b[^)]*\)\s*$", re.I)
 
+# Leading list decoration the sheet uses for bulleted strain rows: "• PE6",
+# "- Enigma", "* Fiji". If left on, "• PE6" and "PE6" are distinct names and
+# the importer inserts a second row instead of upserting onto the first — the
+# source of the duplicate "• Name" strains. Stripped so both collapse to one.
+_LEADING_DECOR = re.compile(r"^[\s•▪◦‣·♦●○*\-–—]+")
+
+# Rows that are order/shipment notes parked in a strain column ("NEW SPORES —
+# order #6849 shipped", "tracking 1Z…"), not actual strains. Kept out of the
+# library so they don't masquerade as cultures.
+_ORDER_NOTE = re.compile(
+    r"(?i)\border\s*#|#\d{3,}|\btracking\b|\bshipped\b|\bshipment\b|\beta\b|"
+    r"\bnew\s+spores\b")
+
 
 def _strip_name(name: str) -> str:
-    """Canonical strain name: drop only a trailing container parenthetical."""
-    return _CONTAINER_PAREN.sub("", util.clean(name)).strip()
+    """Canonical strain name: drop a trailing container parenthetical and any
+    leading bullet/list decoration, then collapse internal whitespace."""
+    cleaned = _CONTAINER_PAREN.sub("", util.clean(name))
+    cleaned = _LEADING_DECOR.sub("", cleaned)
+    return re.sub(r"\s{2,}", " ", cleaned).strip()
+
+
+def _is_order_note(name: str) -> bool:
+    """True for cells that are order/shipment notes rather than strain names."""
+    return bool(_ORDER_NOTE.search(name))
 
 
 def parse_strain_library(wb: Workbook) -> list[Strain]:
@@ -273,6 +294,9 @@ def parse_strain_library(wb: Workbook) -> list[Strain]:
         name_raw = util.clean(_at(row, c_name))
         # Section banners ("MEDICINAL — COLONIZING") have a name but no status.
         if not name_raw or util.is_blank(_at(row, c_status)):
+            continue
+        # Order/shipment notes sometimes sit in the strain column — not cultures.
+        if _is_order_note(name_raw):
             continue
         notes = util.clean(_at(row, c_notes))
         out.append(Strain(
@@ -319,6 +343,8 @@ def parse_fridge_and_incoming(wb: Workbook) -> list[Strain]:
             name = util.clean(_at(row, c_name))
             if not name or util.is_blank(_at(row, c_status)):
                 continue
+            if _is_order_note(name):
+                continue
             out.append(Strain(
                 name=_strip_name(name),
                 mushroom_type="psychedelic",
@@ -351,6 +377,8 @@ def parse_fridge_and_incoming(wb: Workbook) -> list[Strain]:
             if "supplies" in text and "substrate" in text:
                 break
             if util.is_blank(_at(row, c_status)):
+                continue
+            if _is_order_note(name):
                 continue
             out.append(Strain(
                 name=_strip_name(name),

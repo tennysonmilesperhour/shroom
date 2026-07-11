@@ -4,6 +4,7 @@ import { useId, useState } from "react";
 import EntityForm from "@/components/EntityForm";
 import { addBatch } from "./actions";
 import { STAGE_ORDER, STAGE_LABEL } from "@/lib/stages";
+import { kgToLb } from "@/lib/format";
 
 interface Option {
   id: number;
@@ -173,14 +174,14 @@ export default function AddBatchForm({ strains, rooms, presets }: AddBatchFormPr
           />
         </div>
         <div>
-          <label htmlFor={ids.substrate}>Substrate (kg)</label>
+          <label htmlFor={ids.substrate}>Substrate (lb)</label>
           <input
             id={ids.substrate}
-            name="substrate_weight_kg"
+            name="substrate_weight_lb"
             type="number"
             min={0}
-            step="0.01"
-            defaultValue={preset?.substrate_weight_kg ?? 0}
+            step="0.1"
+            defaultValue={kgToLb(preset?.substrate_weight_kg ?? 0)}
           />
         </div>
         <div>

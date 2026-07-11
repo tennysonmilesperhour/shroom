@@ -6,6 +6,7 @@ import { must, soft } from "@/lib/query";
 import { stageTone } from "@/components/ui";
 import LifecycleRing from "@/components/LifecycleRing";
 import { normalizeStage } from "@/lib/stages";
+import { kgToLb } from "@/lib/format";
 import AddPanel from "@/components/AddPanel";
 import AddHarvestForm from "../../harvests/AddHarvestForm";
 import AdvanceStage from "./AdvanceStage";
@@ -240,7 +241,7 @@ export default async function BatchDetailPage({
         />
         <div className="batch-hero-stats">
           <Kpi label="Units" countTo={batch.block_count} />
-          <Kpi label="Substrate" countTo={batch.substrate_weight_kg ?? 0} decimals={1} unit="kg" />
+          <Kpi label="Substrate" countTo={kgToLb(batch.substrate_weight_kg ?? 0)} decimals={1} unit="lb" />
           <Kpi
             label="Fresh harvested"
             countTo={Math.round(totalFresh * 1000)}

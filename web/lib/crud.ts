@@ -8,6 +8,7 @@ import { revalidatePath } from "next/cache";
 import { createServiceClient } from "@/utils/supabase/service";
 import { enqueueSync } from "@/lib/sync";
 import { getEntity, type EntityDef } from "@/lib/entities";
+import { convertToStore } from "@/lib/format";
 import type { EntityResult } from "@/components/EntityForm";
 
 function buildPatch(entity: EntityDef, formData: FormData): Record<string, unknown> {
@@ -34,7 +35,9 @@ function buildPatch(entity: EntityDef, formData: FormData): Record<string, unkno
       // a NOT NULL column.
       if (val.trim() === "") continue;
       const n = Number(val);
-      if (Number.isFinite(n)) patch[f.name] = n;
+      // A field edited in a display unit (lb, °F) is converted back to the
+      // stored unit (kg, °C) before it hits the column.
+      if (Number.isFinite(n)) patch[f.name] = f.convert ? convertToStore(f.convert, n) : n;
       continue;
     }
     if (f.type === "date") {

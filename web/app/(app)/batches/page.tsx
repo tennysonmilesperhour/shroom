@@ -8,6 +8,7 @@ import AddBatchForm, { type PresetOption } from "./AddBatchForm";
 import BatchBoard from "./BatchBoard";
 import RowActions from "@/components/RowActions";
 import { STAGE_ORDER, STAGE_LABEL, normalizeStage } from "@/lib/stages";
+import { kgToLb } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
@@ -188,7 +189,7 @@ export default async function BatchesPage() {
                   </td>
                   <td>{b.rooms?.name ?? "-"}</td>
                   <td className="right">{b.block_count}</td>
-                  <td className="right">{b.substrate_weight_kg} kg</td>
+                  <td className="right">{kgToLb(b.substrate_weight_kg)} lb</td>
                   <td>{b.inoculated_on ?? "-"}</td>
                   <td className="right">{b.rating ? `${b.rating}/10` : "-"}</td>
                   <td className="actions-col">

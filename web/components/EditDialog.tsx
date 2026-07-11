@@ -3,8 +3,10 @@
 import { useEffect, useRef, useTransition, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ToastProvider";
+import Portal from "@/components/Portal";
 import { updateEntity } from "@/lib/crud";
 import { getEntity, type FieldDef, type Option } from "@/lib/entities";
+import { convertToDisplay } from "@/lib/format";
 
 interface EditDialogProps {
   entity: string;
@@ -59,12 +61,18 @@ function Field({
         </select>
       );
     }
+    // A numeric field can store one unit but be edited in another (kg↔lb,
+    // °C↔°F). Show the operator's unit; lib/crud converts back on save.
+    const shown =
+      field.type === "number" && field.convert && v != null && v !== ""
+        ? str(convertToDisplay(field.convert, Number(v)))
+        : str(v);
     return (
       <input
         id={fieldId}
         name={field.name}
         type={field.type === "number" ? "number" : field.type === "date" ? "date" : "text"}
-        defaultValue={str(v)}
+        defaultValue={shown}
         required={field.required}
         step={field.step}
         min={field.min}
@@ -129,6 +137,7 @@ export default function EditDialog({
   }
 
   return (
+    <Portal>
     <div className="modal-overlay" role="presentation" onClick={onClose}>
       <div
         ref={panelRef}
@@ -170,5 +179,6 @@ export default function EditDialog({
         </form>
       </div>
     </div>
+    </Portal>
   );
 }

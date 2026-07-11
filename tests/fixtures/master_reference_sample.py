@@ -51,6 +51,13 @@ def build(path: str | Path) -> str:
         ["MEDICINAL — AWAITING INOCULATION"],
         ["Penis Envy", "Awaiting inoculation", "Sporeworks", datetime(2026, 5, 21),
          "TBD", "Very High", "5/10", "TBD", "-", "Mutant variety. Highest potency."],
+        # A bulleted duplicate of an existing strain — the "• Name" shape that
+        # used to import as a second row. Must collapse onto "Stargazer".
+        ["• Stargazer", "Active — F3 fruiting", "Local shop", "TBD", "TBD",
+         "Moderate", "8/10", "Yes", "-", "Duplicate bullet row."],
+        # An order note parked in the strain column — must not become a strain.
+        ["NEW SPORES — order #6849 shipped", "Awaiting inoculation", "Sporeworks",
+         "TBD", "TBD", "-", "-", "-", "-", "Tracking to follow."],
     ])
 
     fr = wb.create_sheet("Fridge & Incoming")

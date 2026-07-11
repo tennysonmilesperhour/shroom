@@ -8,6 +8,7 @@
 // field name via the `options` prop on RowActions/EditPanel.
 
 import type { SyncEntity } from "@/lib/sync";
+import type { ConvertKind } from "@/lib/format";
 import { STAGE_ORDER, STAGE_LABEL } from "@/lib/stages";
 
 export type FieldType =
@@ -37,6 +38,12 @@ export interface FieldDef {
   placeholder?: string;
   /** Span the full width of the two-column form grid. */
   full?: boolean;
+  /**
+   * Store the column in one unit but edit it in another (e.g. a `*_kg` column
+   * entered in pounds, or a `*_c` column entered in °F). The edit form shows
+   * the display unit and lib/crud converts back to the stored unit on save.
+   */
+  convert?: ConvertKind;
 }
 
 export interface EntityDef {
@@ -81,7 +88,7 @@ export const ENTITIES: Record<string, EntityDef> = {
       },
       { name: "container_id", label: "Container ID", type: "text" },
       { name: "block_count", label: "Units", type: "number", min: 0 },
-      { name: "substrate_weight_kg", label: "Substrate (kg)", type: "number", min: 0, step: "0.01" },
+      { name: "substrate_weight_kg", label: "Substrate (lb)", type: "number", min: 0, step: "0.1", convert: "kg_to_lb" },
       { name: "inoculated_on", label: "Inoculated on", type: "date" },
       { name: "rating", label: "Rating (/10)", type: "number", min: 0 },
       { name: "notes", label: "Notes", type: "textarea", full: true },
@@ -413,7 +420,7 @@ export const ENTITIES: Record<string, EntityDef> = {
         options: opt("incubation", "fruiting", "drying", "lab", "storage"),
       },
       { name: "capacity_blocks", label: "Capacity (blocks)", type: "number", min: 0 },
-      { name: "target_temp_c", label: "Target temp °C", type: "number", step: "0.1" },
+      { name: "target_temp_c", label: "Target temp °F", type: "number", step: "1", convert: "c_to_f" },
       { name: "target_humidity", label: "Target humidity %", type: "number", step: "0.1" },
       { name: "target_co2_ppm", label: "Target CO₂ ppm", type: "number" },
       { name: "target_fae_per_hr", label: "Target FAE/hr", type: "number", step: "0.1" },
@@ -428,7 +435,7 @@ export const ENTITIES: Record<string, EntityDef> = {
     listPath: "/environment",
     fields: [
       { name: "room_id", label: "Room", type: "select", fk: true, required: true },
-      { name: "temp_c", label: "Temp °C", type: "number", step: "0.1" },
+      { name: "temp_c", label: "Temp °F", type: "number", step: "1", convert: "c_to_f" },
       { name: "humidity", label: "Humidity %", type: "number", step: "0.1" },
       { name: "co2_ppm", label: "CO₂ ppm", type: "number" },
       { name: "fae_per_hr", label: "FAE/hr", type: "number", step: "0.1" },

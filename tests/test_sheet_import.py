@@ -58,6 +58,21 @@ def test_strains_merge_across_tabs(parsed):
     assert by_name["Golden Teacher"].priority == 4
 
 
+def test_bulleted_duplicate_collapses_onto_canonical(parsed):
+    # "• Stargazer" must strip its bullet and merge into the one "Stargazer"
+    # row rather than importing as a distinct strain.
+    names = [s.name for s in parsed.strains]
+    assert "• Stargazer" not in names
+    assert names.count("Stargazer") == 1
+
+
+def test_order_notes_are_not_imported_as_strains(parsed):
+    # A shipment note sitting in the strain column is not a culture.
+    for s in parsed.strains:
+        assert "order #" not in s.name.lower()
+        assert not s.name.lower().startswith("new spores")
+
+
 def test_vendors_split_into_supply_and_sourcing(parsed):
     by_name = {v.name: v for v in parsed.vendors}
     assert by_name["Sporeworks"].category == "spores"

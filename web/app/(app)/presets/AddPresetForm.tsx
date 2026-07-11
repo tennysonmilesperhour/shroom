@@ -96,13 +96,13 @@ export default function AddPresetForm({ strains, recipes, rooms, items }: AddPre
         <input id={ids.spawn} name="spawn_type" type="text" placeholder="rye berries / WBS" />
       </div>
       <div>
-        <label htmlFor={ids.spawnWeight}>Spawn (kg)</label>
+        <label htmlFor={ids.spawnWeight}>Spawn (lb)</label>
         <input
           id={ids.spawnWeight}
-          name="spawn_weight_kg"
+          name="spawn_weight_lb"
           type="number"
           min={0}
-          step="0.01"
+          step="0.1"
           defaultValue={0}
         />
       </div>
@@ -116,13 +116,13 @@ export default function AddPresetForm({ strains, recipes, rooms, items }: AddPre
         />
       </div>
       <div>
-        <label htmlFor={ids.substrateWeight}>Substrate (kg)</label>
+        <label htmlFor={ids.substrateWeight}>Substrate (lb)</label>
         <input
           id={ids.substrateWeight}
-          name="substrate_weight_kg"
+          name="substrate_weight_lb"
           type="number"
           min={0}
-          step="0.01"
+          step="0.1"
           defaultValue={0}
         />
       </div>
