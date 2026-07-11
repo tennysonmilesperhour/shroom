@@ -1,6 +1,7 @@
 import { createServiceClient } from "@/utils/supabase/service";
 import { Badge, Card } from "@/components/ui";
 import { must } from "@/lib/query";
+import { kgToLb } from "@/lib/format";
 import AddPanel from "@/components/AddPanel";
 import AddPresetForm from "./AddPresetForm";
 import DeletePresetButton from "./DeletePresetButton";
@@ -103,12 +104,12 @@ export default async function PresetsPage() {
               <dt>Spawn</dt>
               <dd>
                 {p.spawn_type || "—"}
-                {p.spawn_weight_kg ? ` · ${p.spawn_weight_kg} kg` : ""}
+                {p.spawn_weight_kg ? ` · ${kgToLb(p.spawn_weight_kg)} lb` : ""}
               </dd>
               <dt>Substrate</dt>
               <dd>
                 {p.substrate_type || "—"}
-                {p.substrate_weight_kg ? ` · ${p.substrate_weight_kg} kg` : ""}
+                {p.substrate_weight_kg ? ` · ${kgToLb(p.substrate_weight_kg)} lb` : ""}
               </dd>
               <dt>Bag</dt>
               <dd>{p.bag_type || "—"}</dd>

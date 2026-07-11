@@ -134,8 +134,19 @@ export default async function SyncPage() {
         </div>
       </Card>
 
-      <Card title="Push to the sheet (website → sheet)">
-        <MarkSyncedButton />
+      <Card title="Clear the pending queue (website → sheet)">
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <MarkSyncedButton />
+          <p className="muted" style={{ margin: 0, fontSize: 13 }}>
+            This marks the pending ops below as synced — it clears the local
+            queue but does <strong>not</strong> itself write the Master
+            Cultivation Reference workbook. Use it once the write-back job (the
+            Python exporter, <code>POST /api/sync/push</code>) has actually
+            pushed these rows to the sheet, so the counter reflects reality.
+            Until that job is wired to this button, pressing it only
+            acknowledges the ops locally.
+          </p>
+        </div>
       </Card>
 
       <Card title={`Pending ops (${pending.length})`}>

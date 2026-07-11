@@ -3,6 +3,7 @@
 import { createServiceClient } from "@/utils/supabase/service";
 import { revalidatePath } from "next/cache";
 import { enqueueSync } from "@/lib/sync";
+import { lbToKg } from "@/lib/format";
 import type { EntityResult } from "@/components/EntityForm";
 
 const VALID_CONTAINERS = new Set(["tub", "grain_bag", "aio"]);
@@ -55,8 +56,13 @@ export async function addPreset(formData: FormData): Promise<EntityResult> {
   const substrate_type = String(formData.get("substrate_type") ?? "").trim();
   const bag_type = String(formData.get("bag_type") ?? "").trim();
   const block_count = Number(formData.get("block_count") ?? 0);
-  const substrate_weight_kg = Number(formData.get("substrate_weight_kg") ?? 0);
-  const spawn_weight_kg = Number(formData.get("spawn_weight_kg") ?? 0);
+  // Weights are entered in pounds; storage stays canonical in kg.
+  const substrate_weight_lb = Number(formData.get("substrate_weight_lb") ?? 0);
+  const spawn_weight_lb = Number(formData.get("spawn_weight_lb") ?? 0);
+  const substrate_weight_kg = Number.isFinite(substrate_weight_lb)
+    ? lbToKg(substrate_weight_lb)
+    : 0;
+  const spawn_weight_kg = Number.isFinite(spawn_weight_lb) ? lbToKg(spawn_weight_lb) : 0;
   const notes = String(formData.get("notes") ?? "").trim();
   const materials = parseMaterials(String(formData.get("materials_json") ?? ""));
 

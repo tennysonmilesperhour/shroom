@@ -3,6 +3,7 @@
 import { createServiceClient } from "@/utils/supabase/service";
 import { revalidatePath } from "next/cache";
 import { enqueueSync } from "@/lib/sync";
+import { lbToKg } from "@/lib/format";
 import type { EntityResult } from "@/components/EntityForm";
 import { STAGE_ORDER, VALID_STAGES, nextStage, normalizeStage } from "@/lib/stages";
 
@@ -45,7 +46,11 @@ export async function addBatch(formData: FormData): Promise<EntityResult> {
   const container_type = String(formData.get("container_type") ?? "tub");
   const container_id = String(formData.get("container_id") ?? "").trim();
   const block_count = Number(formData.get("block_count") ?? 0);
-  const substrate_weight_kg = Number(formData.get("substrate_weight_kg") ?? 0);
+  // The form collects substrate in pounds; storage stays canonical in kg.
+  const substrate_weight_lb = Number(formData.get("substrate_weight_lb") ?? 0);
+  const substrate_weight_kg = Number.isFinite(substrate_weight_lb)
+    ? lbToKg(substrate_weight_lb)
+    : 0;
   const inoculated_on = String(formData.get("inoculated_on") ?? "").trim();
   const notes = String(formData.get("notes") ?? "").trim();
   const tub_size = String(formData.get("tub_size") ?? "").trim();
