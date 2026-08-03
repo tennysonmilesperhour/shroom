@@ -34,6 +34,7 @@ interface BatchDetailRow {
   spent_on: string | null;
   contamination_flag: boolean;
   rating: number | null;
+  issues: string | null;
   notes: string | null;
   strains: { id: number; name: string } | null;
   rooms: { id: number; name: string } | null;
@@ -224,10 +225,19 @@ export default async function BatchDetailPage({
             stage: normalizeStage(batch.stage),
             container_type: batch.container_type,
             container_id: batch.container_id,
+            tub_size: batch.tub_size,
+            spawn_type: batch.spawn_type,
+            substrate_type: batch.substrate_type,
+            bag_type: batch.bag_type,
             block_count: batch.block_count,
             substrate_weight_kg: batch.substrate_weight_kg,
             inoculated_on: batch.inoculated_on,
+            colonized_on: batch.colonized_on,
+            fruiting_on: batch.fruiting_on,
+            spent_on: batch.spent_on,
             rating: batch.rating,
+            contamination_flag: batch.contamination_flag,
+            issues: batch.issues,
             notes: batch.notes,
           }}
         />
@@ -265,6 +275,7 @@ export default async function BatchDetailPage({
           <dt>Substrate</dt><dd>{batch.substrate_type || "—"}</dd>
           <dt>Bag</dt><dd>{batch.bag_type || "—"}</dd>
           <dt>Rating</dt><dd>{batch.rating ? `${batch.rating}/10` : "—"}</dd>
+          <dt>Issues</dt><dd>{batch.issues || "—"}</dd>
         </dl>
         <div style={{ marginTop: "var(--space-3)" }}>
           <AdvanceStage batchId={batch.id} currentStage={effectiveStage} />
