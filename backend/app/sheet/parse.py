@@ -140,7 +140,6 @@ class Batch:
     lot_code: str
     strain: str
     container_id: str = ""
-    flush_number: int | None = None
     stage: str = "colonization"
     inoculated_on: date | None = None
     transferred_on: date | None = None
@@ -152,7 +151,8 @@ class Batch:
 
 @dataclass
 class Harvest:
-    lot_code: str           # links to the batch synthesized from tub+flush
+    lot_code: str           # stable per-flush key, used as the harvest source_ref
+    tub: str                # container the flush came off — links to the batch
     strain: str
     flush_number: int
     harvested_on: date | None
@@ -714,6 +714,38 @@ def _lot_code(tub: str, flush: str | int | None) -> str:
     return f"{tub}-F{f}" if f else tub
 
 
+# Ordered lifecycle used to pick a tub's stage when its flush rows disagree —
+# a tub that has already fruited doesn't go back to colonizing because an
+# earlier flush row says so. Mirrors models.STAGE_LIFECYCLE without the retired
+# "inoculation"; kept local so the parser stays independent of the ORM.
+_STAGE_ORDER = ["colonization", "spawn_to_bulk", "fruiting", "harvesting", "spent"]
+
+
+def _furthest_stage(a: str, b: str) -> str:
+    try:
+        return a if _STAGE_ORDER.index(a) >= _STAGE_ORDER.index(b) else b
+    except ValueError:
+        return a
+
+
+def _earliest(a: date | None, b: date | None) -> date | None:
+    """Earliest of two optional dates — the tub's milestone is the first time
+    any of its flushes reached it."""
+    if a is None:
+        return b
+    if b is None:
+        return a
+    return min(a, b)
+
+
+def _join_text(a: str, b: str) -> str:
+    """Merge two free-text cells without repeating what's already there."""
+    a, b = a.strip(), b.strip()
+    if not b or b in a:
+        return a
+    return b if not a else f"{a} || {b}"
+
+
 def parse_grow_cycle(wb: Workbook) -> list[Batch]:
     ws = _get_sheet(wb, "Grow Cycle Log", "Grow Cycle", "Cycle Log")
     matrix = _matrix(ws)
@@ -731,7 +763,12 @@ def parse_grow_cycle(wb: Workbook) -> list[Batch]:
     c_contam = _col(headers, "contam")
     c_issues = _col(headers, "issues")
     c_notes = _col(headers, "notes")
-    out: list[Batch] = []
+    # The sheet has one row per *flush*, but a batch is a physical container.
+    # Emitting a batch per flush turned one tub into three or four rows in the
+    # app, which read as duplicates on the batches board. Group the flush rows
+    # back into the tub they came off; the per-flush detail lives on the
+    # harvests, which already carry flush_number.
+    by_tub: dict[str, Batch] = {}
     for row in matrix[h + 1:]:
         strain = util.clean(_at(row, c_strain))
         tub = util.clean(_at(row, c_tub))
@@ -753,20 +790,31 @@ def parse_grow_cycle(wb: Workbook) -> list[Batch]:
             # app's kanban board has no column for.
             stage = "colonization"
         contam = util.clean(_at(row, c_contam)).lower()
-        out.append(Batch(
-            lot_code=_lot_code(tub, _at(row, c_flush)),
-            strain=_strip_name(strain),
-            container_id=tub,
-            flush_number=util.parse_int(_at(row, c_flush)),
-            stage=stage,
-            inoculated_on=util.parse_date(_at(row, c_inoc)),
-            transferred_on=trans,
-            first_pins_on=pins,
-            contamination_flag=bool(contam) and contam not in ("none", "no"),
-            issues=util.clean(_at(row, c_issues)),
-            notes=util.clean(_at(row, c_notes)),
-        ))
-    return out
+        contaminated = bool(contam) and contam not in ("none", "no")
+
+        existing = by_tub.get(tub)
+        if existing is None:
+            by_tub[tub] = Batch(
+                lot_code=tub,
+                strain=_strip_name(strain),
+                container_id=tub,
+                stage=stage,
+                inoculated_on=util.parse_date(_at(row, c_inoc)),
+                transferred_on=trans,
+                first_pins_on=pins,
+                contamination_flag=contaminated,
+                issues=util.clean(_at(row, c_issues)),
+                notes=util.clean(_at(row, c_notes)),
+            )
+            continue
+        existing.stage = _furthest_stage(existing.stage, stage)
+        existing.inoculated_on = _earliest(existing.inoculated_on, util.parse_date(_at(row, c_inoc)))
+        existing.transferred_on = _earliest(existing.transferred_on, trans)
+        existing.first_pins_on = _earliest(existing.first_pins_on, pins)
+        existing.contamination_flag = existing.contamination_flag or contaminated
+        existing.issues = _join_text(existing.issues, util.clean(_at(row, c_issues)))
+        existing.notes = _join_text(existing.notes, util.clean(_at(row, c_notes)))
+    return list(by_tub.values())
 
 
 def parse_harvests(wb: Workbook) -> list[Harvest]:
@@ -791,7 +839,11 @@ def parse_harvests(wb: Workbook) -> list[Harvest]:
             continue
         flush = util.parse_int(_at(row, c_flush)) or 1
         out.append(Harvest(
+            # lot_code stays tub+flush: it's the harvest's stable natural key
+            # (source_ref) in the sheet. `tub` is what resolves the batch now
+            # that batches are one-per-container.
             lot_code=_lot_code(tub, flush),
+            tub=tub,
             strain=_strip_name(strain),
             flush_number=flush,
             harvested_on=util.parse_date(_at(row, c_date)),
