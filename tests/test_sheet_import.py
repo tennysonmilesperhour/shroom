@@ -138,16 +138,42 @@ def test_troubleshooting_guides_and_incidents(parsed):
 
 
 def test_batches_and_harvests(parsed):
+    # A batch is a physical container, so the sheet's per-flush rows collapse
+    # into one batch per tub — keyed by the bare tub id, not tub+flush.
     batches = {b.lot_code: b for b in parsed.batches}
-    assert "T-01-F1" in batches
-    assert batches["T-01-F1"].stage == "harvesting"
+    assert "T-01" in batches
+    assert "T-01-F1" not in batches
+    assert batches["T-01"].container_id == "T-01"
+    assert batches["T-01"].stage == "harvesting"
     # A tub with no transfer/pin/harvest date starts at the head of the
     # lifecycle. That's "colonization" — inoculation is the creation event, not
     # a stage (migration 14_drop_inoculation_stage).
-    assert batches["T-03-F1"].stage == "colonization"
+    assert batches["T-03"].stage == "colonization"
+
+    # Harvests keep the tub+flush key as their source_ref, and carry the tub
+    # separately so they can resolve to the collapsed batch.
     harvests = {h.lot_code: h for h in parsed.harvests}
     assert harvests["T-01-F1"].fresh_g == 445
+    assert harvests["T-01-F1"].tub == "T-01"
     assert harvests["T-02-F1"].dry_g == 46.8
+
+
+def test_flush_rows_collapse_into_one_batch_per_tub(parsed):
+    """Every tub appears exactly once, and a multi-flush tub takes the furthest
+    stage and earliest milestone across its flush rows."""
+    lot_codes = [b.lot_code for b in parsed.batches]
+    assert len(lot_codes) == len(set(lot_codes)), "a tub was emitted more than once"
+    assert not [c for c in lot_codes if "-F" in c], "flush-suffixed batch survived"
+
+    by_tub = {b.lot_code: b for b in parsed.batches}
+    multi = {h.tub for h in parsed.harvests if h.flush_number and h.flush_number > 1}
+    for tub in multi:
+        flushes = [h for h in parsed.harvests if h.tub == tub]
+        assert tub in by_tub, f"{tub} has {len(flushes)} flushes but no batch"
+        # The tub's inoculation date can't be later than any flush's harvest.
+        inoc = by_tub[tub].inoculated_on
+        if inoc:
+            assert all(h.harvested_on is None or h.harvested_on >= inoc for h in flushes)
 
 
 # --- SQLite sink (idempotency) -------------------------------------------- #
@@ -181,11 +207,12 @@ def test_sqlite_sink_is_idempotent(parsed, session):
 
     sg = session.query(models.Strain).filter(models.Strain.name == "Stargazer").one()
     assert sg.ease_rating == 8
-    # One harvest per (tub, flush); fresh 445 g -> 0.445 kg.
+    # Harvests hang off the tub's single batch, one row per flush; the F1
+    # flush is 445 g fresh -> 0.445 kg.
     h = (
         session.query(models.Harvest)
         .join(models.Batch)
-        .filter(models.Batch.lot_code == "T-01-F1")
+        .filter(models.Batch.lot_code == "T-01", models.Harvest.flush_number == 1)
         .one()
     )
     assert h.weight_kg == 0.445

@@ -129,10 +129,12 @@ def test_export_roundtrips_through_the_parser(seeded, tmp_path):
     assert sg.vendor == "Sporeworks"
     assert sg.library_status == "active"  # "Active" status cell -> active
 
+    # Batches round-trip keyed by container: the sheet's per-flush rows collapse
+    # back into the one tub they came off.
     batches = {b.lot_code: b for b in parsed.batches}
-    assert "T-01-F1" in batches
-    assert batches["T-01-F1"].stage == "harvesting"
-    assert batches["T-01-F1"].inoculated_on == date(2026, 5, 1)
+    assert "T-01" in batches
+    assert batches["T-01"].stage == "harvesting"
+    assert batches["T-01"].inoculated_on == date(2026, 5, 1)
 
     harvests = {h.lot_code: h for h in parsed.harvests}
     assert harvests["T-01-F1"].fresh_g == 445
@@ -161,7 +163,7 @@ def test_exporter_cli_writes_a_parseable_workbook(seeded, tmp_path, monkeypatch)
     wb = load_workbook(out, read_only=True, data_only=True)
     parsed = parse.parse_workbook(wb)
     assert {"Stargazer", "Penis Envy"} <= {s.name for s in parsed.strains}
-    assert "T-01-F1" in {b.lot_code for b in parsed.batches}
+    assert "T-01" in {b.lot_code for b in parsed.batches}
 
 
 def test_full_loop_export_then_reimport_into_a_fresh_db(seeded, tmp_path, session):
@@ -182,7 +184,7 @@ def test_full_loop_export_then_reimport_into_a_fresh_db(seeded, tmp_path, sessio
         h = (
             db2.query(models.Harvest)
             .join(models.Batch)
-            .filter(models.Batch.lot_code == "T-01-F1")
+            .filter(models.Batch.lot_code == "T-01", models.Harvest.flush_number == 1)
             .one()
         )
         assert h.weight_kg == 0.445

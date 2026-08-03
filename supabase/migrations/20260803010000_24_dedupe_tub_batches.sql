@@ -63,7 +63,25 @@ update public.batches f
   from public.batches o
  where (o.lot_code, f.lot_code) in (('STG-2605','T-01-F1'), ('ILW-2606','T-02-F1'));
 
--- 4. Drop the duplicated harvests explicitly rather than leaning on the cascade,
+-- 4. Repoint the dried-product trail before touching the harvests.
+--    Jars J-01/J-02/J-03 — the only dry_inventory rows with a harvest link, and
+--    the ones carrying the actual sales history (who bought how many grams) —
+--    hang off the duplicate harvests, not the sheet-sourced ones. Deleting
+--    without this severs jar -> harvest -> batch traceability for every jar that
+--    has ever been sold from. Each duplicate has exactly one weight-for-weight
+--    twin on the same tub, so the remap is unambiguous.
+update public.dry_inventory d
+   set harvest_id = keep.id
+  from public.harvests dup
+  join public.batches stale on stale.id = dup.batch_id
+  join public.harvests keep on keep.weight_kg = dup.weight_kg
+                           and keep.dry_weight_kg = dup.dry_weight_kg
+                           and keep.source_ref is not null
+  join public.batches kb on kb.id = keep.batch_id and kb.container_id = stale.container_id
+ where d.harvest_id = dup.id
+   and stale.lot_code in ('STG-2605','ILW-2606');
+
+-- 5. Drop the duplicated harvests explicitly rather than leaning on the cascade,
 --    so the intent is auditable. Every harvest on the two stale rows is either a
 --    weight-for-weight duplicate of a sheet-sourced harvest on the same tub, or
 --    a zero-weight placeholder; the query below only ever matches those.
@@ -83,10 +101,13 @@ delete from public.harvests dup
      )
    );
 
--- 5. Refuse to continue if anything unexpected still hangs off the stale rows —
---    better to abort than to cascade away a harvest nobody accounted for.
+-- 6. Refuse to continue if anything unexpected still hangs off the stale rows —
+--    better to abort than to cascade away a harvest nobody accounted for. The
+--    jar/order checks are what caught the dry_inventory links above: harvests
+--    are referenced by dry_inventory.harvest_id and order_lines.harvest_id with
+--    NO ACTION, so an unhandled reference is a hard error, not a silent orphan.
 do $$
-declare leftover int;
+declare leftover int; jars int; lines int;
 begin
   select count(*) into leftover
     from public.harvests h join public.batches b on b.id = h.batch_id
@@ -94,9 +115,21 @@ begin
   if leftover > 0 then
     raise exception 'Aborting: % unreviewed harvest(s) still attached to the stale batch rows', leftover;
   end if;
+
+  select count(*) into jars from public.dry_inventory d
+    join public.harvests h on h.id = d.harvest_id
+    join public.batches b on b.id = h.batch_id
+   where b.lot_code in ('STG-2605','ILW-2606');
+  select count(*) into lines from public.order_lines o
+    join public.harvests h on h.id = o.harvest_id
+    join public.batches b on b.id = h.batch_id
+   where b.lot_code in ('STG-2605','ILW-2606');
+  if jars > 0 or lines > 0 then
+    raise exception 'Aborting: % jar(s) and % order line(s) still point at the stale rows', jars, lines;
+  end if;
 end $$;
 
--- 6. Remove the now-empty duplicates.
+-- 7. Remove the now-empty duplicates.
 delete from public.batches where lot_code in ('STG-2605','ILW-2606');
 
 commit;

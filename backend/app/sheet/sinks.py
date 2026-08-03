@@ -150,7 +150,8 @@ class SqliteSink:
         for r in rows:
             if r.harvested_on is None:
                 continue  # harvested_on is required; an undated row isn't a harvest yet
-            batch = self._get_or_create_batch(r.lot_code, r.strain)
+            # Batches are keyed by container, so a flush resolves to its tub.
+            batch = self._get_or_create_batch(r.tub or r.lot_code, r.strain)
             obj = (
                 self.db.query(models.Harvest)
                 .filter(
@@ -306,14 +307,16 @@ class SupabaseSink:
             }) for j in parsed.jars
         ], on_conflict="jar_id")
 
+        # A harvest hangs off the tub (batches are one-per-container); its own
+        # tub+flush code stays the source_ref so re-imports still merge in place.
         counts["harvests"] = self._upsert("harvests", [
             _prune({
-                "batch_id": batch_ids.get(h.lot_code), "harvested_on": _iso(h.harvested_on),
+                "batch_id": batch_ids.get(h.tub), "harvested_on": _iso(h.harvested_on),
                 "flush_number": h.flush_number, "weight_kg": round(h.fresh_g / 1000, 4),
                 "dry_weight_kg": round(h.dry_g / 1000, 4), "notes": h.notes,
                 "source_ref": h.lot_code,
             }) for h in parsed.harvests
-            if batch_ids.get(h.lot_code) and h.harvested_on
+            if batch_ids.get(h.tub) and h.harvested_on
         ], on_conflict="source_ref")
 
         self._log_run(counts)
