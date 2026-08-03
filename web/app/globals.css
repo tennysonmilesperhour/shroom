@@ -1947,34 +1947,63 @@ tbody tr.row-link button {
   display: inline-block;
   flex-shrink: 0;
 }
+/* Phase states are drawn differently, not just tinted: stages already behind
+   the batch are solid, the current one is thicker and lit, and stages still
+   ahead are dashed and hollow. Stroke widths come from the component so the
+   ring scales — don't set stroke-width here (CSS beats the attribute). */
 .lifecycle-ring svg .arc {
-  stroke-width: 6;
-  stroke-linecap: round;
   fill: none;
+  stroke-linecap: round;
   transition: stroke 240ms var(--ease-out);
 }
-.lifecycle-ring svg .arc.dim     { stroke: oklch(60% 0.04 220 / 0.16); }
-.lifecycle-ring svg .arc.done    { stroke: oklch(72% 0.13 155 / 0.55); }
-.lifecycle-ring svg .arc.active  {
+.lifecycle-ring svg .arc.todo {
+  stroke: color-mix(in oklch, var(--faint) 42%, transparent);
+  stroke-linecap: butt;
+}
+.lifecycle-ring svg .arc.done { stroke: color-mix(in oklch, var(--moss) 62%, transparent); }
+.lifecycle-ring svg .arc.active {
   stroke: var(--lumen);
-  filter: drop-shadow(0 0 6px oklch(82% 0.18 195 / 0.6));
+  filter: drop-shadow(0 0 7px color-mix(in oklch, var(--lumen) 60%, transparent));
   animation: ring-pulse 2.4s ease-in-out infinite;
 }
-.lifecycle-ring svg .arc.danger  {
+.lifecycle-ring svg .arc.danger {
   stroke: var(--ember);
-  filter: drop-shadow(0 0 6px oklch(68% 0.22 25 / 0.6));
+  filter: drop-shadow(0 0 6px color-mix(in oklch, var(--ember) 55%, transparent));
 }
+
+/* Checkpoint dots sitting in the gaps between arcs. */
+.lifecycle-ring svg .node {
+  transition: fill 240ms var(--ease-out);
+}
+.lifecycle-ring svg .node.todo {
+  fill: none;
+  stroke: color-mix(in oklch, var(--faint) 55%, transparent);
+  stroke-width: 1.25;
+}
+.lifecycle-ring svg .node.done   { fill: color-mix(in oklch, var(--moss) 75%, transparent); }
+.lifecycle-ring svg .node.active {
+  fill: var(--lumen);
+  filter: drop-shadow(0 0 5px color-mix(in oklch, var(--lumen) 75%, transparent));
+}
+.lifecycle-ring svg .node.danger { fill: var(--ember); }
+
+/* Labels ride their stage's arc via <textPath>; font-size is set inline so the
+   component can reserve the matching band of space. */
 .lifecycle-ring svg .stage-label {
   font-family: var(--font-sans);
-  font-size: 9.5px;
   font-weight: 600;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  fill: var(--muted);
 }
-.lifecycle-ring svg .stage-label.current {
+.lifecycle-ring svg .stage-label.todo   { fill: var(--faint); }
+.lifecycle-ring svg .stage-label.done   { fill: color-mix(in oklch, var(--moss) 82%, transparent); }
+.lifecycle-ring svg .stage-label.active {
   fill: var(--text);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  filter: drop-shadow(0 0 6px color-mix(in oklch, var(--lumen) 35%, transparent));
 }
+.lifecycle-ring svg .stage-label.danger { fill: color-mix(in oklch, var(--ember) 88%, transparent); }
 .lifecycle-center {
   position: absolute;
   inset: 0;
@@ -2001,7 +2030,13 @@ tbody tr.row-link button {
   line-height: 1;
   color: var(--text);
   text-align: center;
-  max-width: 140px;
+  max-width: 130px;
+}
+/* Stage names run long where a day count is short — size them to fit the well. */
+.lifecycle-center-value[data-kind="text"] {
+  font-size: clamp(1rem, 0.85rem + 0.6vw, 1.28rem);
+  line-height: 1.15;
+  overflow-wrap: anywhere;
 }
 @keyframes ring-pulse {
   0%, 100% { opacity: 1; }
