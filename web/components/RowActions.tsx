@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useToast } from "@/components/ToastProvider";
@@ -25,6 +25,10 @@ interface RowActionsProps {
   afterDeleteHref?: string;
 }
 
+/** Menu box, used to decide whether it fits below the trigger. */
+const MENU_WIDTH = 160;
+const MENU_MAX_HEIGHT = 160;
+
 export default function RowActions({
   entity,
   id,
@@ -41,22 +45,57 @@ export default function RowActions({
   const [confirming, setConfirming] = useState(false);
   const [pending, startTransition] = useTransition();
   const ref = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  // Viewport coordinates for the portaled menu. The menu can't be a normal
+  // absolutely-positioned child: on narrow screens the surrounding <table>
+  // becomes `display:block; overflow-x:auto` (globals.css), which clips any
+  // descendant that escapes its box — the menu was being cut off, leaving Edit
+  // and Delete unreachable. Portaling to <body> with fixed coordinates keeps it
+  // clear of every scroll container and stacking context on the page.
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+
+  const place = useCallback(() => {
+    const btn = btnRef.current;
+    if (!btn) return;
+    const r = btn.getBoundingClientRect();
+    const height = menuRef.current?.offsetHeight ?? MENU_MAX_HEIGHT;
+    const width = menuRef.current?.offsetWidth ?? MENU_WIDTH;
+    // Flip above the trigger when there isn't room below.
+    const below = r.bottom + 4;
+    const top = below + height > window.innerHeight - 8 ? Math.max(8, r.top - 4 - height) : below;
+    // Right-align to the trigger, clamped into the viewport.
+    const left = Math.max(8, Math.min(r.right - width, window.innerWidth - width - 8));
+    setPos({ top, left });
+  }, []);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      setPos(null);
+      return;
+    }
+    place();
     function onDoc(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      const t = e.target as Node;
+      if (ref.current?.contains(t) || menuRef.current?.contains(t)) return;
+      setOpen(false);
     }
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") setOpen(false);
     }
+    // A fixed-position menu doesn't travel with its trigger, so re-anchor it
+    // while the page (or the table it sits in) scrolls.
     document.addEventListener("mousedown", onDoc);
     document.addEventListener("keydown", onKey);
+    window.addEventListener("scroll", place, true);
+    window.addEventListener("resize", place);
     return () => {
       document.removeEventListener("mousedown", onDoc);
       document.removeEventListener("keydown", onKey);
+      window.removeEventListener("scroll", place, true);
+      window.removeEventListener("resize", place);
     };
-  }, [open]);
+  }, [open, place]);
 
   function doDelete() {
     startTransition(async () => {
@@ -78,48 +117,56 @@ export default function RowActions({
   return (
     <div className="row-actions" ref={ref}>
       <button
+        ref={btnRef}
         type="button"
         className="icon-btn"
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-label="Row actions"
+        aria-label={label ? `Actions for ${label}` : "Row actions"}
         onClick={() => setOpen((v) => !v)}
       >
         ⋯
       </button>
 
       {open && (
-        <div className="row-menu" role="menu">
-          {viewHref && (
-            <Link href={viewHref} role="menuitem" className="row-menu-item" onClick={() => setOpen(false)}>
-              View
-            </Link>
-          )}
-          {initial && (
+        <Portal>
+          <div
+            ref={menuRef}
+            className="row-menu"
+            role="menu"
+            style={{ top: pos?.top ?? -9999, left: pos?.left ?? -9999, visibility: pos ? "visible" : "hidden" }}
+          >
+            {viewHref && (
+              <Link href={viewHref} role="menuitem" className="row-menu-item" onClick={() => setOpen(false)}>
+                View
+              </Link>
+            )}
+            {initial && (
+              <button
+                type="button"
+                role="menuitem"
+                className="row-menu-item"
+                onClick={() => {
+                  setEditing(true);
+                  setOpen(false);
+                }}
+              >
+                Edit
+              </button>
+            )}
             <button
               type="button"
               role="menuitem"
-              className="row-menu-item"
+              className="row-menu-item danger"
               onClick={() => {
-                setEditing(true);
+                setConfirming(true);
                 setOpen(false);
               }}
             >
-              Edit
+              Delete
             </button>
-          )}
-          <button
-            type="button"
-            role="menuitem"
-            className="row-menu-item danger"
-            onClick={() => {
-              setConfirming(true);
-              setOpen(false);
-            }}
-          >
-            Delete
-          </button>
-        </div>
+          </div>
+        </Portal>
       )}
 
       {editing && initial && (

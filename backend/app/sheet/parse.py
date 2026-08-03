@@ -141,7 +141,7 @@ class Batch:
     strain: str
     container_id: str = ""
     flush_number: int | None = None
-    stage: str = "inoculation"
+    stage: str = "colonization"
     inoculated_on: date | None = None
     transferred_on: date | None = None
     first_pins_on: date | None = None
@@ -747,7 +747,11 @@ def parse_grow_cycle(wb: Workbook) -> list[Batch]:
         elif trans:
             stage = "colonization"
         else:
-            stage = "inoculation"
+            # Creating a batch *is* the inoculation event, so the lifecycle
+            # starts at colonization (see migration 14_drop_inoculation_stage).
+            # Importing the retired "inoculation" stage put rows in a state the
+            # app's kanban board has no column for.
+            stage = "colonization"
         contam = util.clean(_at(row, c_contam)).lower()
         out.append(Batch(
             lot_code=_lot_code(tub, _at(row, c_flush)),

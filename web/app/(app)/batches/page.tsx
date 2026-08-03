@@ -25,8 +25,16 @@ interface BatchRow {
   strain_id: number;
   container_id: string | null;
   container_type: string | null;
+  tub_size: string | null;
+  spawn_type: string | null;
+  substrate_type: string | null;
+  bag_type: string | null;
+  colonized_on: string | null;
+  fruiting_on: string | null;
+  spent_on: string | null;
   contamination_flag: boolean;
   rating: number | null;
+  issues: string | null;
   notes: string | null;
   strains: { name: string } | null;
   rooms: { name: string } | null;
@@ -206,10 +214,19 @@ export default async function BatchesPage() {
                         stage: normalizeStage(b.stage),
                         container_type: b.container_type,
                         container_id: b.container_id,
+                        tub_size: b.tub_size,
+                        spawn_type: b.spawn_type,
+                        substrate_type: b.substrate_type,
+                        bag_type: b.bag_type,
                         block_count: b.block_count,
                         substrate_weight_kg: b.substrate_weight_kg,
                         inoculated_on: b.inoculated_on,
+                        colonized_on: b.colonized_on,
+                        fruiting_on: b.fruiting_on,
+                        spent_on: b.spent_on,
                         rating: b.rating,
+                        contamination_flag: b.contamination_flag,
+                        issues: b.issues,
                         notes: b.notes,
                       }}
                     />

@@ -50,9 +50,17 @@ function Field({
     }
     if (field.type === "select") {
       const opts = field.fk ? options?.[field.name] ?? [] : field.options ?? [];
+      const current = str(v);
+      // A stored value the caller didn't supply an option for (a retired enum
+      // member, a strain that was merged away) would leave the browser showing
+      // — for an optional field, or silently selecting the *first* option for a
+      // required one, so saving would reassign the record without the operator
+      // touching it. Keep the current value selectable instead.
+      const missing = current !== "" && !opts.some((o) => o.value === current);
       return (
-        <select id={fieldId} name={field.name} defaultValue={str(v)} required={field.required}>
+        <select id={fieldId} name={field.name} defaultValue={current} required={field.required}>
           {!field.required && <option value="">—</option>}
+          {missing && <option value={current}>{current} (current)</option>}
           {opts.map((o) => (
             <option key={o.value} value={o.value}>
               {o.label}
@@ -63,21 +71,26 @@ function Field({
     }
     // A numeric field can store one unit but be edited in another (kg↔lb,
     // °C↔°F). Show the operator's unit; lib/crud converts back on save.
-    const shown =
-      field.type === "number" && field.convert && v != null && v !== ""
-        ? str(convertToDisplay(field.convert, Number(v)))
-        : str(v);
+    const converts = field.type === "number" && field.convert && v != null && v !== "";
+    const shown = converts ? str(convertToDisplay(field.convert!, Number(v))) : str(v);
     return (
-      <input
-        id={fieldId}
-        name={field.name}
-        type={field.type === "number" ? "number" : field.type === "date" ? "date" : "text"}
-        defaultValue={shown}
-        required={field.required}
-        step={field.step}
-        min={field.min}
-        placeholder={field.placeholder}
-      />
+      <>
+        <input
+          id={fieldId}
+          name={field.name}
+          type={field.type === "number" ? "number" : field.type === "date" ? "date" : "text"}
+          defaultValue={shown}
+          required={field.required}
+          step={field.step}
+          min={field.min}
+          placeholder={field.placeholder}
+        />
+        {/* The display unit is rounded (5 kg reads as 11.0 lb), so converting it
+            back would rewrite the column on every save — 5 → 4.99 → … Carry the
+            stored value along so crud can keep it when the shown value is
+            untouched. */}
+        {converts && <input type="hidden" name={`__orig_${field.name}`} value={str(v)} />}
+      </>
     );
   })();
 

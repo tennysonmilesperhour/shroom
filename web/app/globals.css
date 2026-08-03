@@ -1340,6 +1340,15 @@ main > *:nth-child(6) { animation-delay: 300ms; }
   table { display: block; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; }
   .card table thead, .card table tbody, table thead, table tbody { display: table; width: 100%; table-layout: auto; }
 
+  /* Pin the row-actions column to the right edge of the scrolling table so the
+     ⋯ menu is reachable without scrolling a wide table (e.g. batches) sideways.
+     The menu itself is portaled out of the table, so this can't clip it. */
+  th.actions-col, td.actions-col {
+    position: sticky; right: 0; z-index: 2;
+    background: var(--ink-2);
+    box-shadow: -8px 0 12px -10px oklch(0% 0 0 / 0.7);
+  }
+
   /* Touch-friendly inputs */
   input, textarea, select, button.primary { font-size: 16px; padding: 12px 14px; }
   button.primary { min-height: 44px; }
@@ -2812,8 +2821,11 @@ a.kpi-link:focus-visible { outline: 2px solid var(--lumen); outline-offset: 2px;
 .icon-btn:hover { border-color: var(--line-warm); color: var(--text); }
 .icon-btn:focus-visible { outline: 2px solid var(--lumen); outline-offset: 2px; }
 
+/* Portaled to <body> and positioned in viewport coordinates by RowActions.
+   Fixed rather than absolute so no ancestor scroll container (notably the
+   `display:block; overflow-x:auto` tables on narrow screens) can clip it. */
 .row-menu {
-  position: absolute; top: calc(100% + 4px); right: 0; z-index: 60;
+  position: fixed; z-index: 210;
   min-width: 150px; padding: 6px;
   background: var(--ink-2);
   border: 1px solid var(--line);

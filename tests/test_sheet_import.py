@@ -141,7 +141,10 @@ def test_batches_and_harvests(parsed):
     batches = {b.lot_code: b for b in parsed.batches}
     assert "T-01-F1" in batches
     assert batches["T-01-F1"].stage == "harvesting"
-    assert batches["T-03-F1"].stage == "inoculation"
+    # A tub with no transfer/pin/harvest date starts at the head of the
+    # lifecycle. That's "colonization" — inoculation is the creation event, not
+    # a stage (migration 14_drop_inoculation_stage).
+    assert batches["T-03-F1"].stage == "colonization"
     harvests = {h.lot_code: h for h in parsed.harvests}
     assert harvests["T-01-F1"].fresh_g == 445
     assert harvests["T-02-F1"].dry_g == 46.8

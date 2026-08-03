@@ -37,14 +37,17 @@ def _biological_efficiency(fresh_kg: float, substrate_kg: float, moisture: float
 def dashboard(period_days: int = 30, db: Session = Depends(get_db)):
     since = date.today() - timedelta(days=period_days)
 
+    # Everything on the lifecycle except the terminal "spent" is still in
+    # production. Spelling the stages out by hand had dropped "spawn_to_bulk"
+    # from both counters, so tubs between colonization and fruiting went
+    # uncounted.
+    in_production = [s for s in models.STAGE_LIFECYCLE if s != "spent"]
     active_batches = db.scalar(
-        select(func.count(models.Batch.id)).where(
-            models.Batch.stage.in_(["colonization", "fruiting", "harvesting"])
-        )
+        select(func.count(models.Batch.id)).where(models.Batch.stage.in_(in_production))
     )
     blocks_in_production = db.scalar(
         select(func.coalesce(func.sum(models.Batch.block_count), 0)).where(
-            models.Batch.stage.in_(["inoculation", "colonization", "fruiting", "harvesting"])
+            models.Batch.stage.in_(in_production)
         )
     )
     harvested_kg = db.scalar(

@@ -8,7 +8,7 @@ import { revalidatePath } from "next/cache";
 import { createServiceClient } from "@/utils/supabase/service";
 import { enqueueSync } from "@/lib/sync";
 import { getEntity, type EntityDef } from "@/lib/entities";
-import { convertToStore } from "@/lib/format";
+import { convertToDisplay, convertToStore } from "@/lib/format";
 import type { EntityResult } from "@/components/EntityForm";
 
 function buildPatch(entity: EntityDef, formData: FormData): Record<string, unknown> {
@@ -35,9 +35,23 @@ function buildPatch(entity: EntityDef, formData: FormData): Record<string, unkno
       // a NOT NULL column.
       if (val.trim() === "") continue;
       const n = Number(val);
+      if (!Number.isFinite(n)) continue;
+      if (!f.convert) {
+        patch[f.name] = n;
+        continue;
+      }
       // A field edited in a display unit (lb, °F) is converted back to the
-      // stored unit (kg, °C) before it hits the column.
-      if (Number.isFinite(n)) patch[f.name] = f.convert ? convertToStore(f.convert, n) : n;
+      // stored unit (kg, °C) before it hits the column. The display value is
+      // rounded, so round-tripping an untouched field would drift the column
+      // (5 kg → 11.0 lb → 4.99 kg). When the operator didn't change what they
+      // were shown, keep the stored value exactly as it was.
+      const origRaw = formData.get(`__orig_${f.name}`);
+      const orig = origRaw == null ? NaN : Number(String(origRaw));
+      if (Number.isFinite(orig) && convertToDisplay(f.convert, orig) === n) {
+        patch[f.name] = orig;
+        continue;
+      }
+      patch[f.name] = convertToStore(f.convert, n);
       continue;
     }
     if (f.type === "date") {
