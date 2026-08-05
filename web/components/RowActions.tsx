@@ -142,7 +142,11 @@ export default function RowActions({
             onClick={(e) => e.stopPropagation()}
           >
             <h3 style={{ marginTop: 0 }}>Delete {label ? `“${label}”` : "this record"}?</h3>
-            <p className="muted">This can’t be undone.</p>
+            <p className="muted">
+              {entity === "batch"
+                ? "This can’t be undone. Harvests, contamination logs, stage events, materials, and dry inventory from this batch will be removed too. Batches linked to orders won’t be deleted."
+                : "This can’t be undone."}
+            </p>
             <div className="actions">
               <button type="button" className="danger-btn" onClick={doDelete} disabled={pending}>
                 {pending ? "Deleting…" : "Delete"}

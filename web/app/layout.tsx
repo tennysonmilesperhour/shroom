@@ -51,7 +51,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             __html:
               "(function(){try{var t=localStorage.getItem('shroom-theme');" +
               "if(t!=='light'&&t!=='dark'){t=window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';}" +
-              "document.documentElement.dataset.theme=t;}catch(e){document.documentElement.dataset.theme='dark';}})();",
+              "document.documentElement.dataset.theme=t;" +
+              "var m=localStorage.getItem('shroom-mushroom-mode');" +
+              "if(m==='function')m='functional';" +
+              "if(m!=='magic'&&m!=='functional')m='magic';" +
+              "document.documentElement.dataset.mushroomMode=m;}catch(e){document.documentElement.dataset.theme='dark';document.documentElement.dataset.mushroomMode='magic';}})();",
           }}
         />
       </head>

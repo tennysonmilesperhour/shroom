@@ -459,6 +459,80 @@ h3 { font-size: var(--text-h3); letter-spacing: -0.015em; line-height: 1.2; }
 .sidebar button.link:hover { color: var(--lumen); }
 
 .content { flex: 1; min-width: 0; }
+.mode-bar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  justify-content: center;
+  padding: 10px clamp(1.25rem, 1rem + 2vw, 3rem) 0;
+  pointer-events: none;
+}
+.mushroom-mode {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 5px 7px 5px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--ink-2) 86%, transparent);
+  box-shadow: var(--shadow-lift);
+  backdrop-filter: blur(18px) saturate(1.2);
+}
+.mode-caption, .mode-context {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+}
+.mode-context { padding-right: 8px; letter-spacing: .04em; text-transform: none; }
+.mode-segmented {
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+  border-radius: 999px;
+  background: oklch(5% 0.02 240 / .35);
+}
+.mode-segmented button {
+  border: 0;
+  border-radius: 999px;
+  padding: 6px 13px;
+  color: var(--muted);
+  background: transparent;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 650;
+  transition: color 180ms var(--ease-out), background 180ms var(--ease-out), box-shadow 180ms var(--ease-out);
+}
+.mode-segmented button.active {
+  color: var(--text);
+  background: linear-gradient(110deg, oklch(66% 0.18 268 / .34), oklch(60% 0.21 295 / .24));
+  box-shadow: inset 0 0 0 1px var(--line-warm), 0 0 18px oklch(66% 0.18 268 / .16);
+}
+.mode-intro { max-width: 720px; margin: -2px 0 var(--space-5); }
+
+html[data-mushroom-mode="functional"] {
+  --lumen: oklch(80% 0.15 120);
+  --lumen-2: oklch(72% 0.13 130);
+  --indigo: oklch(68% 0.13 150);
+  --bruise: oklch(72% 0.13 75);
+  --moss: oklch(76% 0.16 135);
+  --spore: oklch(82% 0.15 85);
+  --line-warm: oklch(80% 0.15 120 / .25);
+}
+html[data-mushroom-mode="functional"] body {
+  background:
+    radial-gradient(1100px 680px at 82% -10%, oklch(70% 0.14 125 / .18), transparent 58%),
+    radial-gradient(900px 760px at 5% 15%, oklch(76% 0.13 75 / .10), transparent 55%),
+    radial-gradient(800px 520px at 55% 110%, oklch(62% 0.13 150 / .11), transparent 60%),
+    linear-gradient(180deg, oklch(15% .035 150), oklch(10% .025 145) 100%);
+}
+html[data-mushroom-mode="functional"] .mode-segmented button.active {
+  background: linear-gradient(110deg, oklch(70% .14 125 / .34), oklch(76% .13 75 / .22));
+}
 main {
   padding: var(--section-pad) clamp(1.25rem, 1rem + 2vw, 3rem);
   max-width: 1240px;
@@ -472,8 +546,12 @@ main {
   .sidebar { display: none; }
   .shell { flex-direction: column; }
   .content { width: 100%; }
+  .mode-bar { top: var(--topbar-h); padding: 8px 10px 0; }
+  .mode-caption, .mode-context { display: none; }
+  .mushroom-mode { min-height: 38px; padding: 4px; }
+  .mode-segmented button { padding: 5px 11px; }
   main {
-    padding: calc(var(--topbar-h) + 16px) clamp(0.85rem, 0.6rem + 2vw, 1.5rem) clamp(1.5rem, 1rem + 3vw, 2.5rem);
+    padding: 20px clamp(0.85rem, 0.6rem + 2vw, 1.5rem) clamp(1.5rem, 1rem + 3vw, 2.5rem);
     max-width: 100%;
   }
 }

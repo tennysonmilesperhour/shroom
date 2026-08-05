@@ -94,6 +94,8 @@ export async function deleteEntity(key: string, id: number): Promise<EntityResul
   }
   if (!Number.isFinite(id)) return { ok: false, message: "Invalid record." };
 
+  if (key === "batch") return deleteBatchEntity(id, entity);
+
   const supabase = createServiceClient();
   const { error } = await supabase.from(entity.table).delete().eq("id", id);
   if (error) {
@@ -109,6 +111,65 @@ export async function deleteEntity(key: string, id: number): Promise<EntityResul
   if (entity.sync) await enqueueSync(supabase, entity.sync, id, "delete", {});
   revalidatePath(entity.listPath);
   return { ok: true, message: `${cap(entity.label)} deleted` };
+}
+
+async function deleteBatchEntity(id: number, entity: EntityDef): Promise<EntityResult> {
+  const supabase = createServiceClient();
+  const { data: batch, error: batchErr } = await supabase
+    .from("batches")
+    .select("id,lot_code")
+    .eq("id", id)
+    .single();
+  if (batchErr || !batch) {
+    return { ok: false, message: batchErr?.message ?? "Batch not found." };
+  }
+
+  const { data: harvests, error: harvestErr } = await supabase
+    .from("harvests")
+    .select("id")
+    .eq("batch_id", id);
+  if (harvestErr) return { ok: false, message: harvestErr.message };
+
+  const harvestIds = (harvests ?? []).map((h) => h.id).filter((h): h is number => Number.isFinite(h));
+  if (harvestIds.length > 0) {
+    const { count: orderLineCount, error: orderErr } = await supabase
+      .from("order_lines")
+      .select("id", { count: "exact", head: true })
+      .in("harvest_id", harvestIds);
+    if (orderErr) return { ok: false, message: orderErr.message };
+    if ((orderLineCount ?? 0) > 0) {
+      return {
+        ok: false,
+        message:
+          "Can’t delete this batch because one or more harvests are linked to orders. Unlink those order lines first to preserve traceability.",
+      };
+    }
+
+    // dry_inventory references harvests without ON DELETE CASCADE in the
+    // current schema, so remove the batch-owned jar rows before deleting the
+    // batch and letting harvests cascade.
+    const { error: dryErr } = await supabase
+      .from("dry_inventory")
+      .delete()
+      .in("harvest_id", harvestIds);
+    if (dryErr) return { ok: false, message: dryErr.message };
+  }
+
+  const { error } = await supabase.from("batches").delete().eq("id", id);
+  if (error) {
+    return {
+      ok: false,
+      message: /foreign key|violates/i.test(error.message)
+        ? "Can’t delete this batch — other records still reference it."
+        : error.message,
+    };
+  }
+
+  if (entity.sync) await enqueueSync(supabase, entity.sync, id, "delete", { lot_code: batch.lot_code });
+  revalidatePath(entity.listPath);
+  revalidatePath(`/batches/${id}`);
+  revalidatePath("/");
+  return { ok: true, message: `Batch ${batch.lot_code} deleted` };
 }
 
 function cap(s: string): string {

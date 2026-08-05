@@ -8,15 +8,18 @@ import QuickLog, { type QuickLogBatch } from "@/components/QuickLog";
 import RoutinePlanner, { type Routine } from "@/components/RoutinePlanner";
 import OperationPulse from "@/components/OperationPulse";
 import { kgToG, money, DRY_FLOOR } from "@/lib/format";
-import { must, maybe, soft } from "@/lib/query";
+import { must, soft } from "@/lib/query";
+import { cookies } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
 interface BatchRow {
   stage: string;
   block_count: number | null;
+  strains: { mushroom_type: string } | null;
 }
 interface DryRatioRow {
+  strain_id: number | null;
   fresh_g: number | null;
   dry_g: number | null;
   below_floor: boolean | null;
@@ -83,10 +86,17 @@ const ACTIVE_STAGES = new Set(["colonization", "spawn_to_bulk", "fruiting", "har
 const RETIRED_STAGES = new Set(["spent", "contaminated"]);
 
 export default async function Dashboard() {
+  const cookieStore = await cookies();
+  const rawMode = cookieStore.get("shroom-mushroom-mode")?.value;
+  const mode = rawMode === "functional" || rawMode === "function" ? "functional" : "magic";
+  const includedTypes = mode === "functional"
+    ? new Set(["functional", "gourmet"])
+    : new Set(["psychedelic"]);
+  const isFunctional = mode === "functional";
   const supabase = createServiceClient();
-  const [batches, dry, env, yields, tasks, inv, valuation, spotlight] = await Promise.all([
-    must<BatchRow[]>(supabase.from("batches").select("stage,block_count"), "load batches"),
-    must<DryRatioRow[]>(supabase.from("v_dry_ratio").select("fresh_g,dry_g,below_floor"), "load dry ratios"),
+  const [allBatches, allDry, env, allYields, tasks, inv, valuation, allSpotlights, strainTypes] = await Promise.all([
+    must<BatchRow[]>(supabase.from("batches").select("stage,block_count,strains(mushroom_type)"), "load batches"),
+    must<DryRatioRow[]>(supabase.from("v_dry_ratio").select("strain_id,fresh_g,dry_g,below_floor"), "load dry ratios"),
     must<EnvStatusRow[]>(supabase.from("v_environment_status").select("room_id,room,in_spec"), "load environment status"),
     must<YieldRow[]>(
       supabase
@@ -104,19 +114,29 @@ export default async function Dashboard() {
       supabase.from("v_inventory_valuation").select("distributor_low,distributor_high"),
       "load valuation",
     ),
-    maybe<SpotlightHarvest>(
+    must<SpotlightHarvest[]>(
       supabase
         .from("v_dry_ratio")
         .select(
           "harvest_id,batch_id,lot_code,harvested_on,flush_number,strain_id,strain,fresh_g,dry_g,dry_ratio_pct,below_floor",
         )
         .order("harvested_on", { ascending: false })
-        .limit(1)
-        .maybeSingle(),
-      "load spotlight harvest",
+        .limit(20),
+      "load spotlight harvests",
+    ),
+    must<{ id: number; mushroom_type: string }[]>(
+      supabase.from("strains").select("id,mushroom_type"),
+      "load strain types",
     ),
   ]);
 
+  const typeByStrain = new Map(strainTypes.map((s) => [s.id, s.mushroom_type]));
+  const batches = allBatches.filter((b) => b.strains && includedTypes.has(b.strains.mushroom_type));
+  const dry = allDry.filter((r) => r.strain_id != null && includedTypes.has(typeByStrain.get(r.strain_id) ?? ""));
+  const yields = allYields.filter((y) => includedTypes.has(typeByStrain.get(y.strain_id) ?? ""));
+  const spotlight = allSpotlights.find(
+    (h) => h.strain_id != null && includedTypes.has(typeByStrain.get(h.strain_id) ?? ""),
+  ) ?? null;
   const active = batches.filter((b) => ACTIVE_STAGES.has(b.stage)).length;
   const blocks = batches
     .filter((b) => !RETIRED_STAGES.has(b.stage))
@@ -186,8 +206,15 @@ export default async function Dashboard() {
       <OperationPulse vitals={vitals} />
 
       <div>
-        <div className="eyebrow">Operation</div>
-        <h1 className="section">Today&rsquo;s state of the mycelium</h1>
+        <div className="eyebrow">{isFunctional ? "Functional & culinary" : "Magic collection"}</div>
+        <h1 className="section">
+          {isFunctional ? "From fruiting room to kitchen shelf" : "Today’s state of the mycelium"}
+        </h1>
+        <p className="lead mode-intro">
+          {isFunctional
+            ? "Production health for functional extracts, fresh culinary harvests, and the cultures behind them."
+            : "Cultivation signals, harvest potency, and the living library behind the magic collection."}
+        </p>
       </div>
 
       <RoutinePlanner routines={routineRows as Routine[]} />
@@ -195,7 +222,7 @@ export default async function Dashboard() {
       {spotlight && (
         <section className="spotlight has-gauge" aria-labelledby="spotlight-title">
           <div className="spotlight-main">
-            <div className="eyebrow">Latest harvest</div>
+            <div className="eyebrow">{isFunctional ? "Fresh from the fruiting room" : "Latest magic harvest"}</div>
             <h3 id="spotlight-title">
               {spotlight.strain_id ? (
                 <Link href={`/strains/${spotlight.strain_id}`} className="row-anchor">
@@ -241,21 +268,25 @@ export default async function Dashboard() {
             value={Math.min(1, (spotlight.dry_ratio_pct ?? 0) / 12)}
             tone={spotlight.below_floor ? "ember" : "lumen"}
             centerValue={<><CountUp value={spotlight.dry_ratio_pct ?? 0} decimals={1} />%</>}
-            centerLabel="dry yield"
+            centerLabel={isFunctional ? "conversion" : "dry yield"}
             ariaLabel={`Dry ratio ${spotlight.dry_ratio_pct ?? 0} percent`}
           />
         </section>
       )}
 
       <div className="kpi-row">
-        <Kpi label="Active batches" countTo={active} series={startedSeries} feature tilt />
-        <Kpi label="Blocks in production" countTo={blocks} tilt />
-        <Kpi label="Harvested (fresh)" countTo={freshG} unit="g" series={freshSeries} tilt />
-        <Kpi label="Overall dry ratio" countTo={overallRatio} decimals={1} unit="%" series={ratioSeries} tilt />
+        <Kpi label={isFunctional ? "Active grows" : "Active batches"} countTo={active} series={startedSeries} feature tilt />
+        <Kpi label={isFunctional ? "Fruiting blocks" : "Blocks in production"} countTo={blocks} tilt />
+        <Kpi label={isFunctional ? "Fresh crop" : "Harvested (fresh)"} countTo={freshG} unit="g" series={freshSeries} tilt />
+        <Kpi label={isFunctional ? "Dry conversion" : "Overall dry ratio"} countTo={overallRatio} decimals={1} unit="%" series={ratioSeries} tilt />
       </div>
 
       <div className="grid kpis" style={{ marginTop: "var(--space-3)" }}>
-        <Kpi label="Dried on-hand (distrib.)" value={`${money(invLow)}–${money(invHigh)}`} tilt />
+        {isFunctional ? (
+          <Kpi label="Cultivars in rotation" countTo={yields.filter((y) => y.batches > 0).length} tilt />
+        ) : (
+          <Kpi label="Dried on-hand (distrib.)" value={`${money(invLow)}–${money(invHigh)}`} tilt />
+        )}
         <Kpi label="Open tasks" countTo={openTasks} series={tasksSeries} tilt href="/tasks" />
       </div>
 
@@ -279,9 +310,9 @@ export default async function Dashboard() {
             ))
           )}
         </Card>
-        <Card title="Attention">
+        <Card title={isFunctional ? "Crop watch" : "Attention"}>
           <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0" }}>
-            <span>Harvests below {DRY_FLOOR}% dry floor</span>
+            <span>{isFunctional ? "Lots below target conversion" : `Harvests below ${DRY_FLOOR}% dry floor`}</span>
             <Badge tone={flagged ? "amber" : "green"}>{flagged}</Badge>
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0" }}>
@@ -294,12 +325,12 @@ export default async function Dashboard() {
         </Card>
       </div>
 
-      <Card title="Yield by strain">
+      <Card title={isFunctional ? "Yield by cultivar" : "Yield by strain"}>
         <table>
-          <caption className="sr-only">Yield by strain</caption>
+          <caption className="sr-only">Yield by {isFunctional ? "cultivar" : "strain"}</caption>
           <thead>
             <tr>
-              <th scope="col">Strain</th>
+              <th scope="col">{isFunctional ? "Cultivar" : "Strain"}</th>
               <th scope="col">Batches</th>
               <th scope="col" className="right">Fresh (g)</th>
               <th scope="col" className="right">Bio-efficiency</th>
