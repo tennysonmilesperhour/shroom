@@ -8,6 +8,7 @@ import CursorAura from "@/components/CursorAura";
 import ToastProvider from "@/components/ToastProvider";
 import FeedbackPanel from "@/components/FeedbackPanel";
 import ThemeToggle from "@/components/ThemeToggle";
+import MushroomModeToggle from "@/components/MushroomModeToggle";
 import { createServiceClient } from "@/utils/supabase/service";
 
 // Open access - no auth gate. SSR pages read with the service-role client
@@ -72,6 +73,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       </aside>
 
       <div className="content">
+        <div className="mode-bar">
+          <MushroomModeToggle />
+        </div>
         <main id="main" tabIndex={-1}>
           {children}
         </main>
