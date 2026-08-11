@@ -123,6 +123,12 @@ def test_supply_usage_infers_untracked(client):
     inoc = next(b for b in ipa["by_stage"] if b["stage"] == "inoculation")
     assert inoc["batches"] == total
     assert abs(inoc["used"] - round(0.05 * total, 3)) < 1e-6
+    # Each stage row exposes its estimate id + editable fields so the UI can
+    # PATCH it inline, and vocab lets the UI offer stage/basis pickers.
+    assert isinstance(inoc["id"], int)
+    assert "replace_after_batches" in inoc
+    assert "inoculation" in r["vocab"]["stages"]
+    assert "block" in r["vocab"]["bases"]
     rep = ipa["replacement"]
     assert rep["replace_after_batches"] == 50
     assert rep["completions"] == total

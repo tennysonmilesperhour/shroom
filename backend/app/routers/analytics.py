@@ -415,9 +415,12 @@ def supply_usage(db: Session = Depends(get_db)):
         entry["inferred_used"] = round(entry["inferred_used"] + used, 3)
         entry["by_stage"].append(
             {
+                "id": est.id,
                 "stage": est.stage,
                 "basis": est.basis,
                 "avg_qty": est.avg_qty,
+                "unit": est.unit,
+                "replace_after_batches": est.replace_after_batches,
                 "batches": n_batches,
                 "blocks": n_blocks,
                 "used": used,
@@ -458,6 +461,9 @@ def supply_usage(db: Session = Depends(get_db)):
         "batches_considered": len(batches),
         "stage_completions": stage_completions,
         "supplies": sorted(supplies.values(), key=lambda s: s["supply_name"].lower()),
+        # Vocab so the UI can offer stage/basis pickers when adding or editing
+        # an estimate — sourced from the models so the two never drift.
+        "vocab": {"stages": models.STAGES, "bases": models.SUPPLY_BASES},
     }
 
 
