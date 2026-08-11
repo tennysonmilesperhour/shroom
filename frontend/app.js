@@ -6,6 +6,18 @@ const API = (path) => fetch(`/api${path}`).then((r) => {
 const POST = (path, body) => fetch(`/api${path}`, {
   method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body),
 }).then((r) => r.json());
+// Write helper with error surfacing, for PATCH / POST / DELETE mutations.
+const req = (method, path, body) => fetch(`/api${path}`, {
+  method,
+  headers: { 'content-type': 'application/json' },
+  body: body === undefined ? undefined : JSON.stringify(body),
+}).then(async (r) => {
+  if (!r.ok) {
+    const detail = await r.json().catch(() => ({}));
+    throw new Error(detail.detail || `${method} ${path} -> ${r.status}`);
+  }
+  return r.status === 204 ? null : r.json();
+});
 
 const $ = (id) => document.getElementById(id);
 const el = (html) => { const d = document.createElement('div'); d.innerHTML = html.trim(); return d.firstChild; };
@@ -147,50 +159,160 @@ views.harvests = async () => {
 };
 
 // --- Supplies (inferred usage of untracked consumables) ---
+const num = (n) => Number(n).toLocaleString(undefined, { maximumFractionDigits: 3 });
+const opts = (arr, sel) => arr.map((o) => `<option value="${o}"${o === sel ? ' selected' : ''}>${o}</option>`).join('');
+
 views.supplies = async () => {
   const root = $('supplies');
-  root.innerHTML = '<div class="loading">Inferring supply usage…</div>';
-  const u = await API('/analytics/supply-usage');
-  const num = (n) => Number(n).toLocaleString(undefined, { maximumFractionDigits: 3 });
-  const stageChips = Object.entries(u.stage_completions)
-    .sort((a, b) => b[1] - a[1])
-    .map(([s, n]) => `<span class="badge muted">${s}: ${n}</span>`).join(' ');
 
-  const card = (s) => {
-    const rep = s.replacement;
-    let repHtml = '';
-    if (rep) {
-      const due = rep.due_now;
-      repHtml = `<div class="env-row"><span>Replace every ${rep.replace_after_batches} batches</span>
-        <span class="badge ${due ? 'red' : rep.batches_until_next <= 5 ? 'amber' : 'green'}">${
-          due ? 'due now' : `${rep.batches_until_next} to go`}</span></div>`;
-    }
-    const stageRows = s.by_stage.map((b) => `<div class="env-row"><span>${b.stage}
-      <span class="muted">(${num(b.avg_qty)}/${b.basis})</span></span>
-      <span>${num(b.used)} ${s.unit}</span></div>`).join('');
-    return `<div class="card" style="margin-bottom:12px">
-      <div class="env-row" style="border:none;padding-bottom:4px">
-        <h3 style="margin:0">${s.supply_name}
-          ${s.on_hand == null ? '<span class="badge amber">untracked</span>'
-            : `<span class="badge blue">on hand ${num(s.on_hand)} ${s.unit}</span>`}</h3>
-        <span class="value" style="font-size:1.15rem">${num(s.inferred_used)}<span class="unit"> ${s.unit} used</span></span>
+  const render = async () => {
+    root.innerHTML = '<div class="loading">Inferring supply usage…</div>';
+    const [u, inventory] = await Promise.all([
+      API('/analytics/supply-usage'),
+      API('/inventory').catch(() => []),
+    ]);
+    const stages = (u.vocab && u.vocab.stages) || Object.keys(u.stage_completions);
+    const bases = (u.vocab && u.vocab.bases) || ['batch', 'block'];
+    const stageChips = Object.entries(u.stage_completions)
+      .sort((a, b) => b[1] - a[1])
+      .map(([s, n]) => `<span class="badge muted">${s}: ${n}</span>`).join(' ');
+
+    // One editable row per estimate: adjust avg qty, basis and replace cadence in place.
+    const editRow = (b, unit) => `
+      <div class="est-row" data-id="${b.id}" data-batches="${b.batches}" data-blocks="${b.blocks}">
+        <span class="est-stage">${b.stage}</span>
+        <input class="est-qty" type="number" step="0.001" min="0" value="${b.avg_qty}" title="avg ${unit} per ${b.basis}">
+        <span class="lbl">/</span>
+        <select class="est-basis">${opts(bases, b.basis)}</select>
+        <span class="lbl">· replace every</span>
+        <input class="est-rep" type="number" min="1" placeholder="—" value="${b.replace_after_batches ?? ''}" title="replace after N batches (blank = not a wear item)">
+        <span class="est-used">≈ <b>${num(b.used)}</b> ${unit}</span>
+        <button class="btn-sm est-save" type="button">Save</button>
+        <button class="btn-sm danger est-del" type="button" title="Delete this estimate">✕</button>
+      </div>`;
+
+    const card = (s) => {
+      const rep = s.replacement;
+      let repHtml = '';
+      if (rep) {
+        const due = rep.due_now;
+        repHtml = `<div class="env-row"><span>Replace every ${rep.replace_after_batches} batches</span>
+          <span class="badge ${due ? 'red' : rep.batches_until_next <= 5 ? 'amber' : 'green'}">${
+            due ? 'due now' : `${rep.batches_until_next} to go`}</span></div>`;
+      }
+      return `<div class="card" style="margin-bottom:12px">
+        <div class="env-row" style="border:none;padding-bottom:4px">
+          <h3 style="margin:0">${s.supply_name}
+            ${s.on_hand == null ? '<span class="badge amber">untracked</span>'
+              : `<span class="badge blue">on hand ${num(s.on_hand)} ${s.unit}</span>`}</h3>
+          <span class="value" style="font-size:1.15rem">${num(s.inferred_used)}<span class="unit"> ${s.unit} used</span></span>
+        </div>
+        ${repHtml}
+        ${s.by_stage.map((b) => editRow(b, s.unit)).join('')}
+      </div>`;
+    };
+
+    const invOpts = inventory.map((i) => `<option value="${i.id}">${i.name}</option>`).join('');
+    const addForm = `
+      <details class="est-add">
+        <summary>＋ Add a supply usage estimate</summary>
+        <div class="fields">
+          <div><label>Supply name</label><input id="add-name" placeholder="e.g. 70% isopropyl alcohol"></div>
+          <div><label>Unit</label><input id="add-unit" placeholder="L, pair, disc…" value="unit"></div>
+          <div><label>Stage that consumes it</label><select id="add-stage">${opts(stages, 'inoculation')}</select></div>
+          <div><label>Avg qty</label><input id="add-qty" type="number" step="0.001" min="0" value="0"></div>
+          <div><label>Per</label><select id="add-basis">${opts(bases, 'batch')}</select></div>
+          <div><label>Replace after N batches</label><input id="add-rep" type="number" min="1" placeholder="optional"></div>
+          <div><label>Link tracked item</label><select id="add-inv"><option value="">— none (untracked) —</option>${invOpts}</select></div>
+        </div>
+        <button class="primary" id="add-save" type="button">Add estimate</button>
+        <span class="est-status" id="add-status"></span>
+      </details>`;
+
+    root.innerHTML = `<h2 class="section">Supply Usage (inferred)</h2>
+      <p class="lead">Average burn per stage × batches that reached each stage — so consumables we never
+        count per use (isopropyl alcohol, gloves, filter discs) get a running total, and wear items get a
+        replace-by forecast. Estimates, not meter readings — <b>edit any figure below</b> to match reality.</p>
+      <div class="card" style="margin-bottom:16px">
+        <h3>Throughput</h3>
+        <div class="muted" style="margin-bottom:8px">${u.batches_considered} batches considered · stages reached:</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">${stageChips}</div>
       </div>
-      ${repHtml}
-      ${stageRows}
-    </div>`;
+      ${u.supplies.length ? u.supplies.map(card).join('')
+        : '<div class="card muted" style="margin-bottom:12px">No stage supply estimates yet — add your first one below.</div>'}
+      ${addForm}`;
+
+    wire();
   };
 
-  root.innerHTML = `<h2 class="section">Supply Usage (inferred)</h2>
-    <p class="lead">Average burn per stage × batches that reached each stage — so consumables we never
-      count per use (isopropyl alcohol, gloves, filter discs) get a running total, and wear items get a
-      replace-by forecast. Estimates, not meter readings.</p>
-    <div class="card" style="margin-bottom:16px">
-      <h3>Throughput</h3>
-      <div class="muted" style="margin-bottom:8px">${u.batches_considered} batches considered · stages reached:</div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap">${stageChips}</div>
-    </div>
-    ${u.supplies.length ? u.supplies.map(card).join('')
-      : '<div class="card muted">No stage supply estimates configured yet.</div>'}`;
+  // --- interactions ---
+  const wire = () => {
+    // Live "used" preview as qty/basis change, before saving.
+    root.querySelectorAll('.est-row').forEach((row) => {
+      const preview = () => {
+        const qty = parseFloat(row.querySelector('.est-qty').value) || 0;
+        const basis = row.querySelector('.est-basis').value;
+        const count = Number(row.dataset[basis === 'block' ? 'blocks' : 'batches']) || 0;
+        row.querySelector('.est-used b').textContent = num(Math.round(qty * count * 1000) / 1000);
+      };
+      row.querySelector('.est-qty').addEventListener('input', preview);
+      row.querySelector('.est-basis').addEventListener('change', preview);
+    });
+
+    root.querySelectorAll('.est-save').forEach((btn) => btn.addEventListener('click', async () => {
+      const row = btn.closest('.est-row');
+      const rep = row.querySelector('.est-rep').value.trim();
+      btn.disabled = true; btn.textContent = 'Saving…';
+      try {
+        await req('PATCH', `/stage-supply-estimates/${row.dataset.id}`, {
+          avg_qty: parseFloat(row.querySelector('.est-qty').value) || 0,
+          basis: row.querySelector('.est-basis').value,
+          replace_after_batches: rep === '' ? null : parseInt(rep, 10),
+        });
+        await render();
+      } catch (e) {
+        btn.disabled = false; btn.textContent = 'Save';
+        alert(`Could not save: ${e.message}`);
+      }
+    }));
+
+    root.querySelectorAll('.est-del').forEach((btn) => btn.addEventListener('click', async () => {
+      const row = btn.closest('.est-row');
+      if (!confirm('Delete this stage estimate?')) return;
+      btn.disabled = true;
+      try {
+        await req('DELETE', `/stage-supply-estimates/${row.dataset.id}`);
+        await render();
+      } catch (e) { btn.disabled = false; alert(`Could not delete: ${e.message}`); }
+    }));
+
+    const addBtn = root.querySelector('#add-save');
+    if (addBtn) addBtn.addEventListener('click', async () => {
+      const status = root.querySelector('#add-status');
+      const name = root.querySelector('#add-name').value.trim();
+      if (!name) { status.className = 'est-status err'; status.textContent = 'Supply name is required.'; return; }
+      const inv = root.querySelector('#add-inv').value;
+      const rep = root.querySelector('#add-rep').value.trim();
+      const body = {
+        supply_name: name,
+        unit: root.querySelector('#add-unit').value.trim() || 'unit',
+        stage: root.querySelector('#add-stage').value,
+        avg_qty: parseFloat(root.querySelector('#add-qty').value) || 0,
+        basis: root.querySelector('#add-basis').value,
+        replace_after_batches: rep === '' ? null : parseInt(rep, 10),
+        inventory_item_id: inv === '' ? null : parseInt(inv, 10),
+      };
+      addBtn.disabled = true; status.className = 'est-status'; status.textContent = 'Adding…';
+      try {
+        await req('POST', '/stage-supply-estimates', body);
+        await render();
+      } catch (e) {
+        addBtn.disabled = false; status.className = 'est-status err'; status.textContent = e.message;
+      }
+    });
+  };
+
+  await render();
 };
 
 // --- Environment ---
