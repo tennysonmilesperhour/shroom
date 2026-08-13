@@ -31,6 +31,13 @@ export default function PrintLabel({
   size: LabelSize;
   basePath: string;
 }) {
+  function hrefForSize(key: string): string {
+    const [path, rawQuery = ""] = basePath.split("?");
+    const params = new URLSearchParams(rawQuery);
+    params.set("size", key);
+    return `${path}?${params.toString()}`;
+  }
+
   useEffect(() => {
     const id = "label-page-size";
     let style = document.getElementById(id) as HTMLStyleElement | null;
@@ -51,7 +58,7 @@ export default function PrintLabel({
         {LABEL_SIZES.map((s) => (
           <Link
             key={s.key}
-            href={`${basePath}?size=${s.key}`}
+            href={hrefForSize(s.key)}
             className={`label-size-btn ${s.key === size.key ? "active" : ""}`}
             aria-current={s.key === size.key ? "true" : undefined}
           >

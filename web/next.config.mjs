@@ -53,7 +53,7 @@ const securityHeaders = [
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   {
     key: "Permissions-Policy",
-    value: "camera=(), microphone=(), geolocation=(), interest-cohort=()",
+    value: "camera=(self), microphone=(self), geolocation=(), interest-cohort=()",
   },
   {
     key: "Content-Security-Policy",
@@ -64,7 +64,7 @@ const securityHeaders = [
       "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
       // Inline style attributes are used throughout the React tree.
       "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: blob:",
+      `img-src 'self' data: blob: ${SUPABASE_HOST}`,
       "font-src 'self' data:",
       `connect-src 'self' ${SUPABASE_HOST} wss://*.supabase.co${PRODUCTION_ORIGIN ? ` ${PRODUCTION_ORIGIN}` : ""}`,
       // Truth Source embeds live Google Sheets in <iframe>s; without an
@@ -80,6 +80,15 @@ const securityHeaders = [
 ];
 
 const nextConfig = {
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "*.supabase.co",
+        pathname: "/storage/v1/object/sign/**",
+      },
+    ],
+  },
   // Exposed to client + server bundles so the version-watcher can compare
   // the running build against the deployed one. See BUILD_ID above.
   env: {

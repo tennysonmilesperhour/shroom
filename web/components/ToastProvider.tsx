@@ -18,11 +18,18 @@ export interface ToastInput {
   tone?: ToastTone;
   /** ms before auto-dismiss. Default 3800. */
   duration?: number;
+  actionLabel?: string;
+  onAction?: () => void | Promise<void>;
 }
 
-interface ToastItem extends Required<Omit<ToastInput, "body">> {
+interface ToastItem {
   id: number;
+  title: string;
   body?: string;
+  tone: ToastTone;
+  duration: number;
+  actionLabel?: string;
+  onAction?: () => void | Promise<void>;
 }
 
 interface ToastContextValue {
@@ -49,9 +56,9 @@ export default function ToastProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const push = useCallback(
-    ({ title, body, tone = "lumen", duration = 3800 }: ToastInput) => {
+    ({ title, body, tone = "lumen", duration = 3800, actionLabel, onAction }: ToastInput) => {
       const id = nextId.current++;
-      setItems((list) => [...list, { id, title, body, tone, duration }]);
+      setItems((list) => [...list, { id, title, body, tone, duration, actionLabel, onAction }]);
       window.setTimeout(() => dismiss(id), duration);
     },
     [dismiss],
@@ -70,6 +77,18 @@ export default function ToastProvider({ children }: { children: ReactNode }) {
               <div className="qtoast-title">{t.title}</div>
               {t.body && <div className="qtoast-body">{t.body}</div>}
             </div>
+            {t.actionLabel && t.onAction && (
+              <button
+                type="button"
+                className="qtoast-action"
+                onClick={() => {
+                  void t.onAction?.();
+                  dismiss(t.id);
+                }}
+              >
+                {t.actionLabel}
+              </button>
+            )}
             <button
               type="button"
               className="qtoast-x"

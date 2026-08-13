@@ -10,6 +10,8 @@ import { enqueueSync } from "@/lib/sync";
 import { getEntity, type EntityDef } from "@/lib/entities";
 import { convertToDisplay, convertToStore } from "@/lib/format";
 import type { EntityResult } from "@/components/EntityForm";
+import { recordBatchChange } from "@/lib/batch-history";
+import { completeTaskRecord } from "@/lib/task-completion";
 
 function buildPatch(entity: EntityDef, formData: FormData): Record<string, unknown> {
   // The dialog reports which fields it actually rendered, so a partial edit
@@ -94,6 +96,38 @@ export async function updateEntity(
   }
 
   const supabase = createServiceClient();
+  // A task completion is a domain action, not just a status string: perform
+  // its configured batch mutation before marking it done. Save any other form
+  // edits first so a newly selected completion action applies immediately.
+  if (key === "task" && patch.status === "done") {
+    const configPatch = { ...patch };
+    delete configPatch.status;
+    if (Object.keys(configPatch).length > 0) {
+      const { error: configError } = await supabase.from(entity.table).update(configPatch).eq("id", id);
+      if (configError) return { ok: false, message: configError.message };
+    }
+    const result = await completeTaskRecord(supabase, id);
+    if (result.ok) {
+      revalidatePath(entity.listPath);
+      revalidatePath("/batches");
+      revalidatePath("/");
+    }
+    return result;
+  }
+
+  let batchBefore: Record<string, unknown> | null = null;
+  let batchLot = "";
+  if (key === "batch") {
+    const fields = [...new Set(["lot_code", ...Object.keys(patch)])];
+    const { data: current, error: currentError } = await supabase
+      .from("batches")
+      .select(fields.join(","))
+      .eq("id", id)
+      .single<Record<string, unknown>>();
+    if (currentError || !current) return { ok: false, message: currentError?.message ?? "Batch not found." };
+    batchLot = String(current.lot_code ?? "");
+    batchBefore = Object.fromEntries(Object.keys(patch).map((field) => [field, current[field]]));
+  }
   // .select() so PostgREST reports the affected rows — an update whose filter
   // matches nothing returns no error, which would otherwise read as success.
   const { data, error } = await supabase
@@ -105,9 +139,31 @@ export async function updateEntity(
   if (!data || data.length === 0)
     return { ok: false, message: "This record no longer exists — reload the page." };
 
+  let undoId: number | undefined;
+  if (key === "batch" && batchBefore) {
+    try {
+      const change = await recordBatchChange(supabase, {
+        batchId: id,
+        lotCode: batchLot,
+        action: "Edited batch details",
+        before: batchBefore,
+        after: patch,
+      });
+      undoId = change.id;
+    } catch (historyError) {
+      const { error: rollbackError } = await supabase.from("batches").update(batchBefore).eq("id", id);
+      const message = historyError instanceof Error ? historyError.message : "Could not record change history.";
+      if (!rollbackError) return { ok: false, message };
+      if (entity.sync) await enqueueSync(supabase, entity.sync, id, "update", patch);
+      revalidatePath(entity.listPath);
+      revalidatePath(`/batches/${id}`);
+      return { ok: true, message: `${cap(entity.label)} updated, but undo is unavailable (${message})` };
+    }
+    revalidatePath(`/batches/${id}`);
+  }
   if (entity.sync) await enqueueSync(supabase, entity.sync, id, "update", patch);
   revalidatePath(entity.listPath);
-  return { ok: true, message: `${cap(entity.label)} updated ✓` };
+  return { ok: true, message: `${cap(entity.label)} updated ✓`, undoId };
 }
 
 export async function deleteEntity(key: string, id: number): Promise<EntityResult> {
@@ -186,6 +242,17 @@ async function deleteBatchEntity(id: number, entity: EntityDef): Promise<EntityR
     if (dryErr) return { ok: false, message: dryErr.message };
   }
 
+  // Storage objects live outside Postgres and are not removed by the
+  // batch_media FK cascade. Resolve the exact paths only after every
+  // traceability guard above passes, then delete them through the Storage API.
+  const { data: media, error: mediaReadError } = await supabase
+    .from("batch_media")
+    .select("storage_path")
+    .eq("batch_id", id);
+  if (mediaReadError && !/batch_media|does not exist|schema cache/i.test(mediaReadError.message)) {
+    return { ok: false, message: mediaReadError.message };
+  }
+  const mediaPaths = (media ?? []).map((row) => row.storage_path).filter(Boolean);
   const { error } = await supabase.from("batches").delete().eq("id", id);
   if (error) {
     return {
@@ -196,11 +263,17 @@ async function deleteBatchEntity(id: number, entity: EntityDef): Promise<EntityR
     };
   }
 
+  let cleanupNote = "";
+  if (mediaPaths.length > 0) {
+    const { error: storageError } = await supabase.storage.from("batch-media").remove(mediaPaths);
+    if (storageError) cleanupNote = " · photo files need storage cleanup";
+  }
+
   if (entity.sync) await enqueueSync(supabase, entity.sync, id, "delete", { lot_code: batch.lot_code });
   revalidatePath(entity.listPath);
   revalidatePath(`/batches/${id}`);
   revalidatePath("/");
-  return { ok: true, message: `Batch ${batch.lot_code} deleted` };
+  return { ok: true, message: `Batch ${batch.lot_code} deleted${cleanupNote}` };
 }
 
 function cap(s: string): string {

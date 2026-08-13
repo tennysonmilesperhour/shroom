@@ -6,6 +6,10 @@ import { useToast } from "@/components/ToastProvider";
 export interface EntityResult {
   ok: boolean;
   message?: string;
+  /** Reversible batch mutations return the change-event id for a 10-minute undo. */
+  undoId?: number;
+  /** True when an offline-capable mutation was stored locally for later sync. */
+  queued?: boolean;
 }
 
 interface EntityFormProps {

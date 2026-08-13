@@ -7,6 +7,8 @@ import Portal from "@/components/Portal";
 import { updateEntity } from "@/lib/crud";
 import { getEntity, type FieldDef, type Option } from "@/lib/entities";
 import { convertToDisplay } from "@/lib/format";
+import { ChoiceField, StepperField, ToggleField } from "@/components/TapFields";
+import { undoBatchChange } from "@/app/(app)/batches/workflow-actions";
 
 interface EditDialogProps {
   entity: string;
@@ -36,12 +38,7 @@ function Field({
   const v = initial[field.name];
 
   if (field.type === "checkbox") {
-    return (
-      <label className="checkbox-row" htmlFor={fieldId}>
-        <input id={fieldId} type="checkbox" name={field.name} defaultChecked={Boolean(v)} />
-        {field.label}
-      </label>
-    );
+    return <ToggleField id={fieldId} name={field.name} label={field.label} defaultChecked={Boolean(v)} />;
   }
 
   const inner = (() => {
@@ -57,6 +54,18 @@ function Field({
       // required one, so saving would reassign the record without the operator
       // touching it. Keep the current value selectable instead.
       const missing = current !== "" && !opts.some((o) => o.value === current);
+      if (field.control === "chips" && !missing) {
+        return (
+          <ChoiceField
+            name={field.name}
+            options={opts}
+            defaultValue={current}
+            required={field.required}
+            allowEmpty={!field.required}
+            ariaLabel={field.label}
+          />
+        );
+      }
       return (
         <select id={fieldId} name={field.name} defaultValue={current} required={field.required}>
           {!field.required && <option value="">—</option>}
@@ -73,6 +82,19 @@ function Field({
     // °C↔°F). Show the operator's unit; lib/crud converts back on save.
     const converts = field.type === "number" && field.convert && v != null && v !== "";
     const shown = converts ? str(convertToDisplay(field.convert!, Number(v))) : str(v);
+    if (field.type === "number" && field.control === "stepper") {
+      return (
+        <StepperField
+          id={fieldId}
+          name={field.name}
+          defaultValue={shown === "" ? field.min ?? 0 : Number(shown)}
+          min={field.min}
+          max={field.max}
+          step={Number(field.step ?? 1)}
+          required={field.required}
+        />
+      );
+    }
     return (
       <>
         <input
@@ -141,6 +163,19 @@ export default function EditDialog({
         title: r.ok ? "Saved" : "Couldn’t save",
         body: r.message,
         tone: r.ok ? "moss" : "ember",
+        duration: r.undoId ? 10_000 : undefined,
+        actionLabel: r.undoId ? "Undo" : undefined,
+        onAction: r.undoId
+          ? async () => {
+              const undo = await undoBatchChange(r.undoId!);
+              push({
+                title: undo.ok ? "Change undone" : "Couldn’t undo",
+                body: undo.message,
+                tone: undo.ok ? "moss" : "ember",
+              });
+              router.refresh();
+            }
+          : undefined,
       });
       if (r.ok) {
         router.refresh();

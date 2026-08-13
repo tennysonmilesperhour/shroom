@@ -37,6 +37,9 @@ export interface FieldDef {
   step?: string;
   min?: number;
   placeholder?: string;
+  /** Tap-first presentation for short enums, booleans, and bounded numbers. */
+  control?: "chips" | "stepper" | "switch";
+  max?: number;
   /** Span the full width of the two-column form grid. */
   full?: boolean;
   /**
@@ -80,19 +83,20 @@ export const ENTITIES: Record<string, EntityDef> = {
       { name: "lot_code", label: "Lot code", type: "text", required: true },
       { name: "strain_id", label: "Strain", type: "select", fk: true, required: true },
       { name: "room_id", label: "Room", type: "select", fk: true },
-      { name: "stage", label: "Stage", type: "select", options: STAGE_OPTIONS },
+      { name: "stage", label: "Stage", type: "select", options: STAGE_OPTIONS, control: "chips", full: true },
       {
         name: "container_type",
         label: "Container type",
         type: "select",
         options: opt("tub", "grain_bag", "aio"),
+        control: "chips",
       },
       { name: "container_id", label: "Container ID", type: "text" },
       { name: "tub_size", label: "Tub size", type: "text", placeholder: "32 qt monotub" },
       { name: "spawn_type", label: "Spawn type", type: "text", placeholder: "rye berries" },
       { name: "substrate_type", label: "Substrate type", type: "text", placeholder: "CVG" },
       { name: "bag_type", label: "Bag type", type: "text", placeholder: "Unicorn 3T" },
-      { name: "block_count", label: "Units", type: "number", min: 0 },
+      { name: "block_count", label: "Units", type: "number", min: 0, control: "stepper" },
       { name: "substrate_weight_kg", label: "Substrate (lb)", type: "number", min: 0, step: "0.1", convert: "kg_to_lb" },
       // The lifecycle dates drive "days in stage" and the cycle-time reports, so
       // they need to be correctable — the stage buttons only ever stamp today.
@@ -100,8 +104,8 @@ export const ENTITIES: Record<string, EntityDef> = {
       { name: "colonized_on", label: "Colonized on", type: "date" },
       { name: "fruiting_on", label: "Fruiting on", type: "date" },
       { name: "spent_on", label: "Spent on", type: "date" },
-      { name: "rating", label: "Rating (/10)", type: "number", min: 0 },
-      { name: "contamination_flag", label: "Contamination flagged", type: "checkbox" },
+      { name: "rating", label: "Rating (/10)", type: "number", min: 0, max: 10, control: "stepper" },
+      { name: "contamination_flag", label: "Contamination flagged", type: "checkbox", control: "switch" },
       { name: "issues", label: "Issues", type: "text", full: true },
       { name: "notes", label: "Notes", type: "textarea", full: true },
     ],
@@ -168,8 +172,11 @@ export const ENTITIES: Record<string, EntityDef> = {
       { name: "room_id", label: "Room", type: "select", fk: true },
       { name: "assigned_to", label: "Assigned to", type: "select", fk: true },
       { name: "due_date", label: "Due date", type: "date" },
-      { name: "status", label: "Status", type: "select", options: opt("open", "in_progress", "done", "blocked") },
-      { name: "priority", label: "Priority", type: "select", options: opt("low", "med", "high") },
+      { name: "status", label: "Status", type: "select", options: opt("open", "in_progress", "done", "blocked"), control: "chips", full: true },
+      { name: "priority", label: "Priority", type: "select", options: opt("low", "med", "high"), control: "chips" },
+      { name: "completion_action", label: "When completed", type: "select", options: opt("none", "advance_stage", "set_stage", "move_room"), control: "chips", full: true },
+      { name: "completion_stage", label: "Completion stage", type: "select", options: STAGE_OPTIONS, control: "chips", full: true },
+      { name: "completion_room_id", label: "Completion room", type: "select", fk: true },
     ],
   },
 

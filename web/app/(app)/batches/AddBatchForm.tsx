@@ -5,6 +5,7 @@ import EntityForm from "@/components/EntityForm";
 import { addBatch } from "./actions";
 import { STAGE_ORDER, STAGE_LABEL } from "@/lib/stages";
 import { kgToLb } from "@/lib/format";
+import { ChoiceField, RecentSelect, SmartTextField, StepperField } from "@/components/TapFields";
 
 interface Option {
   id: number;
@@ -74,50 +75,48 @@ export default function AddBatchForm({ strains, rooms, presets }: AddBatchFormPr
         </div>
         <div>
           <label htmlFor={ids.strain}>Strain</label>
-          <select
+          <RecentSelect
             id={ids.strain}
             name="strain_id"
             required
+            storageKey="batch-strain"
             defaultValue={preset?.strain_id != null ? String(preset.strain_id) : ""}
-          >
-            <option value="" disabled>Pick a strain…</option>
-            {strains.map((s) => (
-              <option key={s.id} value={s.id}>{s.name}</option>
-            ))}
-          </select>
+            emptyLabel="Pick a strain…"
+            options={strains.map((s) => ({ value: String(s.id), label: s.name }))}
+          />
         </div>
         <div>
           <label htmlFor={ids.room}>Room</label>
-          <select
+          <RecentSelect
             id={ids.room}
             name="room_id"
+            storageKey="batch-room"
             defaultValue={preset?.room_id != null ? String(preset.room_id) : ""}
-          >
-            <option value="">(unassigned)</option>
-            {rooms.map((r) => (
-              <option key={r.id} value={r.id}>{r.name}</option>
-            ))}
-          </select>
+            emptyLabel="(unassigned)"
+            options={rooms.map((r) => ({ value: String(r.id), label: r.name }))}
+          />
+        </div>
+        <div className="full">
+          <label>Stage</label>
+          <ChoiceField
+            name="stage"
+            defaultValue="colonization"
+            ariaLabel="Starting stage"
+            options={STAGE_ORDER.map((s) => ({ value: s, label: STAGE_LABEL[s] }))}
+          />
         </div>
         <div>
-          <label htmlFor={ids.stage}>Stage</label>
-          <select id={ids.stage} name="stage" defaultValue="colonization">
-            {STAGE_ORDER.map((s) => (
-              <option key={s} value={s}>{STAGE_LABEL[s]}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label htmlFor={ids.container}>Container type</label>
-          <select
-            id={ids.container}
+          <label>Container type</label>
+          <ChoiceField
             name="container_type"
             defaultValue={preset?.container_type || "tub"}
-          >
-            <option value="tub">tub</option>
-            <option value="grain_bag">grain_bag</option>
-            <option value="aio">aio</option>
-          </select>
+            ariaLabel="Container type"
+            options={[
+              { value: "tub", label: "Tub" },
+              { value: "grain_bag", label: "Grain bag" },
+              { value: "aio", label: "All-in-one" },
+            ]}
+          />
         </div>
         <div>
           <label htmlFor={ids.containerId}>Container ID</label>
@@ -125,50 +124,53 @@ export default function AddBatchForm({ strains, rooms, presets }: AddBatchFormPr
         </div>
         <div>
           <label htmlFor={ids.tubSize}>Tub size</label>
-          <input
+          <SmartTextField
             id={ids.tubSize}
             name="tub_size"
-            type="text"
+            storageKey="tub-size"
             placeholder="32 qt monotub"
             defaultValue={preset?.tub_size ?? ""}
+            suggestions={["32 qt monotub", "54 qt monotub", "6 qt shoebox"]}
           />
         </div>
         <div>
           <label htmlFor={ids.spawn}>Spawn type</label>
-          <input
+          <SmartTextField
             id={ids.spawn}
             name="spawn_type"
-            type="text"
+            storageKey="spawn-type"
             placeholder="rye berries"
             defaultValue={preset?.spawn_type ?? ""}
+            suggestions={["rye berries", "millet", "oats", "brown rice"]}
           />
         </div>
         <div>
           <label htmlFor={ids.substrateType}>Substrate type</label>
-          <input
+          <SmartTextField
             id={ids.substrateType}
             name="substrate_type"
-            type="text"
+            storageKey="substrate-type"
             placeholder="CVG"
             defaultValue={preset?.substrate_type ?? ""}
+            suggestions={["CVG", "hardwood sawdust", "Master's Mix", "straw"]}
           />
         </div>
         <div>
           <label htmlFor={ids.bag}>Bag type</label>
-          <input
+          <SmartTextField
             id={ids.bag}
             name="bag_type"
-            type="text"
+            storageKey="bag-type"
             placeholder="Unicorn 3T"
             defaultValue={preset?.bag_type ?? ""}
+            suggestions={["Unicorn 3T", "Unicorn 10T", "filter patch bag"]}
           />
         </div>
         <div>
           <label htmlFor={ids.blocks}>Units</label>
-          <input
+          <StepperField
             id={ids.blocks}
             name="block_count"
-            type="number"
             min={0}
             defaultValue={preset?.block_count ?? 0}
           />
