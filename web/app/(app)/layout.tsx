@@ -28,13 +28,16 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // Build id inlined at build time (next.config.mjs). Always present, and
   // changes on every deploy, so VersionWatcher can detect stale tabs.
   const buildId = process.env.NEXT_PUBLIC_BUILD_ID ?? "dev";
+  // This points at the stable production alias on Vercel. It deliberately
+  // differs from window.location.origin on immutable deployment URLs.
+  const versionEndpoint = process.env.NEXT_PUBLIC_VERSION_ENDPOINT ?? "/api/version";
 
   return (
     <ToastProvider>
     <div className="shell">
       <SectionTint />
       <CursorAura />
-      <VersionWatcher buildId={buildId} />
+      <VersionWatcher buildId={buildId} versionEndpoint={versionEndpoint} />
       <a href="#main" className="skip-link">
         Skip to main content
       </a>
