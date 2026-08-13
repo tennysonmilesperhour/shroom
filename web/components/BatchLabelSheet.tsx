@@ -1,5 +1,5 @@
 import Image from "next/image";
-import type { LabelSize } from "@/components/PrintLabel";
+import type { LabelSize } from "@/lib/label-size";
 
 export interface BatchLabelData {
   id: number;

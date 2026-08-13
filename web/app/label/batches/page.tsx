@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createServiceClient } from "@/utils/supabase/service";
-import PrintLabel, { sizeFor } from "@/components/PrintLabel";
+import PrintLabel from "@/components/PrintLabel";
+import { sizeFor } from "@/lib/label-size";
 import BatchLabelSheet, { type BatchLabelData } from "@/components/BatchLabelSheet";
 import { batchQrDataUrl } from "@/lib/label-qr";
 
