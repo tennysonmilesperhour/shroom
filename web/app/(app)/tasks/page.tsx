@@ -56,7 +56,7 @@ export default async function TasksPage() {
       supabase
         .from("tasks")
         .select(
-          "id,title,description,status,priority,due_date,batch_id,room_id,assigned_to,completion_action,completion_stage,completion_room_id, batches(id,lot_code), rooms(name), staff(name)",
+          "id,title,description,status,priority,due_date,batch_id,room_id,assigned_to,completion_action,completion_stage,completion_room_id, batches(id,lot_code), rooms!tasks_room_id_fkey(name), staff(name)",
         )
         .order("due_date", { ascending: true, nullsFirst: false })
         .returns<TaskRow[]>(),
