@@ -13,17 +13,35 @@ const SUPABASE_HOST = "https://*.supabase.co";
 // deploy is live. For that comparison to work the id must (a) exist on every
 // deploy and (b) change on every deploy.
 //
-// We deliberately do NOT rely solely on VERCEL_GIT_COMMIT_SHA: it is only
-// populated when a project has "Automatically expose System Environment
-// Variables" enabled, and is empty otherwise — which silently disabled the
-// whole feature. We fall back to the Vercel deployment id, then to a
-// build-time timestamp for local/self-hosted builds. Inlining it via `env`
-// freezes the value into both the client bundle and the server, so each
-// deploy's code carries its own immutable id.
+// A deployment id is the primary identity because it changes even when the
+// same Git commit is redeployed. The old commit-first order made those
+// deployments indistinguishable and silently suppressed the update prompt.
+// The commit SHA remains a fallback for providers that do not expose a
+// deployment id, followed by a build-time timestamp for local/self-hosted
+// builds. Inlining it via `env` freezes the value into both the client bundle
+// and the server, so each deploy's code carries its own immutable id.
 const BUILD_ID =
-  process.env.VERCEL_GIT_COMMIT_SHA ||
   process.env.VERCEL_DEPLOYMENT_ID ||
+  process.env.VERCEL_GIT_COMMIT_SHA ||
   `local-${Date.now()}`;
+
+// Always ask the stable production alias which deployment is current. A
+// relative /api/version request is ineffective on Vercel's immutable deploy
+// URLs (and when Skew Protection pins a session), because it keeps reaching
+// the same old deployment forever.
+const PRODUCTION_HOST =
+  process.env.NEXT_PUBLIC_PRODUCTION_HOST ||
+  process.env.VERCEL_PROJECT_PRODUCTION_URL ||
+  "";
+const PRODUCTION_ORIGIN = (
+  process.env.SHROOM_PRODUCTION_ORIGIN ||
+  (PRODUCTION_HOST
+    ? `https://${PRODUCTION_HOST.replace(/^https?:\/\//, "").replace(/\/$/, "")}`
+    : "")
+).replace(/\/$/, "");
+const VERSION_ENDPOINT = PRODUCTION_ORIGIN
+  ? `${PRODUCTION_ORIGIN}/api/version`
+  : "/api/version";
 
 const securityHeaders = [
   {
@@ -48,7 +66,7 @@ const securityHeaders = [
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob:",
       "font-src 'self' data:",
-      `connect-src 'self' ${SUPABASE_HOST} wss://*.supabase.co`,
+      `connect-src 'self' ${SUPABASE_HOST} wss://*.supabase.co${PRODUCTION_ORIGIN ? ` ${PRODUCTION_ORIGIN}` : ""}`,
       // Truth Source embeds live Google Sheets in <iframe>s; without an
       // explicit frame-src this falls back to default-src 'self' and the
       // embeds are blocked.
@@ -64,7 +82,10 @@ const securityHeaders = [
 const nextConfig = {
   // Exposed to client + server bundles so the version-watcher can compare
   // the running build against the deployed one. See BUILD_ID above.
-  env: { NEXT_PUBLIC_BUILD_ID: BUILD_ID },
+  env: {
+    NEXT_PUBLIC_BUILD_ID: BUILD_ID,
+    NEXT_PUBLIC_VERSION_ENDPOINT: VERSION_ENDPOINT,
+  },
   // Tie Next's own build id to ours so static asset URLs change per deploy too.
   generateBuildId: () => BUILD_ID,
   async headers() {
