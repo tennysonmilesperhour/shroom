@@ -5,7 +5,8 @@ import { revalidatePath } from "next/cache";
 import { enqueueSync } from "@/lib/sync";
 import { lbToKg } from "@/lib/format";
 import type { EntityResult } from "@/components/EntityForm";
-import { STAGE_ORDER, VALID_STAGES, nextStage, normalizeStage } from "@/lib/stages";
+import { STAGE_ORDER, VALID_STAGES } from "@/lib/stages";
+import { advanceBatch, setBatchStage } from "@/lib/batch-operations";
 
 export interface GenerateResult {
   ok: boolean;
@@ -186,65 +187,18 @@ export async function moveBatchStage(
   batchId: number,
   toStage: string,
 ): Promise<EntityResult> {
-  if (!Number.isFinite(batchId)) return { ok: false, message: "Invalid batch." };
   if (!BOARD_STAGES.has(toStage)) return { ok: false, message: "Invalid stage." };
-
-  const supabase = createServiceClient();
-  const { data: current, error: readErr } = await supabase
-    .from("batches")
-    .select("stage,colonized_on,fruiting_on,spent_on")
-    .eq("id", batchId)
-    .single();
-  if (readErr || !current) return { ok: false, message: readErr?.message ?? "Not found." };
-  if (current.stage === toStage) return { ok: true, message: "No change" };
-
-  const today = new Date().toISOString().slice(0, 10);
-  const update: Record<string, unknown> = { stage: toStage };
-  // Stamp the lifecycle date only if this stage hasn't been recorded before,
-  // so dragging back and forth never clobbers an existing milestone.
-  if (toStage === "colonization" && !current.colonized_on) update.colonized_on = today;
-  else if (toStage === "fruiting" && !current.fruiting_on) update.fruiting_on = today;
-  else if (toStage === "spent" && !current.spent_on) update.spent_on = today;
-
-  const { error } = await supabase.from("batches").update(update).eq("id", batchId);
-  if (error) return { ok: false, message: error.message };
-
-  await enqueueSync(supabase, "batch", batchId, "update", { stage: toStage });
+  const result = await setBatchStage(createServiceClient(), batchId, toStage);
   revalidatePath(`/batches/${batchId}`);
   revalidatePath("/batches");
-  return { ok: true, message: `Moved to ${toStage}` };
+  revalidatePath("/");
+  return result;
 }
 
 export async function advanceBatchStage(batchId: number): Promise<EntityResult> {
-  if (!Number.isFinite(batchId)) return { ok: false, message: "Invalid batch." };
-
-  const supabase = createServiceClient();
-  const { data: current, error: readErr } = await supabase
-    .from("batches")
-    .select("stage,lot_code,colonized_on,fruiting_on,spent_on")
-    .eq("id", batchId)
-    .single();
-  if (readErr || !current) return { ok: false, message: readErr?.message ?? "Not found." };
-
-  const next = nextStage(current.stage);
-  if (!next) {
-    return normalizeStage(current.stage) === STAGE_ORDER[STAGE_ORDER.length - 1]
-      ? { ok: false, message: "Already at the final stage." }
-      : { ok: false, message: `Stage "${current.stage}" cannot be advanced.` };
-  }
-  const today = new Date().toISOString().slice(0, 10);
-  const update: Record<string, unknown> = { stage: next };
-  // Only stamp a milestone that isn't already recorded, so re-advancing (or a
-  // date set at creation) never overwrites the real date. Mirrors moveBatchStage.
-  if (next === "colonization" && !current.colonized_on) update.colonized_on = today;
-  else if (next === "fruiting" && !current.fruiting_on) update.fruiting_on = today;
-  else if (next === "spent" && !current.spent_on) update.spent_on = today;
-
-  const { error } = await supabase.from("batches").update(update).eq("id", batchId);
-  if (error) return { ok: false, message: error.message };
-
-  await enqueueSync(supabase, "batch", batchId, "update", { stage: next });
+  const result = await advanceBatch(createServiceClient(), batchId);
   revalidatePath(`/batches/${batchId}`);
   revalidatePath("/batches");
-  return { ok: true, message: `Advanced to ${next}` };
+  revalidatePath("/");
+  return result;
 }

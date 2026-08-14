@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { createServiceClient } from "@/utils/supabase/service";
-import PrintLabel, { sizeFor } from "@/components/PrintLabel";
+import PrintLabel from "@/components/PrintLabel";
+import { sizeFor } from "@/lib/label-size";
 
 export const dynamic = "force-dynamic";
 

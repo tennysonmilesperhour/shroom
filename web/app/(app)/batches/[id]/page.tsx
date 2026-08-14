@@ -11,6 +11,13 @@ import AddPanel from "@/components/AddPanel";
 import AddHarvestForm from "../../harvests/AddHarvestForm";
 import AdvanceStage from "./AdvanceStage";
 import RowActions from "@/components/RowActions";
+import BatchMediaUpload from "@/components/BatchMediaUpload";
+import BatchMediaGallery, { type BatchMediaItem } from "@/components/BatchMediaGallery";
+import BatchStageControl from "@/components/BatchStageControl";
+import VoiceObservation from "@/components/VoiceObservation";
+import BatchWorkflowTools from "@/components/BatchWorkflowTools";
+import { BATCH_MEDIA_BUCKET } from "@/lib/batch-media";
+import BatchRoomControl from "@/components/BatchRoomControl";
 
 export const dynamic = "force-dynamic";
 
@@ -36,6 +43,7 @@ interface BatchDetailRow {
   rating: number | null;
   issues: string | null;
   notes: string | null;
+  lineage_parent_id: number | null;
   strains: { id: number; name: string } | null;
   rooms: { id: number; name: string } | null;
 }
@@ -79,6 +87,46 @@ interface OrderLineRow {
     customers: { id: number; name: string } | null;
   } | null;
   products: { name: string } | null;
+}
+
+interface MediaRow {
+  id: number;
+  storage_path: string;
+  original_filename: string;
+  stage_snapshot: string;
+  categories: string[];
+  captured_at: string;
+  note: string;
+  is_cover: boolean;
+}
+
+interface ObservationRow {
+  id: number;
+  observed_at: string;
+  stage_snapshot: string;
+  kind: string;
+  transcript: string;
+  tags: string[];
+}
+
+interface ChangeRow {
+  id: number;
+  action: string;
+  created_at: string;
+  undone_at: string | null;
+}
+
+interface CompatibleRow {
+  id: number;
+  lot_code: string;
+  container_id: string | null;
+  block_count: number;
+}
+
+interface LineageRow {
+  id: number;
+  lot_code: string;
+  lineage_parent_id: number | null;
 }
 
 function daysBetween(a: string | null, b: string | null = null): number | null {
@@ -146,6 +194,75 @@ export default async function BatchDetailPage({
       .order("id"),
   );
 
+  const [mediaRows, observations, changes, compatible, lineageRows] = await Promise.all([
+    soft<MediaRow>(
+      supabase
+        .from("batch_media")
+        .select("id,storage_path,original_filename,stage_snapshot,categories,captured_at,note,is_cover")
+        .eq("batch_id", id)
+        .order("is_cover", { ascending: false })
+        .order("captured_at", { ascending: false }),
+    ),
+    soft<ObservationRow>(
+      supabase
+        .from("batch_observations")
+        .select("id,observed_at,stage_snapshot,kind,transcript,tags")
+        .eq("batch_id", id)
+        .order("observed_at", { ascending: false })
+        .limit(30),
+    ),
+    soft<ChangeRow>(
+      supabase
+        .from("batch_change_events")
+        .select("id,action,created_at,undone_at")
+        .eq("batch_id", id)
+        .order("created_at", { ascending: false })
+        .limit(30),
+    ),
+    soft<CompatibleRow>(
+      supabase
+        .from("batches")
+        .select("id,lot_code,container_id,block_count")
+        .eq("strain_id", batch.strain_id)
+        .eq("stage", batch.stage)
+        .neq("id", id)
+        .order("lot_code"),
+    ),
+    soft<LineageRow>(
+      supabase
+        .from("batches")
+        .select("id,lot_code,lineage_parent_id")
+        .or(`id.eq.${batch.lineage_parent_id ?? -1},lineage_parent_id.eq.${id}`)
+        .order("lot_code"),
+    ),
+  ]);
+
+  const lineageParent = lineageRows.find((row) => row.id === batch.lineage_parent_id);
+  const lineageChildren = lineageRows.filter((row) => row.lineage_parent_id === batch.id);
+
+  let media: BatchMediaItem[] = [];
+  if (mediaRows.length > 0) {
+    const { data: signed } = await supabase.storage
+      .from(BATCH_MEDIA_BUCKET)
+      .createSignedUrls(mediaRows.map((row) => row.storage_path), 60 * 60);
+    const urls = new Map((signed ?? []).map((item) => [item.path, item.signedUrl]));
+    media = mediaRows.flatMap((row) => {
+      const signedUrl = urls.get(row.storage_path);
+      return signedUrl
+        ? [{
+            id: row.id,
+            signedUrl,
+            originalFilename: row.original_filename,
+            stage: row.stage_snapshot,
+            categories: row.categories,
+            capturedAt: row.captured_at,
+            note: row.note,
+            isCover: row.is_cover,
+          }]
+        : [];
+    });
+  }
+
   // Downstream orders: order_lines linked to one of this batch's harvests.
   const harvestIds = harvests.map((h) => h.id);
   const downstream =
@@ -204,6 +321,16 @@ export default async function BatchDetailPage({
             )}
             {batch.rooms && <Badge tone="muted">{batch.rooms.name}</Badge>}
             {batch.container_id && <Badge tone="muted">{batch.container_id}</Badge>}
+            {lineageParent && (
+              <Link href={`/batches/${lineageParent.id}`} className="badge muted">
+                from {lineageParent.lot_code}
+              </Link>
+            )}
+            {lineageChildren.map((child) => (
+              <Link key={child.id} href={`/batches/${child.id}`} className="badge muted">
+                child {child.lot_code}
+              </Link>
+            ))}
           </div>
         </div>
         <RowActions
@@ -243,6 +370,13 @@ export default async function BatchDetailPage({
         />
       </div>
 
+      <nav className="batch-action-dock" aria-label="Batch quick actions">
+        <a href="#batch-photos">Take photo</a>
+        <a href="#batch-observation">Log observation</a>
+        <a href={`/label/batch/${batch.id}`} target="_blank" rel="noopener noreferrer">Print QR</a>
+        <a href="#batch-workflows">Clone / split / merge</a>
+      </nav>
+
       <div className="batch-hero">
         <LifecycleRing
           stage={effectiveStage}
@@ -280,7 +414,67 @@ export default async function BatchDetailPage({
         <div style={{ marginTop: "var(--space-3)" }}>
           <AdvanceStage batchId={batch.id} currentStage={effectiveStage} />
         </div>
+        <div className="stage-control-wrap">
+          <div className="eyebrow">Tap to move</div>
+          <BatchStageControl batchId={batch.id} currentStage={normalizeStage(batch.stage)} />
+          <div className="room-control-row">
+            <span className="eyebrow">Room</span>
+            <BatchRoomControl batchId={batch.id} currentRoomId={batch.room_id} rooms={roomOpts} />
+          </div>
+        </div>
       </Card>
+
+      <section id="batch-photos" className="anchor-section">
+        <AddPanel label="Add batch photo" buttonLabel="Take or upload photo">
+          <BatchMediaUpload batchId={batch.id} currentStage={normalizeStage(batch.stage)} />
+        </AddPanel>
+        <Card title="Growth photos">
+          <BatchMediaGallery items={media} />
+        </Card>
+      </section>
+
+      <section id="batch-observation" className="anchor-section">
+        <Card title="Observation">
+          <VoiceObservation batchId={batch.id} />
+        </Card>
+        {observations.length > 0 && (
+          <Card title="Observation history" variant="quiet">
+            <ol className="observation-list">
+              {observations.map((observation) => (
+                <li key={observation.id}>
+                  <div className="observation-head">
+                    <b>{observation.stage_snapshot.replace(/_/g, " ")}</b>
+                    <span>{new Date(observation.observed_at).toLocaleString()}</span>
+                  </div>
+                  <p>{observation.transcript}</p>
+                  {observation.tags.length > 0 && (
+                    <div className="choice-chips compact">
+                      {observation.tags.map((tag) => <span className="choice-chip static" key={tag}>{tag.replace(/_/g, " ")}</span>)}
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ol>
+          </Card>
+        )}
+      </section>
+
+      <section id="batch-workflows" className="anchor-section">
+        <Card title="Batch workflows">
+          <p className="muted form-help">Clone this setup for a new run, split physical units into a child lot, or consolidate another compatible batch into this one.</p>
+          <BatchWorkflowTools
+            batchId={batch.id}
+            lotCode={batch.lot_code}
+            blockCount={batch.block_count}
+            compatible={compatible.map((row) => ({
+              id: row.id,
+              lotCode: row.lot_code,
+              containerId: row.container_id,
+              units: row.block_count,
+            }))}
+          />
+        </Card>
+      </section>
 
       {materials.length > 0 && (
         <Card title="Materials used">
@@ -462,6 +656,19 @@ export default async function BatchDetailPage({
       {batch.notes && (
         <Card title="Notes" variant="quiet">
           <p style={{ margin: 0, whiteSpace: "pre-wrap" }}>{batch.notes}</p>
+        </Card>
+      )}
+
+      {changes.length > 0 && (
+        <Card title="Change history" variant="quiet">
+          <ol className="change-history">
+            {changes.map((change) => (
+              <li key={change.id}>
+                <span>{change.action}</span>
+                <span className="muted">{new Date(change.created_at).toLocaleString()}{change.undone_at ? " · undone" : ""}</span>
+              </li>
+            ))}
+          </ol>
         </Card>
       )}
     </>
