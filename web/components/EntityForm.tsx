@@ -18,6 +18,8 @@ interface EntityFormProps {
   children: ReactNode;
   /** Reset the form on success. Default true. */
   resetOnSuccess?: boolean;
+  /** Called after a successful save (e.g. to close a wrapping dialog). */
+  onSuccess?: () => void;
 }
 
 // Thin wrapper for "Add X" forms. Children are the labelled inputs; this
@@ -27,6 +29,7 @@ export default function EntityForm({
   submitLabel = "Save",
   children,
   resetOnSuccess = true,
+  onSuccess,
 }: EntityFormProps) {
   const [result, setResult] = useState<EntityResult | null>(null);
   const [bloom, setBloom] = useState(false);
@@ -54,6 +57,7 @@ export default function EntityForm({
         body: r.message ?? (r.ok ? undefined : "Something went wrong."),
         tone: r.ok ? "moss" : "ember",
       });
+      if (r.ok) onSuccess?.();
     });
   }
 

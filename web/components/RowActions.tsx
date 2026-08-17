@@ -116,6 +116,19 @@ export default function RowActions({
 
   return (
     <div className="row-actions" ref={ref}>
+      {/* Edit is the action people reach for most, so it gets its own visible
+          button — burying it in the ⋯ menu made it easy to miss entirely. */}
+      {initial && (
+        <button
+          type="button"
+          className="icon-btn"
+          aria-label={label ? `Edit ${label}` : "Edit"}
+          title="Edit"
+          onClick={() => setEditing(true)}
+        >
+          ✎
+        </button>
+      )}
       <button
         ref={btnRef}
         type="button"
