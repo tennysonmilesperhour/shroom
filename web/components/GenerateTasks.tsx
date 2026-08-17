@@ -45,7 +45,7 @@ export default function GenerateTasks({ protocols, batches }: GenerateTasksProps
 
   return (
     <div style={{ display: "flex", gap: 10, alignItems: "flex-end", flexWrap: "wrap" }}>
-      <div>
+      <div style={{ minWidth: 0, maxWidth: "100%" }}>
         <label htmlFor={protocolId} className="eyebrow" style={{ display: "block", marginBottom: 4 }}>
           Protocol
         </label>
@@ -53,7 +53,7 @@ export default function GenerateTasks({ protocols, batches }: GenerateTasksProps
           id={protocolId}
           value={protocol}
           onChange={(e) => setProtocol(Number(e.target.value))}
-          style={{ width: "auto" }}
+          style={{ width: "auto", maxWidth: "100%" }}
         >
           {protocols.map((p) => (
             <option key={p.id} value={p.id}>{p.name}</option>
@@ -61,7 +61,7 @@ export default function GenerateTasks({ protocols, batches }: GenerateTasksProps
         </select>
       </div>
 
-      <div>
+      <div style={{ minWidth: 0, maxWidth: "100%" }}>
         <label htmlFor={batchId} className="eyebrow" style={{ display: "block", marginBottom: 4 }}>
           Batch
         </label>
@@ -69,7 +69,7 @@ export default function GenerateTasks({ protocols, batches }: GenerateTasksProps
           id={batchId}
           value={batch}
           onChange={(e) => setBatch(e.target.value === "" ? "" : Number(e.target.value))}
-          style={{ width: "auto" }}
+          style={{ width: "auto", maxWidth: "100%" }}
         >
           <option value="">(no batch)</option>
           {batches.map((b) => (

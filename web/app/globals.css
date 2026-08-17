@@ -546,6 +546,10 @@ main {
   .sidebar { display: none; }
   .shell { flex-direction: column; }
   .content { width: 100%; }
+  /* The topbar is position:fixed (out of flow), so the content column must
+     reserve its height — otherwise the sticky mode pill's flow slot hides
+     behind the topbar and the pill lands on top of every page's heading. */
+  .content { padding-top: var(--topbar-h); }
   .mode-bar { top: var(--topbar-h); padding: 8px 10px 0; }
   .mode-caption, .mode-context { display: none; }
   .mushroom-mode { min-height: 38px; padding: 4px; }
@@ -588,6 +592,10 @@ p.lead {
 
 /* ── 7. Grids ───────────────────────────────────────────────────────────── */
 .grid { display: grid; gap: var(--space-4); }
+/* Grid items default to min-width:auto, so a card holding a wide table or a
+   <select> with long options inflates its track past the viewport instead of
+   scrolling inside — the root cause of sideways-scrolling pages on phones. */
+.grid > * { min-width: 0; }
 .grid.kpis { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
 .grid.two  { grid-template-columns: 1fr 1fr; }
 .grid.three { grid-template-columns: repeat(3, 1fr); }
@@ -882,11 +890,16 @@ button.primary:disabled { opacity: 0.5; cursor: default; transform: none; box-sh
 /* Truth Source — embedded live sheet cards. */
 .embed-source-head {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--space-3);
   margin-bottom: var(--space-3);
 }
+/* The source URL is one unbreakable token; without these the whole card is
+   forced wider than a phone screen. */
+.embed-source-head > div { min-width: 0; }
+.embed-source-head a { overflow-wrap: anywhere; }
 .embed-frame {
   width: 100%;
   border: 1px solid var(--line);
@@ -1413,18 +1426,35 @@ main > *:nth-child(6) { animation-delay: 300ms; }
   .card { padding: var(--space-4); margin-bottom: var(--space-3); }
   p.lead { font-size: var(--text-base); margin-bottom: var(--space-5); }
 
-  /* Tables: allow horizontal scroll without breaking layout */
+  /* Tables: allow horizontal scroll without breaking layout. contain:layout
+     is load-bearing: a display:block <table> still leaks its rows' min-content
+     width into the page (Chromium), so without it wide tables make the whole
+     page scroll sideways instead of scrolling inside their own box. thead and
+     tbody keep their native display so the browser wraps them in ONE anonymous
+     table box — styling them as two separate width:100% tables (the previous
+     approach) made header and body columns size independently and visibly
+     drift out of alignment. */
   .card table,
-  table { display: block; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; }
-  .card table thead, .card table tbody, table thead, table tbody { display: table; width: 100%; table-layout: auto; }
+  table { display: block; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; contain: layout; }
 
   /* Pin the row-actions column to the right edge of the scrolling table so the
      ⋯ menu is reachable without scrolling a wide table (e.g. batches) sideways.
      The menu itself is portaled out of the table, so this can't clip it. */
   th.actions-col, td.actions-col {
     position: sticky; right: 0; z-index: 2;
-    background: var(--ink-2);
-    box-shadow: -8px 0 12px -10px oklch(0% 0 0 / 0.7);
+    /* Cards are translucent, so no token blends invisibly — use the next
+       surface shade with a seam so the pinned column reads as deliberate. */
+    background: var(--ink-3);
+    border-left: 1px solid var(--line);
+    box-shadow: -8px 0 12px -10px oklch(0% 0 0 / 0.35);
+  }
+  /* Flagged rows tint their cells with a translucent wash (!important), which
+     would let scrolled content show through the pinned cell — repaint it on
+     an opaque base so the flag color still reads but nothing bleeds under it. */
+  tr.flag-low td.actions-col {
+    background:
+      linear-gradient(oklch(68% 0.22 25 / 0.05), oklch(68% 0.22 25 / 0.05)),
+      var(--ink-3) !important;
   }
 
   /* Touch-friendly inputs */
@@ -1711,6 +1741,7 @@ tbody tr.row-link button {
   grid-template-columns: repeat(2, 1fr);
   gap: var(--space-3) var(--space-4);
 }
+.form-grid > * { min-width: 0; }
 .form-grid .full { grid-column: 1 / -1; }
 .form-grid label {
   display: block;
@@ -2548,7 +2579,9 @@ body::after {
   font-family: var(--font-display); font-variation-settings: 'opsz' 144;
   font-weight: 400; font-size: 1.9rem; line-height: 1; letter-spacing: -0.02em;
 }
-.gauge-center span {
+/* Direct child only: the value slot (<b>) can contain a CountUp <span>, which
+   must inherit the big display size, not the tiny label style. */
+.gauge-center > span {
   font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
   color: var(--muted); margin-top: 4px;
 }
@@ -2685,6 +2718,12 @@ a.kpi-link:focus-visible { outline: 2px solid var(--lumen); outline-offset: 2px;
 .spectrum-swatch { width: 14px; height: 14px; border-radius: 50%; box-shadow: 0 0 10px -1px currentColor; flex: none; }
 .spectrum-readout-meta { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 6px; font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-2); }
 .spectrum-readout-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+.spectrum-readout-open {
+  display: inline-block; margin-top: 10px;
+  font-family: var(--font-mono); font-size: 0.78rem;
+  color: var(--lumen); text-decoration: none;
+}
+.spectrum-readout-open:hover { text-decoration: underline; }
 
 .spectrum-legend { margin: 0; display: flex; flex-direction: column; gap: var(--space-2); }
 .spectrum-legend div { display: flex; flex-direction: column; gap: 2px; }
@@ -3528,6 +3567,7 @@ label.choice-chip { display: inline-flex; align-items: center; margin: 0; }
 .saved-view button:first-child { border-radius: 999px 0 0 999px; color: var(--spore); }
 .saved-view button:last-child { border-radius: 0 999px 999px 0; border-left: 0; }
 .batch-filter-builder { display: grid; grid-template-columns: 160px 180px auto minmax(220px, 1fr); gap: 8px; align-items: end; margin-bottom: 12px; }
+.batch-filter-builder > * { min-width: 0; }
 .batch-filter-builder label > span { display: block; color: var(--muted); font-size: 10px; margin-bottom: 3px; }
 .filter-toggle { display: flex; align-items: center; gap: 7px; min-height: 42px; color: var(--text-2); font-size: 12px; }
 .filter-toggle input { width: 20px; height: 20px; }
