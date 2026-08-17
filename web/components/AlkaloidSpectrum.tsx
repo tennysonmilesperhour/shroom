@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   hueColor,
@@ -43,6 +44,22 @@ export default function AlkaloidSpectrum({ strains }: { strains: SpectrumStrain[
   const router = useRouter();
   const [activeId, setActiveId] = useState<number | null>(null);
   const active = strains.find((s) => s.id === activeId) ?? null;
+  const readoutRef = useRef<HTMLDivElement>(null);
+  // Which wedge the last tap selected, and what kind of pointer produced the
+  // current click. On phones the tap's synthetic mouseenter re-renders the
+  // wedge mid-tap and the follow-up click is dropped or lands "already
+  // active" depending on timing — so navigation was a coin flip. Touch now
+  // gets an explicit two-tap flow: first tap selects and reveals the
+  // profile, second tap opens the strain. Mouse behavior is unchanged.
+  const lastTapRef = useRef<number | null>(null);
+  const pointerTypeRef = useRef<string>("mouse");
+
+  const selectWedge = (id: number) => {
+    setActiveId(id);
+    // The readout sits below the wheel on phones; make the tapped strain's
+    // profile actually appear, otherwise the tap looks like it did nothing.
+    readoutRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  };
 
   // Sort by hue so the wedges sweep through the colour spectrum (gentle → intense),
   // matching the character scale beneath the wheel.
@@ -94,8 +111,16 @@ export default function AlkaloidSpectrum({ strains }: { strains: SpectrumStrain[
               <a
                 key={s.id}
                 href={`/strains/${s.id}`}
+                onPointerDown={(e) => {
+                  pointerTypeRef.current = e.pointerType;
+                }}
                 onClick={(e) => {
                   e.preventDefault();
+                  if (pointerTypeRef.current === "touch" && lastTapRef.current !== s.id) {
+                    lastTapRef.current = s.id;
+                    selectWedge(s.id);
+                    return;
+                  }
                   router.push(`/strains/${s.id}`);
                 }}
                 onMouseEnter={() => setActiveId(s.id)}
@@ -156,7 +181,7 @@ export default function AlkaloidSpectrum({ strains }: { strains: SpectrumStrain[
       </figure>
 
       <div className="spectrum-side">
-        <div className="spectrum-readout" aria-live="polite">
+        <div className="spectrum-readout" aria-live="polite" ref={readoutRef}>
           {active ? (
             <>
               <div className="spectrum-readout-top">
@@ -183,10 +208,14 @@ export default function AlkaloidSpectrum({ strains }: { strains: SpectrumStrain[
                   ))}
                 </div>
               )}
+              <Link href={`/strains/${active.id}`} className="spectrum-readout-open">
+                Open {active.name} →
+              </Link>
             </>
           ) : (
             <p className="muted" style={{ margin: 0 }}>
-              Hover or focus a wedge to read its profile. Click to open the strain.
+              Tap or hover a wedge to read its profile. Tap again (or click) to
+              open the strain.
             </p>
           )}
         </div>
