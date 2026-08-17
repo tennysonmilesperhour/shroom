@@ -5,11 +5,13 @@ import { kgToLb } from "@/lib/format";
 import AddPanel from "@/components/AddPanel";
 import AddPresetForm from "./AddPresetForm";
 import DeletePresetButton from "./DeletePresetButton";
+import EditPresetButton from "./EditPresetButton";
 
 export const dynamic = "force-dynamic";
 
 interface PresetMaterial {
   id: number;
+  inventory_item_id: number | null;
   name: string;
   quantity: number;
   unit: string;
@@ -19,6 +21,9 @@ interface PresetMaterial {
 interface PresetRow {
   id: number;
   name: string;
+  strain_id: number | null;
+  recipe_id: number | null;
+  room_id: number | null;
   container_type: string;
   tub_size: string | null;
   spawn_type: string | null;
@@ -51,7 +56,7 @@ export default async function PresetsPage() {
       supabase
         .from("batch_presets")
         .select(
-          "*, strains(name), recipes(name), rooms(name), preset_materials(id,name,quantity,unit, inventory_items(name))",
+          "*, strains(name), recipes(name), rooms(name), preset_materials(id,inventory_item_id,name,quantity,unit, inventory_items(name))",
         )
         .eq("active", true)
         .order("name"),
@@ -155,7 +160,42 @@ export default async function PresetsPage() {
               </p>
             )}
 
-            <div style={{ marginTop: "var(--space-3)" }}>
+            <div
+              style={{
+                marginTop: "var(--space-3)",
+                display: "flex",
+                alignItems: "center",
+                gap: "var(--space-3)",
+              }}
+            >
+              <EditPresetButton
+                presetId={p.id}
+                initial={{
+                  name: p.name,
+                  strain_id: p.strain_id,
+                  recipe_id: p.recipe_id,
+                  room_id: p.room_id,
+                  container_type: p.container_type,
+                  tub_size: p.tub_size,
+                  spawn_type: p.spawn_type,
+                  substrate_type: p.substrate_type,
+                  bag_type: p.bag_type,
+                  block_count: p.block_count,
+                  substrate_weight_kg: p.substrate_weight_kg,
+                  spawn_weight_kg: p.spawn_weight_kg,
+                  notes: p.notes,
+                  materials: p.preset_materials.map((m) => ({
+                    inventory_item_id: m.inventory_item_id,
+                    name: m.name,
+                    quantity: m.quantity,
+                    unit: m.unit,
+                  })),
+                }}
+                strains={strains}
+                recipes={recipes}
+                rooms={rooms}
+                items={items}
+              />
               <DeletePresetButton presetId={p.id} name={p.name} />
             </div>
           </Card>

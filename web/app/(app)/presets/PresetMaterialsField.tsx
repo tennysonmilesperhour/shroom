@@ -8,6 +8,14 @@ export interface InventoryOption {
   unit: string;
 }
 
+/** An existing preset_materials row, used to prefill the editor when editing. */
+export interface MaterialInitial {
+  inventory_item_id: number | null;
+  name: string;
+  quantity: number;
+  unit: string;
+}
+
 interface Row {
   key: string;
   inventory_item_id: string; // "" = manual / unlinked
@@ -29,8 +37,22 @@ const blankRow = (): Row => ({
 // free-typed material) plus the quantity one tub of this preset consumes. The
 // rows are serialised into a hidden `materials_json` input that the server
 // action parses — keeping everything inside the single EntityForm submit.
-export default function PresetMaterialsField({ items }: { items: InventoryOption[] }) {
-  const [rows, setRows] = useState<Row[]>([]);
+export default function PresetMaterialsField({
+  items,
+  initial,
+}: {
+  items: InventoryOption[];
+  initial?: MaterialInitial[];
+}) {
+  const [rows, setRows] = useState<Row[]>(() =>
+    (initial ?? []).map((m) => ({
+      ...blankRow(),
+      inventory_item_id: m.inventory_item_id == null ? "" : String(m.inventory_item_id),
+      name: m.name,
+      quantity: String(m.quantity ?? 0),
+      unit: m.unit || "unit",
+    })),
+  );
   const headingId = useId();
 
   const patch = (key: string, next: Partial<Row>) =>

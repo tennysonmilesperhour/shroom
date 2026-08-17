@@ -11,6 +11,7 @@ import type { SyncEntity } from "@/lib/sync";
 import type { ConvertKind } from "@/lib/format";
 import { STAGE_ORDER, STAGE_LABEL } from "@/lib/stages";
 import { channelOptions } from "@/lib/channels";
+import { CULTURE_TYPES, CULTURE_STATUSES } from "@/app/(app)/cultures/constants";
 
 export type FieldType =
   | "text"
@@ -353,6 +354,40 @@ export const ENTITIES: Record<string, EntityDef> = {
       { name: "room_id", label: "Room", type: "select", fk: true },
       { name: "last_checked", label: "Last checked", type: "text" },
       { name: "spec_notes", label: "Spec notes", type: "textarea", full: true },
+    ],
+  },
+
+  culture: {
+    key: "culture",
+    table: "culture_inventory",
+    label: "culture",
+    listPath: "/cultures",
+    sync: "culture",
+    fields: [
+      { name: "label", label: "Label", type: "text", required: true },
+      {
+        name: "culture_type",
+        label: "Type",
+        type: "select",
+        options: CULTURE_TYPES.map(([value, label]) => ({ value, label })),
+        required: true,
+      },
+      { name: "strain_id", label: "Strain", type: "select", fk: true },
+      {
+        name: "status",
+        label: "Stage",
+        type: "select",
+        options: CULTURE_STATUSES.map(([value, label]) => ({ value, label })),
+        required: true,
+      },
+      { name: "quantity_on_hand", label: "On hand", type: "number", min: 0, step: "0.1" },
+      { name: "unit", label: "Unit", type: "text" },
+      { name: "reorder_threshold", label: "Reorder at", type: "number", min: 0, step: "0.1" },
+      { name: "location", label: "Location", type: "text" },
+      { name: "source", label: "Source", type: "text" },
+      { name: "acquired_on", label: "Acquired on", type: "date" },
+      { name: "expires_on", label: "Use by", type: "date" },
+      { name: "notes", label: "Notes", type: "textarea", full: true },
     ],
   },
 

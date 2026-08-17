@@ -2,6 +2,7 @@ import { createServiceClient } from "@/utils/supabase/service";
 import { Badge, Card } from "@/components/ui";
 import { soft } from "@/lib/query";
 import AddPanel from "@/components/AddPanel";
+import RowActions from "@/components/RowActions";
 import AddCultureForm from "./AddCultureForm";
 import QuickAdjust from "./QuickAdjust";
 import StatusSelect from "./StatusSelect";
@@ -44,6 +45,7 @@ export default async function CulturesPage() {
   ]);
 
   const strainName = new Map(strains.map((s) => [s.id, s.name]));
+  const strainSelectOptions = strains.map((s) => ({ value: String(s.id), label: s.name }));
   const today = new Date().toISOString().slice(0, 10);
 
   const isLow = (c: CultureRow) =>
@@ -120,6 +122,7 @@ export default async function CulturesPage() {
                 <th scope="col">Location</th>
                 <th scope="col">Use by</th>
                 <th scope="col">Source</th>
+                <th scope="col" className="actions-col"><span className="sr-only">Actions</span></th>
               </tr>
             </thead>
             <tbody>
@@ -153,6 +156,28 @@ export default async function CulturesPage() {
                     )}
                   </td>
                   <td className="muted">{c.source || "-"}</td>
+                  <td className="actions-col">
+                    <RowActions
+                      entity="culture"
+                      id={c.id}
+                      label={c.label}
+                      initial={{
+                        label: c.label,
+                        culture_type: c.culture_type,
+                        strain_id: c.strain_id,
+                        status: c.status,
+                        quantity_on_hand: c.quantity_on_hand,
+                        unit: c.unit,
+                        reorder_threshold: c.reorder_threshold,
+                        location: c.location,
+                        source: c.source,
+                        acquired_on: c.acquired_on,
+                        expires_on: c.expires_on,
+                        notes: c.notes,
+                      }}
+                      options={{ strain_id: strainSelectOptions }}
+                    />
+                  </td>
                 </tr>
               ))}
             </tbody>

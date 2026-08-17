@@ -2941,7 +2941,7 @@ a.kpi-link:focus-visible { outline: 2px solid var(--lumen); outline-offset: 2px;
 
 .actions-col { width: 1%; white-space: nowrap; text-align: right; }
 
-.row-actions { position: relative; display: inline-flex; }
+.row-actions { position: relative; display: inline-flex; gap: 6px; }
 
 .icon-btn {
   display: inline-flex; align-items: center; justify-content: center;
