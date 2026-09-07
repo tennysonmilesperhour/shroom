@@ -24,6 +24,7 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm run lint
+      - run: npm test
       - run: npm run build
         env:
           # Build needs SOMETHING for the env vars even though they're only

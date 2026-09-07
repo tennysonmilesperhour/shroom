@@ -2011,6 +2011,8 @@ tbody tr.row-link button {
 }
 .strain-card:hover::before { opacity: 1; }
 .strain-card-top {
+  padding-right: 84px;
+  min-height: 32px;
   display: flex;
   align-items: center;
   justify-content: space-between;

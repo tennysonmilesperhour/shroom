@@ -1,4 +1,5 @@
 import { createServiceClient } from "@/utils/supabase/service";
+import { currentCollection } from "@/lib/collection";
 import { Badge, Card } from "@/components/ui";
 import { must } from "@/lib/query";
 import SightingForm from "./SightingForm";
@@ -30,7 +31,8 @@ interface BatchOption {
 
 export default async function ContaminationPage() {
   const supabase = createServiceClient();
-  const [logs, guides, batches] = await Promise.all([
+  const collection = await currentCollection();
+  const [allLogs, guides, batches] = await Promise.all([
     must<LogRow[]>(
       supabase
         .from("contamination_logs")
@@ -52,11 +54,14 @@ export default async function ContaminationPage() {
       supabase
         .from("batches")
         .select("id,lot_code,container_id")
+        .in("strain_id", collection.strainIds)
         .order("created_at", { ascending: false }),
       "load batches",
     ),
   ]);
 
+  const batchIds = new Set(batches.map((batch) => batch.id));
+  const logs = allLogs.filter((log) => log.batch_id === null || batchIds.has(log.batch_id));
   const batchSelectOptions = batches.map((b) => ({
     value: String(b.id),
     label: b.lot_code,

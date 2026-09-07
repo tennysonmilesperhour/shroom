@@ -133,7 +133,6 @@ export default async function StrainsPage() {
               <Link href={`/strains/${s.id}`} className="strain-card">
                 <div className="strain-card-top">
                   <span className="strain-card-name">{s.name}</span>
-                  <Badge tone={typeTone(s.mushroom_type)}>{s.mushroom_type}</Badge>
                 </div>
                 <div className="strain-card-meta">
                   <span>F{s.generation}</span>
@@ -142,6 +141,7 @@ export default async function StrainsPage() {
                 </div>
                 <QualityBars qualities={strainQualities(s)} />
                 <div className="strain-card-bottom">
+                  <Badge tone={typeTone(s.mushroom_type)}>{s.mushroom_type}</Badge>
                   {s.potency_tier && <Badge tone="violet">{s.potency_tier}</Badge>}
                   {s.library_status === "unknown" ? (
                     <Badge tone="violet">source: searching</Badge>

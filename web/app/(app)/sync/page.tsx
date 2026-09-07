@@ -146,7 +146,7 @@ export default async function SyncPage() {
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           {cloudConfigured ? <PushToSheetButton /> : <p className="muted">Cloud write-back is not connected yet.</p>}
           <p className="muted" style={{ margin: 0, fontSize: 13 }}>
-            Writes the app&rsquo;s current data back into the{" "}
+            Writes supported strain, batch, harvest, and customer fields back into the{" "}
             <strong>Master Cultivation Reference</strong> — a non-destructive
             keyed upsert (owned rows updated in place, new ones appended,
             hand-maintained columns left untouched). Only changes fully covered by those workbook fields are marked synced after the write finishes. Other fields and deletions stay pending for manual reconciliation.

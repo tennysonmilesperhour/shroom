@@ -141,7 +141,7 @@ const consoleErrors = new Map();
 for (const [vpName, viewport] of Object.entries(VIEWPORTS)) {
   const dir = path.join(OUT, vpName);
   mkdirSync(dir, { recursive: true });
-  const context = await browser.newContext({ viewport, deviceScaleFactor: 1 });
+  const context = await browser.newContext({ viewport, deviceScaleFactor: 1, reducedMotion: 'reduce' });
   // The fixture points at a fictional sheet; keep this test independent of Google.
   await context.route('https://docs.google.com/**', route => route.fulfill({contentType:'text/html',body:'<p>Local workbook embed fixture</p>'}));
   const page = await context.newPage();

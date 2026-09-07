@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
+    "test": "node --experimental-strip-types --test scripts/tests/*.test.mjs",
     "postinstall": "node scripts/bundle-workbook.mjs"
   },
   "dependencies": {

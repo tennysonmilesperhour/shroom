@@ -24,7 +24,7 @@ export default function MushroomModeToggle() {
   }
 
   return (
-    <div className="mushroom-mode" role="group" aria-label="Mushroom dashboard">
+    <div className="mushroom-mode" role="group" aria-label="Active mushroom collection">
       <span className="mode-caption">Collection</span>
       <div className="mode-segmented">
         <button
