@@ -55,9 +55,9 @@ export async function POST(request: Request) {
   const supabase = createServiceClient();
   const result =
     payload.type === "batch_stage"
-      ? await setBatchStage(supabase, payload.batchId, payload.stage, { action: "Synced offline stage change" })
+      ? await setBatchStage(supabase, payload.batchId, payload.stage, { action: "Synced offline stage change", groupId: queued.id })
       : payload.type === "batch_room"
-        ? await setBatchRoom(supabase, payload.batchId, payload.roomId, { action: "Synced offline room change" })
+        ? await setBatchRoom(supabase, payload.batchId, payload.roomId, { action: "Synced offline room change", groupId: queued.id })
       : payload.type === "batch_observation"
         ? await addBatchObservationRecord(
             supabase,

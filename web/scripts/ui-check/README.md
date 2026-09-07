@@ -8,7 +8,7 @@ shipping any UI change — see "UI checks on every update" in the repo CLAUDE.md
 No Supabase project or credentials required — nothing it does can touch real
 data. `mock-supabase.mjs` emulates just enough PostgREST for the pages to
 render: fixture rows per table/view, `.single()`, counts via `Content-Range`,
-placeholder images for storage objects. Writes are accepted and discarded.
+placeholder images for storage objects. Writes live in memory until the mock server restarts.
 
 ## Run it
 
@@ -18,14 +18,23 @@ From `web/`:
 # 1. Mock backend (port 55321)
 node scripts/ui-check/mock-supabase.mjs &
 
-# 2. App pointed at the mock
+# 2. Python workbook API, also pointed at the mock (run in another terminal)
+NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:55321 SUPABASE_SERVICE_ROLE_KEY=ui-check \
+../.venv/bin/python api/workbook.py
+
+# 3. App pointed at the mock (run in another terminal)
+SHROOM_NEXT_DIST_DIR=.next-audit SHROOM_WORKBOOK_DEV_URL=http://127.0.0.1:3101 \
 NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:55321 \
 SUPABASE_SERVICE_ROLE_KEY=ui-check \
 npm run dev &
 timeout 60 bash -c 'until curl -sf http://localhost:3000 >/dev/null; do sleep 1; done'
 
-# 3. Sweep (writes PNGs to ./ui-check-shots/{mobile,desktop}/)
+# 4. Sweep (writes PNGs to ./ui-check-shots/{mobile,desktop}/)
 node scripts/ui-check/screenshot.mjs
+
+# 5. Actual upload flows: preview/import, >4.5 MB photo, offline recovery, collection filter
+UI_CHECK_BASE=http://localhost:3000 UI_CHECK_OUT=ui-check-shots/workflows \
+node scripts/ui-check/workflows.mjs
 ```
 
 Then open the screenshots for the pages you touched — mobile first. The sweep

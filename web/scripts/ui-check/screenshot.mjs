@@ -80,7 +80,7 @@ const SCENARIOS = [
     name: "presets-add-panel",
     route: "/presets",
     act: async (page) => {
-      await page.locator(".add-panel-toggle").first().click();
+      if (await page.locator(".add-panel-toggle").first().getAttribute('aria-expanded') === 'false') await page.locator(".add-panel-toggle").first().click();
       await page.locator(".add-panel-body").waitFor();
     },
   },
@@ -112,7 +112,7 @@ const SCENARIOS = [
     name: "batches-add-panel",
     route: "/batches",
     act: async (page) => {
-      await page.locator(".add-panel-toggle").first().click();
+      if (await page.locator(".add-panel-toggle").first().getAttribute('aria-expanded') === 'false') await page.locator(".add-panel-toggle").first().click();
       await page.locator(".add-panel-body").waitFor();
     },
   },

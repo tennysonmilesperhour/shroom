@@ -116,6 +116,18 @@ def test_export_reconciliation_does_not_clear_unmapped_fields_or_deletions():
         assert not is_exported(row)
 
 
+def test_functional_collection_survives_export_and_import(session):
+    session.add(models.Strain(name='Audit Oyster', mushroom_type='functional', species='Pleurotus ostreatus', active=True))
+    session.commit()
+    w = writer.InMemoryXlsxWriter()
+    export.push(session, w)
+    strains = parse.parse_workbook(w.wb).strains
+    assert len(strains) == 1
+    assert strains[0].mushroom_type == 'functional'
+    assert strains[0].species == 'Pleurotus ostreatus'
+    w.close()
+
+
 def test_zero_weight_grams_is_not_dropped():
     # A harvest logged before weighing has weight 0.0 — it must render as 0,
     # not a blank cell, so a real zero round-trips.
@@ -287,8 +299,8 @@ def test_upsert_preserves_operator_columns_and_rows(seeded, tmp_path):
     wb = Workbook(); ws = wb.active; ws.title = "Strain Library"
     spec = layout.BY_KEY["strains"]
     ws.append(list(spec.header) + ["Operator Note"])
-    ws.append(["Stargazer", "Active", "old", None, "", 7, "Yes", "", "", "KEEP ME"])
-    ws.append(["ManualOnly", "Active", "x", None, "", 5, "Yes", "", "", "hand-added"])
+    ws.append(["Stargazer", "Active", "old", None, "", 7, "Yes", "", "", "", "", "KEEP ME"])
+    ws.append(["ManualOnly", "Active", "x", None, "", 5, "Yes", "", "", "", "", "hand-added"])
     wb.save(path)
 
     w = writer.XlsxWriter(str(path))

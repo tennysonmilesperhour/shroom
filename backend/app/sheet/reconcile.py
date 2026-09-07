@@ -4,7 +4,7 @@ import os
 import httpx
 
 EXPORTED_FIELDS = {
-    'strain': {'name', 'active', 'vendor', 'potency', 'ease_rating', 'grow_again', 'notes'},
+    'strain': {'name', 'active', 'vendor', 'potency', 'ease_rating', 'grow_again', 'notes', 'mushroom_type', 'species'},
     'batch': {'lot_code', 'strain_id', 'inoculated_on', 'colonized_on', 'fruiting_on', 'contamination_flag', 'notes'},
     'harvest': {'batch_id', 'harvested_on', 'flush_number', 'weight_kg', 'dry_weight_kg', 'notes'},
     'customer': {'name', 'channel', 'notes'},

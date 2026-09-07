@@ -109,6 +109,8 @@ def _strain_row(s: "models.Strain") -> list:
         _yn(s.grow_again),
         "",                         # Tub/Bag ID — assigned per-batch, not per-strain
         s.notes or "",
+        s.mushroom_type,
+        s.species or "",
     ]
 
 
@@ -170,7 +172,7 @@ TABS: list[TabSpec] = [
         key="strains",
         tab="Strain Library",
         header=["Strain", "Status", "Vendor", "Inoculated", "Potency",
-                "Ease", "Grow Again", "Tub/Bag ID", "Notes"],
+                "Ease", "Grow Again", "Tub/Bag ID", "Notes", "Mushroom Type", "Species"],
         entity=models.Strain,
         order_by=lambda: models.Strain.name,
         row=_strain_row,

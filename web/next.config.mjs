@@ -82,6 +82,11 @@ const securityHeaders = [
 ];
 
 const nextConfig = {
+  // sharp 0.35 loads libvips dynamically; explicitly trace its Linux shared
+  // library into Vercel functions (a macOS-only local run cannot reveal this).
+  outputFileTracingIncludes: {
+    "/*": ["./node_modules/@img/sharp-libvips-linux-x64/**/*", "./node_modules/@img/sharp-linux-x64/**/*"],
+  },
   distDir: process.env.SHROOM_NEXT_DIST_DIR || ".next",
   experimental: { serverActions: { bodySizeLimit: "8mb" } },
   async rewrites() {
