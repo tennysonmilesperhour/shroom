@@ -34,8 +34,8 @@ function wedgePath(a0: number, a1: number, rOut: number): string {
   const p1 = polarPoint(a1, 0, CX, CY, rOut, rOut);
   return [
     `M ${CX} ${CY}`,
-    `L ${p0.x} ${p0.y}`,
-    `A ${rOut} ${rOut} 0 0 0 ${p1.x} ${p1.y}`,
+    `L ${p0.x.toFixed(3)} ${p0.y.toFixed(3)}`,
+    `A ${rOut.toFixed(3)} ${rOut.toFixed(3)} 0 0 0 ${p1.x.toFixed(3)} ${p1.y.toFixed(3)}`,
     "Z",
   ].join(" ");
 }
@@ -153,12 +153,12 @@ export default function AlkaloidSpectrum({ strains }: { strains: SpectrumStrain[
                 <circle
                   cx={CX}
                   cy={CY}
-                  r={r}
+                  r={r.toFixed(3)}
                   fill="none"
                   stroke="var(--line-soft)"
                   strokeDasharray="2 4"
                 />
-                <text x={CX + 3} y={CY - r + 11} className="spectrum-guide-label">
+                <text x={CX + 3} y={(CY - r + 11).toFixed(3)} className="spectrum-guide-label">
                   {pct}%
                 </text>
               </g>

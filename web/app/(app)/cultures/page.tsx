@@ -1,3 +1,4 @@
+import { currentCollection } from "@/lib/collection";
 import { createServiceClient } from "@/utils/supabase/service";
 import { Badge, Card } from "@/components/ui";
 import { soft } from "@/lib/query";
@@ -37,11 +38,12 @@ interface StrainRow {
 
 export default async function CulturesPage() {
   const supabase = createServiceClient();
+  const collection = await currentCollection();
   // soft() so the page degrades to an empty register if migration 14 hasn't
   // been applied to this environment yet, instead of taking the route down.
   const [cultures, strains] = await Promise.all([
-    soft<CultureRow>(supabase.from("culture_inventory").select("*").order("label")),
-    soft<StrainRow>(supabase.from("strains").select("id,name").order("name")),
+    soft<CultureRow>(supabase.from("culture_inventory").select("*").or(`strain_id.is.null,strain_id.in.(${collection.strainIds.join(",")})`).order("label")),
+    soft<StrainRow>(supabase.from("strains").select("id,name").in("id", collection.strainIds).order("name")),
   ]);
 
   const strainName = new Map(strains.map((s) => [s.id, s.name]));

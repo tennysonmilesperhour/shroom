@@ -1,3 +1,4 @@
+import { currentCollection } from "@/lib/collection";
 import Link from "next/link";
 import { createServiceClient } from "@/utils/supabase/service";
 import { Badge } from "@/components/ui";
@@ -48,12 +49,14 @@ function typeTone(t: string): BadgeTone {
 
 export default async function StrainsPage() {
   const supabase = createServiceClient();
+  const collection = await currentCollection();
   const strains = await must<StrainRow[]>(
     supabase
       .from("strains")
       .select(
         "id,name,species,strain_code,mushroom_type,vendor,genetics,potency,ease_rating,typical_be,typical_flushes,syringes_on_hand,library_status,grow_again,active,notes,generation,priority,potency_tier,alkaloid_total_pct,alkaloid_total_low_pct,alkaloid_total_high_pct,spectrum_hue,evidence_grade,experience_tags",
       )
+      .in("mushroom_type", collection.types)
       .order("library_status")
       .order("name"),
     "load strain library",

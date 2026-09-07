@@ -225,7 +225,17 @@ class SupabaseSink:
         resp.raise_for_status()
         return {row["lot_code"]: row["id"] for row in resp.json()}
 
-    def run(self, parsed: ParsedWorkbook) -> dict[str, int]:
+    def run(self, parsed: ParsedWorkbook, *, source: str = "drive", request_id: str | None = None) -> dict[str, int]:
+        from uuid import uuid4
+        plan = build_import_plan(parsed)
+        response = self.client.post(f"{self.base}/rpc/import_workbook", json={
+            "p_tables": plan, "p_source": source[:255],
+            "p_request_id": request_id or str(uuid4()),
+        })
+        response.raise_for_status()
+        return response.json()
+
+    def _run_tables(self, parsed: ParsedWorkbook) -> dict[str, int]:
         counts: dict[str, int] = {}
 
         counts["strains"] = self._upsert("strains", [
@@ -338,3 +348,68 @@ class SupabaseSink:
             )
         except httpx.HTTPError:
             pass
+
+
+class _PlanSink(SupabaseSink):
+    """Reuse the canonical field mapping without performing network requests."""
+    def __init__(self, parsed: ParsedWorkbook):
+        self.tables: dict[str, list[dict]] = {}
+        self.strain_names = {i + 1: s.name for i, s in enumerate(parsed.strains)}
+        self.batch_codes = {i + 1: b.lot_code for i, b in enumerate(parsed.batches)}
+
+    def _upsert(self, table: str, rows: list[dict], on_conflict: str) -> int:
+        output = []
+        for row in rows:
+            row = _prune(row)
+            if "strain_id" in row:
+                row["_strain_name"] = self.strain_names[row.pop("strain_id")]
+            if "batch_id" in row:
+                row["_batch_lot_code"] = self.batch_codes[row.pop("batch_id")]
+            output.append(row)
+        self.tables[table] = output
+        return len(output)
+
+    def _strain_id_map(self):
+        return {name.lower(): i for i, name in self.strain_names.items()}
+
+    def _batch_id_map(self):
+        return {code: i for i, code in self.batch_codes.items()}
+
+    def _log_run(self, counts):
+        pass
+
+
+def build_import_plan(parsed: ParsedWorkbook) -> dict[str, list[dict]]:
+    """Resolve sheet relationships by natural key inside one DB transaction.
+
+    A workbook containing only a Harvest Tracker still creates its referenced
+    batch and strain. Inferred rows never overwrite an existing app record.
+    """
+    from copy import deepcopy
+    from .parse import Strain, Batch
+    parsed = deepcopy(parsed)
+    known_strains = {s.name.lower() for s in parsed.strains}
+    inferred_strains = set()
+    for name in [b.strain for b in parsed.batches] + [h.strain for h in parsed.harvests] + [j.strain for j in parsed.jars]:
+        if name and name.lower() not in known_strains:
+            parsed.strains.append(Strain(name=name))
+            known_strains.add(name.lower())
+            inferred_strains.add(name)
+    known_batches = {b.lot_code for b in parsed.batches}
+    inferred_batches = set()
+    for h in parsed.harvests:
+        if h.tub and h.strain and h.harvested_on and h.tub not in known_batches:
+            parsed.batches.append(Batch(lot_code=h.tub, strain=h.strain, container_id=h.tub, stage="harvesting"))
+            known_batches.add(h.tub)
+            inferred_batches.add(h.tub)
+    sink = _PlanSink(parsed)
+    sink._run_tables(parsed)
+    for row in sink.tables["strains"]:
+        if row["name"] in inferred_strains:
+            name = row["name"]
+            row.clear()
+            row.update({"name": name, "_ensure_only": True})
+    for row in sink.tables["batches"]:
+        if row["lot_code"] in inferred_batches:
+            row["_ensure_only"] = True
+    return sink.tables

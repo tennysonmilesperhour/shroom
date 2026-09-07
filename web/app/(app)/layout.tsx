@@ -11,6 +11,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import MushroomModeToggle from "@/components/MushroomModeToggle";
 import OfflineQueueStatus from "@/components/OfflineQueueStatus";
 import { createServiceClient } from "@/utils/supabase/service";
+import { currentCollection } from "@/lib/collection";
 
 // Open access - no auth gate. SSR pages read with the service-role client
 // (see utils/supabase/service.ts); the browser never holds a Supabase session.
@@ -66,6 +67,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </div>
         <Nav />
         <div className="foot">
+          <a href="mailto:morphiclabsdata@gmail.com" className="support-link">Help &amp; support ↗</a>
           <div className="foot-row">
             <span className="who">
               <span className="live-dot" aria-hidden="true" />
@@ -102,13 +104,15 @@ interface CommandIndex {
 
 async function loadCommandIndex(): Promise<CommandIndex> {
   const supabase = createServiceClient();
+  const collection = await currentCollection();
   const [batches, strains, customers, orders] = await Promise.all([
     supabase
       .from("batches")
       .select("id,lot_code,stage,strains(name)")
+      .in("strain_id", collection.strainIds)
       .order("created_at", { ascending: false })
       .limit(200),
-    supabase.from("strains").select("id,name,mushroom_type").order("name").limit(200),
+    supabase.from("strains").select("id,name,mushroom_type").in("mushroom_type", collection.types).order("name").limit(200),
     supabase.from("customers").select("id,name,channel").order("name").limit(200),
     supabase
       .from("orders")

@@ -154,13 +154,7 @@ export async function setBatchCover(mediaId: number): Promise<EntityResult> {
     .eq("id", mediaId)
     .single<{ batch_id: number }>();
   if (error || !data) return { ok: false, message: error?.message ?? "Photo not found." };
-  const { error: unsetError } = await supabase
-    .from("batch_media")
-    .update({ is_cover: false })
-    .eq("batch_id", data.batch_id)
-    .eq("is_cover", true);
-  if (unsetError) return { ok: false, message: unsetError.message };
-  const { error: setError } = await supabase.from("batch_media").update({ is_cover: true }).eq("id", mediaId);
+  const { error: setError } = await supabase.rpc("set_batch_cover", { p_media_id: mediaId });
   if (setError) return { ok: false, message: setError.message };
   revalidatePath(`/batches/${data.batch_id}`);
   return { ok: true, message: "Cover photo updated" };

@@ -4,6 +4,8 @@ import { must } from "@/lib/query";
 import MarkSyncedButton from "./MarkSyncedButton";
 import SyncFromSheetButton from "./SyncFromSheetButton";
 import PushToSheetButton from "./PushToSheetButton";
+import WorkbookUpload from "./WorkbookUpload";
+import { activeSheetImport, displayImportStatus } from "@/lib/sheet-sync-status";
 
 export const dynamic = "force-dynamic";
 
@@ -30,15 +32,16 @@ interface ImportRun {
 
 export default async function SyncPage() {
   const supabase = createServiceClient();
-  const todayStart = new Date();
-  todayStart.setUTCHours(0, 0, 0, 0);
+  const cloudConfigured = Boolean(process.env.GITHUB_DISPATCH_TOKEN);
 
-  const [pending, recent, imports] = await Promise.all([
+  const cutoff = new Date().toISOString();
+  const [pending, recent, imports, pendingCount] = await Promise.all([
     must<QueueRow[]>(
       supabase
         .from("sheet_sync_queue")
         .select("*")
         .is("synced_at", null)
+        .lte("created_at", cutoff)
         .order("created_at", { ascending: true })
         .limit(200),
       "load pending ops",
@@ -60,9 +63,12 @@ export default async function SyncPage() {
         .limit(10),
       "load sheet imports",
     ),
+    supabase.from("sheet_sync_queue").select("id", { count: "exact", head: true }).is("synced_at", null).lte("created_at", cutoff),
   ]);
+  if (pendingCount.error) throw new Error("Could not count pending sheet updates.");
+  const pendingTotal = pendingCount.count ?? pending.length;
 
-  const syncedToday = imports.some((r) => new Date(r.started_at) >= todayStart);
+  const inProgress = activeSheetImport(imports);
   const lastImport = imports[0] ?? null;
   const lastSyncLabel = lastImport
     ? new Date(lastImport.started_at).toISOString().slice(0, 16).replace("T", " ")
@@ -78,28 +84,29 @@ export default async function SyncPage() {
     <>
       <div>
         <div className="eyebrow">Sync</div>
-        <h1 className="section">Sheet bridge</h1>
+        <h1 className="section">Your records, in sync.</h1>
         <p className="lead">
-          The <strong>Master Cultivation Reference</strong> sheet is the source
-          of truth. Pull it into the app with one click below (sheet → website).
-          Website edits are captured separately as pending ops to push back up.
+          Bring your <strong>Master Cultivation Reference</strong> into Shroom.
+          Preview a workbook from your device, or sync your connected cloud sheet.
         </p>
       </div>
 
-      <div className="kpi-row">
-        <Kpi label="Last sheet sync" value={lastSyncLabel} feature />
-        <Kpi label="Pending ops (to sheet)" countTo={pending.length} />
-        <Kpi label="Entities affected" countTo={entries.length} />
+      <WorkbookUpload />
+
+      <div className="kpi-row sync-kpis">
+        <Kpi label="Last import" value={lastSyncLabel} />
+        <Kpi label="Pending ops (to sheet)" countTo={pendingTotal} />
+        <Kpi label="Entities in visible ops" countTo={entries.length} />
         <Kpi label="Synced (last 50)" countTo={recent.length} />
       </div>
 
       <Card title="Pull from the sheet (sheet → website)">
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <SyncFromSheetButton syncedToday={syncedToday} />
+          <SyncFromSheetButton inProgress={inProgress} configured={cloudConfigured} />
           <p className="muted" style={{ margin: 0, fontSize: 13 }}>
-            {syncedToday
-              ? "Already synced today. The button re-enables tomorrow; an admin can still re-run it from GitHub Actions."
-              : "Pulls strains, inventory, vendors, buyers, harvests and more straight from the workbook. Runs in about a minute."}
+            {!cloudConfigured ? "Import a workbook above to update your records. Cloud sync becomes available when the sheet connection is set up."
+              : inProgress ? "Your sheet is being imported. This page checks for completion automatically."
+              : "Pull the latest saved sheet whenever you need it. A failed or completed attempt never blocks another sync."}
           </p>
           {imports.length > 0 && (
             <table>
@@ -121,7 +128,7 @@ export default async function SyncPage() {
                     <td>{r.source || "—"}</td>
                     <td>
                       <Badge tone={r.status === "ok" ? "green" : r.status === "error" ? "red" : "blue"}>
-                        {r.status}
+                        {displayImportStatus(r)}
                       </Badge>
                     </td>
                     <td className="muted" style={{ fontFamily: "var(--font-mono)", fontSize: 11 }}>
@@ -137,26 +144,26 @@ export default async function SyncPage() {
 
       <Card title="Push to the sheet (website → sheet)">
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <PushToSheetButton />
+          {cloudConfigured ? <PushToSheetButton /> : <p className="muted">Cloud write-back is not connected yet.</p>}
           <p className="muted" style={{ margin: 0, fontSize: 13 }}>
             Writes the app&rsquo;s current data back into the{" "}
             <strong>Master Cultivation Reference</strong> — a non-destructive
             keyed upsert (owned rows updated in place, new ones appended,
-            hand-maintained columns left untouched). Runs the Python exporter via
-            GitHub Actions and clears the pending queue when it lands.
+            hand-maintained columns left untouched). Only changes fully covered by those workbook fields are marked synced after the write finishes. Other fields and deletions stay pending for manual reconciliation.
           </p>
           <hr style={{ border: 0, borderTop: "1px solid var(--line)", margin: "2px 0" }} />
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <MarkSyncedButton />
+            <MarkSyncedButton cutoff={cutoff} count={pendingTotal} />
             <p className="muted" style={{ margin: 0, fontSize: 12 }}>
-              Manual override: mark the pending ops below as synced without
+              Manual override: mark all pending ops counted above as synced without
               running a push — for when the sheet was reconciled by hand.
             </p>
           </div>
         </div>
       </Card>
 
-      <Card title={`Pending ops (${pending.length})`}>
+      <Card title={`Pending ops (${pendingTotal})`}>
+        {pendingTotal > pending.length && <p className="muted">Showing the oldest {pending.length} of {pendingTotal} pending changes.</p>}
         {pending.length === 0 ? (
           <p className="muted" style={{ margin: 0 }}>
             Queue is empty. Nothing waiting to flow up to the sheet.

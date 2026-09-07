@@ -1,6 +1,7 @@
 "use server";
 
 import { createServiceClient } from "@/utils/supabase/service";
+import { activeSheetImport } from "@/lib/sheet-sync-status";
 import { revalidatePath } from "next/cache";
 
 export interface SyncActionResult {
@@ -16,12 +17,14 @@ export interface SyncActionResult {
  * (or just update the rows directly with the service role) to clear them.
  * For now operators can clear the queue manually when they've reconciled.
  */
-export async function markAllSynced(): Promise<SyncActionResult> {
+export async function markAllSynced(cutoff: string): Promise<SyncActionResult> {
+  if (!Number.isFinite(Date.parse(cutoff))) return { ok: false, message: "Refresh the page before reconciling changes." };
   const supabase = createServiceClient();
   const { data, error } = await supabase
     .from("sheet_sync_queue")
     .update({ synced_at: new Date().toISOString() })
     .is("synced_at", null)
+    .lte("created_at", cutoff)
     .select("id");
   if (error) return { ok: false, message: error.message };
   revalidatePath("/sync");
@@ -36,9 +39,8 @@ export async function markAllSynced(): Promise<SyncActionResult> {
  *
  * The parser lives in the Python importer, so this triggers its GitHub Actions
  * workflow via workflow-dispatch rather than re-implementing the parse here.
- * On a successful trigger we record a `running` row in `sheet_imports` so the
- * button can grey out for the rest of the day; the importer appends its own
- * `ok` row when it finishes (~a minute later).
+ * Track a request receipt until the importer completes it. Only a recent
+ * running job disables the button; failed/stale attempts can be retried.
  */
 export async function requestSheetSync(): Promise<SyncActionResult> {
   const token = process.env.GITHUB_DISPATCH_TOKEN;
@@ -48,11 +50,19 @@ export async function requestSheetSync(): Promise<SyncActionResult> {
     return {
       ok: false,
       message:
-        "Sheet sync isn't wired up yet — set GITHUB_DISPATCH_TOKEN and the workflow secrets (see supabase/SHEET_MAPPING.md).",
+        "Cloud sheet sync is not connected. Use the workbook import on this page.",
     };
   }
 
-  const resp = await fetch(
+  const supabase = createServiceClient();
+  const { data: runs, error: readError } = await supabase.from("sheet_imports").select("status,started_at").order("started_at", { ascending: false }).limit(10);
+  if (readError) return { ok: false, message: "Could not check the latest import. Please retry." };
+  if (activeSheetImport(runs || [])) return { ok: false, message: "An import is already running. This page will update when it finishes." };
+  const requestId = crypto.randomUUID();
+  const { error: logError } = await supabase.from("sheet_imports").insert({ source: "Cloud sheet", status: "running", request_id: requestId });
+  if (logError) return { ok: false, message: "Could not start an import record. Please retry." };
+  let resp: Response;
+  try { resp = await fetch(
     `https://api.github.com/repos/${repo}/actions/workflows/sheet-import.yml/dispatches`,
     {
       method: "POST",
@@ -61,23 +71,22 @@ export async function requestSheetSync(): Promise<SyncActionResult> {
         Accept: "application/vnd.github+json",
         "X-GitHub-Api-Version": "2022-11-28",
       },
-      body: JSON.stringify({ ref, inputs: { target: "supabase" } }),
+      body: JSON.stringify({ ref, inputs: { target: "supabase", request_id: requestId } }),
     },
-  );
-
-  const supabase = createServiceClient();
+  ); } catch {
+    await supabase.from("sheet_imports").update({ status: "error", finished_at: new Date().toISOString(), detail: "Cloud connection interrupted" }).eq("request_id", requestId);
+    return { ok: false, message: "Cloud connection interrupted. Please retry." };
+  }
   if (!resp.ok) {
     const detail = (await resp.text()).slice(0, 500);
-    await supabase.from("sheet_imports").insert({
-      source: "web button",
+    await supabase.from("sheet_imports").update({
       status: "error",
       finished_at: new Date().toISOString(),
       detail,
-    });
+    }).eq("request_id", requestId);
     return { ok: false, message: `Couldn't start the sync (GitHub ${resp.status}).` };
   }
 
-  await supabase.from("sheet_imports").insert({ source: "web button", status: "running" });
   revalidatePath("/sync");
   return {
     ok: true,
@@ -101,7 +110,7 @@ export async function pushToSheet(): Promise<SyncActionResult> {
     return {
       ok: false,
       message:
-        "Write-back isn't wired up yet — set GITHUB_DISPATCH_TOKEN plus the sheet-export secrets (SHROOM_DB_URL, GOOGLE_SERVICE_ACCOUNT_JSON with write scope, and a MASTER_SHEET_* target). See .github/workflows/sheet-export.yml.",
+        "Cloud write-back is not connected yet. Your app changes are saved and remain in the pending list.",
     };
   }
 
@@ -129,6 +138,6 @@ export async function pushToSheet(): Promise<SyncActionResult> {
   return {
     ok: true,
     message:
-      "Push started — writing the app's data back to the sheet. The pending queue clears itself when it finishes (~a minute).",
+      "Push started. Supported workbook fields will be written; unmatched changes remain pending.",
   };
 }

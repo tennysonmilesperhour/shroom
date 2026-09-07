@@ -6,3 +6,8 @@ out/
 .vercel
 *.tsbuildinfo
 next-env.d.ts
+
+/api/_vendor/
+.env*
+
+/.next-audit/

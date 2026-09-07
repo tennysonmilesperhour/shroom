@@ -5,6 +5,7 @@ import CountUp from "@/components/anim/CountUp";
 import RadialGauge from "@/components/anim/RadialGauge";
 import Meter from "@/components/anim/Meter";
 import QuickLog, { type QuickLogBatch } from "@/components/QuickLog";
+import { currentCollection } from "@/lib/collection";
 import RoutinePlanner, { type Routine } from "@/components/RoutinePlanner";
 import OperationPulse from "@/components/OperationPulse";
 import { kgToG, money, DRY_FLOOR } from "@/lib/format";
@@ -94,6 +95,7 @@ export default async function Dashboard() {
     : new Set(["psychedelic"]);
   const isFunctional = mode === "functional";
   const supabase = createServiceClient();
+  const collection = await currentCollection();
   const [allBatches, allDry, env, allYields, tasks, inv, valuation, allSpotlights, strainTypes] = await Promise.all([
     must<BatchRow[]>(supabase.from("batches").select("stage,block_count,strains(mushroom_type)"), "load batches"),
     must<DryRatioRow[]>(supabase.from("v_dry_ratio").select("strain_id,fresh_g,dry_g,below_floor"), "load dry ratios"),
@@ -180,6 +182,7 @@ export default async function Dashboard() {
     supabase
       .from("batches")
       .select("id,lot_code,stage,strains(name)")
+      .in("strain_id", collection.strainIds)
       .order("created_at", { ascending: false }),
   ]);
 

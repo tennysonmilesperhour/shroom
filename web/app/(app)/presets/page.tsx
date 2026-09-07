@@ -1,3 +1,4 @@
+import { currentCollection } from "@/lib/collection";
 import { createServiceClient } from "@/utils/supabase/service";
 import { Badge, Card } from "@/components/ui";
 import { must } from "@/lib/query";
@@ -51,6 +52,7 @@ interface InventoryItemRow {
 
 export default async function PresetsPage() {
   const supabase = createServiceClient();
+  const collection = await currentCollection();
   const [presets, strains, recipes, rooms, items] = await Promise.all([
     must<PresetRow[]>(
       supabase
@@ -58,11 +60,11 @@ export default async function PresetsPage() {
         .select(
           "*, strains(name), recipes(name), rooms(name), preset_materials(id,inventory_item_id,name,quantity,unit, inventory_items(name))",
         )
-        .eq("active", true)
+        .eq("active", true).or(`strain_id.is.null,strain_id.in.(${collection.strainIds.join(",")})`)
         .order("name"),
       "load presets",
     ),
-    must<Option[]>(supabase.from("strains").select("id,name").order("name"), "load strains"),
+    must<Option[]>(supabase.from("strains").select("id,name").in("id", collection.strainIds).order("name"), "load strains"),
     must<Option[]>(supabase.from("recipes").select("id,name").order("name"), "load recipes"),
     must<Option[]>(supabase.from("rooms").select("id,name").order("name"), "load rooms"),
     must<InventoryItemRow[]>(

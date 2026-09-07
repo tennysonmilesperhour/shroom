@@ -471,7 +471,7 @@ def parse_equipment(wb: Workbook) -> list[Equipment]:
 def parse_buyers(wb: Workbook) -> list[Customer]:
     ws = _get_sheet(wb, "Buyers & Pricing", "Buyers")
     matrix = _matrix(ws)
-    h = _find_header(matrix, ["name", "tier", "role", "status"])
+    h = _find_header(matrix, ["name", "tier"])
     if h < 0:
         return []
     headers = matrix[h]

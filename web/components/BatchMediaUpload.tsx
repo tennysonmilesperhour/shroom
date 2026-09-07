@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState, useTransition } from "react";
+import { useEffect, useId, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ToastProvider";
 import {
@@ -10,11 +10,21 @@ import {
   MEDIA_CATEGORY_LABEL,
 } from "@/lib/batch-media";
 import { STAGE_LABEL, STAGE_ORDER } from "@/lib/stages";
-import { uploadBatchMedia } from "@/app/(app)/batches/[id]/media-actions";
+import Image from "next/image";
+import { uploadPhoto, UploadResponseError } from "@/lib/upload-photo";
 import { queueOfflineMedia } from "@/lib/offline-queue";
 
 export default function BatchMediaUpload({ batchId, currentStage }: { batchId: number; currentStage: string }) {
   const imageId = useId();
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [preview, setPreview] = useState("");
+  const [progress, setProgress] = useState("Uploading…");
+  useEffect(() => {
+    if (!photo) { setPreview(""); return; }
+    const url = URL.createObjectURL(photo);
+    setPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [photo]);
   const [categories, setCategories] = useState<string[]>(["overview"]);
   const [pending, startTransition] = useTransition();
   const router = useRouter();
@@ -44,6 +54,7 @@ export default function BatchMediaUpload({ batchId, currentStage }: { batchId: n
       return;
     }
     const selectedFile = file;
+    formData.set("client_mutation_id", crypto.randomUUID());
     const capturedRaw = String(formData.get("captured_at") ?? "");
     if (capturedRaw) {
       const capturedAt = new Date(capturedRaw);
@@ -53,6 +64,7 @@ export default function BatchMediaUpload({ batchId, currentStage }: { batchId: n
     for (const category of categories) formData.append("categories", category);
     async function queuePhoto() {
       await queueOfflineMedia({
+        id: String(formData.get("client_mutation_id")),
         batchId,
         stage: String(formData.get("stage_snapshot") ?? currentStage),
         categories,
@@ -64,6 +76,7 @@ export default function BatchMediaUpload({ batchId, currentStage }: { batchId: n
         blob: selectedFile,
       });
       form.reset();
+      setPhoto(null);
       setCategories(["overview"]);
       push({ title: "Photo queued", body: "It will upload when connection returns.", tone: "spore" });
       return true;
@@ -81,8 +94,12 @@ export default function BatchMediaUpload({ batchId, currentStage }: { batchId: n
     startTransition(async () => {
       let result;
       try {
-        result = await uploadBatchMedia(formData);
-      } catch {
+        result = await uploadPhoto(formData, setProgress);
+      } catch (error) {
+        if (error instanceof UploadResponseError) {
+          push({ title: "Couldn’t add photo", body: error.message, tone: "ember" });
+          return;
+        }
         try {
           await queuePhoto();
         } catch {
@@ -97,6 +114,7 @@ export default function BatchMediaUpload({ batchId, currentStage }: { batchId: n
       });
       if (result.ok) {
         form.reset();
+        setPhoto(null);
         setCategories(["overview"]);
         router.refresh();
       }
@@ -104,7 +122,8 @@ export default function BatchMediaUpload({ batchId, currentStage }: { batchId: n
   }
 
   return (
-    <form className="media-upload" onSubmit={submit}>
+    <form className="media-upload" onSubmit={submit} aria-busy={pending}>
+      <fieldset disabled={pending} className="media-upload-fields">
       <input type="hidden" name="batch_id" value={batchId} />
       <div className="media-capture-field">
         <label htmlFor={imageId}>Photo</label>
@@ -113,10 +132,12 @@ export default function BatchMediaUpload({ batchId, currentStage }: { batchId: n
           name="image"
           type="file"
           accept="image/jpeg,image/png,image/webp"
-          capture="environment"
+          onChange={(event) => setPhoto(event.target.files?.[0] ?? null)}
+          disabled={pending}
           required
         />
-        <span className="muted">JPEG, PNG, or WebP · up to 6 MB</span>
+        <span className="muted">Choose from your library or camera · JPEG, PNG, WebP · up to 6 MB</span>
+        {preview && <div className="photo-upload-preview"><Image src={preview} alt="Selected photo preview" width={320} height={220} unoptimized /><span>{photo?.name} · {((photo?.size ?? 0) / 1024 / 1024).toFixed(1)} MB</span></div>}
       </div>
       <div>
         <label>Growth stage shown</label>
@@ -159,8 +180,9 @@ export default function BatchMediaUpload({ batchId, currentStage }: { batchId: n
         <span>Optional note</span>
         <textarea name="note" rows={2} placeholder="Surface condition, lighting, concern, or comparison note…" />
       </label>
+      </fieldset>
       <button type="submit" className="primary" disabled={pending || categories.length === 0}>
-        {pending ? "Uploading…" : "Add photo"}
+        {pending ? progress : "Add photo"}
       </button>
     </form>
   );

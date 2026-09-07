@@ -85,6 +85,9 @@ class TabSpec:
     # a matching row on the sheet is updated in place, a new one is appended,
     # and rows/columns the app doesn't recognize are left untouched.
     key_cols: tuple[str, ...] = ()
+    # Placeholder cells in the reference projection are not app-owned values.
+    # Never blank out the operator's existing data in these workbook columns.
+    unmanaged_headers: tuple[str, ...] = ()
 
     def key_of(self, row: list) -> tuple:
         """The normalized natural key of a projected row (for matching)."""
@@ -172,6 +175,7 @@ TABS: list[TabSpec] = [
         order_by=lambda: models.Strain.name,
         row=_strain_row,
         key_cols=("Strain",),
+        unmanaged_headers=("Inoculated", "Tub/Bag ID"),
     ),
     TabSpec(
         key="batches",
@@ -182,6 +186,7 @@ TABS: list[TabSpec] = [
         order_by=lambda: models.Batch.lot_code,
         row=_batch_row,
         key_cols=("Tub", "Flush"),
+        unmanaged_headers=("Issues",),
     ),
     TabSpec(
         key="harvests",
@@ -201,6 +206,7 @@ TABS: list[TabSpec] = [
         order_by=lambda: models.Customer.name,
         row=_customer_row,
         key_cols=("Name",),
+        unmanaged_headers=("Role", "Volume", "Last Contact", "Status"),
     ),
 ]
 

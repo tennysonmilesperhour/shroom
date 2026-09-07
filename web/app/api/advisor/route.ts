@@ -1,6 +1,7 @@
 import { createServiceClient } from "@/utils/supabase/service";
 import { NextResponse } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { isSameOrigin } from "@/lib/request-origin";
 
 const MODEL = process.env.SHROOM_ADVISOR_MODEL || "claude-sonnet-4-5";
 const QUESTION_MAX = 500;
@@ -130,6 +131,7 @@ function clientIp(request: Request): string {
 }
 
 export async function POST(request: Request) {
+  if (!isSameOrigin(request)) return NextResponse.json({ answered: false, reason: "Cross-origin requests are not allowed." }, { status: 403 });
   if (rateLimited(clientIp(request))) {
     return NextResponse.json(
       { answered: false, reason: "Rate limit reached. Try again in a minute." },

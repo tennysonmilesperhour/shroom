@@ -8,11 +8,13 @@ import {
   removeOfflineMutation,
 } from "@/lib/offline-queue";
 import { useToast } from "@/components/ToastProvider";
+import { uploadPhoto, UploadResponseError } from "@/lib/upload-photo";
 import { useRouter } from "next/navigation";
 
 export default function OfflineQueueStatus() {
   const [count, setCount] = useState(0);
   const [syncing, setSyncing] = useState(false);
+  const [issue, setIssue] = useState<string | null>(null);
   const syncInFlight = useRef(false);
   const { push } = useToast();
   const router = useRouter();
@@ -24,9 +26,11 @@ export default function OfflineQueueStatus() {
 
   const sync = useCallback(async () => {
     if (!navigator.onLine || syncInFlight.current) return;
+    syncInFlight.current = true;
+    setIssue(null);
     const queue = readOfflineQueue();
     const mediaQueue = await readOfflineMediaQueue().catch(() => []);
-    if (queue.length === 0 && mediaQueue.length === 0) return void refresh();
+    if (queue.length === 0 && mediaQueue.length === 0) { syncInFlight.current = false; return void refresh(); }
     syncInFlight.current = true;
     setSyncing(true);
     let synced = 0;
@@ -38,8 +42,9 @@ export default function OfflineQueueStatus() {
           body: JSON.stringify(item),
         });
         if (!response.ok) {
-          if (response.status >= 500) break;
-          continue;
+          const result = await response.json().catch(() => null);
+          setIssue(result?.message || "An update needs a retry.");
+          break;
         }
         removeOfflineMutation(item.id);
         synced += 1;
@@ -58,14 +63,11 @@ export default function OfflineQueueStatus() {
         data.set("note", item.note);
         if (item.isCover) data.set("is_cover", "on");
         data.set("image", new File([item.blob], item.fileName, { type: item.mimeType }));
-        const response = await fetch("/api/offline-media", { method: "POST", body: data });
-        if (!response.ok) {
-          if (response.status >= 500) break;
-          continue;
-        }
+        await uploadPhoto(data);
         await removeOfflineMedia(item.id);
         synced += 1;
-      } catch {
+      } catch (error) {
+        setIssue(error instanceof UploadResponseError ? error.message : "Connection interrupted. Your photo is still saved on this device.");
         break;
       }
     }
@@ -95,8 +97,8 @@ export default function OfflineQueueStatus() {
 
   if (count === 0) return null;
   return (
-    <button type="button" className="offline-queue-pill" disabled={syncing} onClick={() => void sync()}>
-      {syncing ? "Syncing…" : `${count} pending · sync`}
+    <button type="button" className="offline-queue-pill" title={issue || "Saved on this device until synchronization completes"} aria-label={issue ? `${count} pending. ${issue} Retry sync` : undefined} disabled={syncing} onClick={() => void sync()}>
+      {syncing ? "Syncing…" : `${count} pending · ${issue ? "retry" : "sync"}`}
     </button>
   );
 }

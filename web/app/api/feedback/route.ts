@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/utils/supabase/service";
+import { isSameOrigin } from "@/lib/request-origin";
 
 // Side-notes feedback API.
 //
@@ -49,6 +50,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  if (!isSameOrigin(request)) return NextResponse.json({ ok: false, error: "Cross-origin writes are not allowed." }, { status: 403 });
   let payload: { page?: unknown; page_label?: unknown; body?: unknown };
   try {
     payload = await request.json();
@@ -80,6 +82,7 @@ export async function POST(request: Request) {
 }
 
 export async function PATCH(request: Request) {
+  if (!isSameOrigin(request)) return NextResponse.json({ ok: false, error: "Cross-origin writes are not allowed." }, { status: 403 });
   let payload: { id?: unknown; status?: unknown };
   try {
     payload = await request.json();
