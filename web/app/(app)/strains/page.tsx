@@ -1,3 +1,4 @@
+import { currentCollection } from "@/lib/collection";
 import Link from "next/link";
 import { createServiceClient } from "@/utils/supabase/service";
 import { Badge } from "@/components/ui";
@@ -48,12 +49,14 @@ function typeTone(t: string): BadgeTone {
 
 export default async function StrainsPage() {
   const supabase = createServiceClient();
+  const collection = await currentCollection();
   const strains = await must<StrainRow[]>(
     supabase
       .from("strains")
       .select(
         "id,name,species,strain_code,mushroom_type,vendor,genetics,potency,ease_rating,typical_be,typical_flushes,syringes_on_hand,library_status,grow_again,active,notes,generation,priority,potency_tier,alkaloid_total_pct,alkaloid_total_low_pct,alkaloid_total_high_pct,spectrum_hue,evidence_grade,experience_tags",
       )
+      .in("mushroom_type", collection.types)
       .order("library_status")
       .order("name"),
     "load strain library",
@@ -130,7 +133,6 @@ export default async function StrainsPage() {
               <Link href={`/strains/${s.id}`} className="strain-card">
                 <div className="strain-card-top">
                   <span className="strain-card-name">{s.name}</span>
-                  <Badge tone={typeTone(s.mushroom_type)}>{s.mushroom_type}</Badge>
                 </div>
                 <div className="strain-card-meta">
                   <span>F{s.generation}</span>
@@ -139,6 +141,7 @@ export default async function StrainsPage() {
                 </div>
                 <QualityBars qualities={strainQualities(s)} />
                 <div className="strain-card-bottom">
+                  <Badge tone={typeTone(s.mushroom_type)}>{s.mushroom_type}</Badge>
                   {s.potency_tier && <Badge tone="violet">{s.potency_tier}</Badge>}
                   {s.library_status === "unknown" ? (
                     <Badge tone="violet">source: searching</Badge>

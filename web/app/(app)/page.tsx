@@ -5,6 +5,8 @@ import CountUp from "@/components/anim/CountUp";
 import RadialGauge from "@/components/anim/RadialGauge";
 import Meter from "@/components/anim/Meter";
 import QuickLog, { type QuickLogBatch } from "@/components/QuickLog";
+import { currentCollection } from "@/lib/collection";
+import { weeklyTotals } from "@/lib/weekly-totals";
 import RoutinePlanner, { type Routine } from "@/components/RoutinePlanner";
 import OperationPulse from "@/components/OperationPulse";
 import { kgToG, money, DRY_FLOOR } from "@/lib/format";
@@ -14,11 +16,14 @@ import { cookies } from "next/headers";
 export const dynamic = "force-dynamic";
 
 interface BatchRow {
+  id: number;
+  created_at: string;
   stage: string;
   block_count: number | null;
   strains: { mushroom_type: string } | null;
 }
 interface DryRatioRow {
+  harvested_on: string;
   strain_id: number | null;
   fresh_g: number | null;
   dry_g: number | null;
@@ -37,6 +42,8 @@ interface YieldRow {
   biological_efficiency_pct: number | null;
 }
 interface TaskRow {
+  batch_id: number | null;
+  created_at: string;
   status: string;
 }
 interface InventoryRow {
@@ -62,25 +69,12 @@ interface SpotlightHarvest {
   below_floor: boolean | null;
 }
 
-// Weekly sparkline series (optional; backed by the dashboard-weekly views).
-interface HarvestWeeklyRow {
-  fresh_g: number | string | null;
-  dry_ratio_pct: number | string | null;
-}
-interface ActiveBatchesWeeklyRow {
-  started: number | string | null;
-}
-interface OpenTasksWeeklyRow {
-  opened: number | string | null;
-}
 interface ActiveBatchPick {
   id: number;
   lot_code: string;
   stage: string;
   strains: { name: string } | null;
 }
-
-const num = (v: number | string | null): number => (v == null ? 0 : Number(v));
 
 const ACTIVE_STAGES = new Set(["colonization", "spawn_to_bulk", "fruiting", "harvesting"]);
 const RETIRED_STAGES = new Set(["spent", "contaminated"]);
@@ -94,9 +88,10 @@ export default async function Dashboard() {
     : new Set(["psychedelic"]);
   const isFunctional = mode === "functional";
   const supabase = createServiceClient();
-  const [allBatches, allDry, env, allYields, tasks, inv, valuation, allSpotlights, strainTypes] = await Promise.all([
-    must<BatchRow[]>(supabase.from("batches").select("stage,block_count,strains(mushroom_type)"), "load batches"),
-    must<DryRatioRow[]>(supabase.from("v_dry_ratio").select("strain_id,fresh_g,dry_g,below_floor"), "load dry ratios"),
+  const collection = await currentCollection();
+  const [allBatches, allDry, env, allYields, allTasks, inv, valuation, allSpotlights, strainTypes] = await Promise.all([
+    must<BatchRow[]>(supabase.from("batches").select("id,created_at,stage,block_count,strains(mushroom_type)"), "load batches"),
+    must<DryRatioRow[]>(supabase.from("v_dry_ratio").select("harvested_on,strain_id,fresh_g,dry_g,below_floor"), "load dry ratios"),
     must<EnvStatusRow[]>(supabase.from("v_environment_status").select("room_id,room,in_spec"), "load environment status"),
     must<YieldRow[]>(
       supabase
@@ -105,7 +100,7 @@ export default async function Dashboard() {
         .order("fresh_kg", { ascending: false }),
       "load yield by strain",
     ),
-    must<TaskRow[]>(supabase.from("tasks").select("status"), "load tasks"),
+    must<TaskRow[]>(supabase.from("tasks").select("status,batch_id,created_at"), "load tasks"),
     must<InventoryRow[]>(
       supabase.from("inventory_items").select("name,quantity_on_hand,reorder_threshold"),
       "load inventory",
@@ -120,6 +115,7 @@ export default async function Dashboard() {
         .select(
           "harvest_id,batch_id,lot_code,harvested_on,flush_number,strain_id,strain,fresh_g,dry_g,dry_ratio_pct,below_floor",
         )
+        .in("strain_id", collection.strainIds)
         .order("harvested_on", { ascending: false })
         .limit(20),
       "load spotlight harvests",
@@ -145,25 +141,15 @@ export default async function Dashboard() {
   const dryG = dry.reduce((s, r) => s + (r.dry_g ?? 0), 0);
   const overallRatio = freshG > 0 ? Math.round((dryG / freshG) * 1000) / 10 : 0;
   const flagged = dry.filter((r) => r.below_floor).length;
+  const batchIds = new Set(batches.map((batch) => batch.id));
+  const tasks = allTasks.filter((task) => task.batch_id == null || batchIds.has(task.batch_id));
   const openTasks = tasks.filter((t) => t.status !== "done").length;
   const lowStock = inv.filter((i) => i.quantity_on_hand <= i.reorder_threshold);
   const alerts = env.filter((e) => e.in_spec === false);
   const invLow = valuation.reduce((s, r) => s + (r.distributor_low ?? 0), 0);
   const invHigh = valuation.reduce((s, r) => s + (r.distributor_high ?? 0), 0);
 
-  // Optional trend series. soft() so a not-yet-applied migration degrades to
-  // empty rather than breaking the dashboard. (Views aren't in the generated
-  // types, so these are loosely typed by the row interfaces above.)
-  const [harvestWeekly, batchesWeekly, tasksWeekly, routineRows, batchPickRes] = await Promise.all([
-    soft<HarvestWeeklyRow>(
-      supabase.from("v_harvest_weekly").select("fresh_g,dry_ratio_pct").order("week"),
-    ),
-    soft<ActiveBatchesWeeklyRow>(
-      supabase.from("v_active_batches_weekly").select("started").order("week"),
-    ),
-    soft<OpenTasksWeeklyRow>(
-      supabase.from("v_open_tasks_weekly").select("opened").order("week"),
-    ),
+  const [routineRows, batchPickRes] = await Promise.all([
     // soft() so a not-yet-applied routines migration degrades to an empty
     // command center rather than breaking the dashboard.
     soft<Routine>(
@@ -180,13 +166,16 @@ export default async function Dashboard() {
     supabase
       .from("batches")
       .select("id,lot_code,stage,strains(name)")
+      .in("strain_id", collection.strainIds)
       .order("created_at", { ascending: false }),
   ]);
 
-  const freshSeries = harvestWeekly.map((w) => num(w.fresh_g));
-  const ratioSeries = harvestWeekly.map((w) => num(w.dry_ratio_pct));
-  const startedSeries = batchesWeekly.map((w) => num(w.started));
-  const tasksSeries = tasksWeekly.map((w) => num(w.opened));
+  const now = new Date();
+  const freshSeries = weeklyTotals(dry.map((row) => ({ date: row.harvested_on, amount: row.fresh_g })), now);
+  const drySeries = weeklyTotals(dry.map((row) => ({ date: row.harvested_on, amount: row.dry_g })), now);
+  const ratioSeries = freshSeries.map((fresh, index) => fresh > 0 ? drySeries[index] / fresh * 100 : 0);
+  const startedSeries = weeklyTotals(batches.map((row) => ({ date: row.created_at, amount: 1 })), now);
+  const tasksSeries = weeklyTotals(tasks.map((row) => ({ date: row.created_at, amount: 1 })), now);
 
   const activeBatches: QuickLogBatch[] = ((batchPickRes.data as ActiveBatchPick[] | null) ?? [])
     .filter((b) => ACTIVE_STAGES.has(b.stage))

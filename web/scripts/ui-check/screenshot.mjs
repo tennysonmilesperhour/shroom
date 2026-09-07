@@ -26,6 +26,9 @@ const VIEWPORTS = {
 };
 
 const ROUTES = [
+  "/label/batch/1",
+  "/label/batches?ids=1",
+  "/label/harvest/1",
   "/",
   "/batches",
   "/batches/1",
@@ -57,6 +60,14 @@ const ROUTES = [
 
 // Click-through scenarios captured at both widths.
 const SCENARIOS = [
+  { name: "photo-upload", route: "/batches/1", act: async (page) => {
+    await page.getByRole("button", { name: /Take or upload photo/ }).click();
+    await page.locator('input[type="file"]').waitFor();
+  } },
+  { name: "functional-batches", route: "/batches", act: async (page) => {
+    await page.getByRole("button", { name: /Functional/ }).click();
+    await page.waitForTimeout(900);
+  } },
   {
     name: "presets-edit-dialog",
     route: "/presets",
@@ -69,7 +80,7 @@ const SCENARIOS = [
     name: "presets-add-panel",
     route: "/presets",
     act: async (page) => {
-      await page.locator(".add-panel-toggle").first().click();
+      if (await page.locator(".add-panel-toggle").first().getAttribute('aria-expanded') === 'false') await page.locator(".add-panel-toggle").first().click();
       await page.locator(".add-panel-body").waitFor();
     },
   },
@@ -101,7 +112,7 @@ const SCENARIOS = [
     name: "batches-add-panel",
     route: "/batches",
     act: async (page) => {
-      await page.locator(".add-panel-toggle").first().click();
+      if (await page.locator(".add-panel-toggle").first().getAttribute('aria-expanded') === 'false') await page.locator(".add-panel-toggle").first().click();
       await page.locator(".add-panel-body").waitFor();
     },
   },
@@ -113,8 +124,10 @@ function slug(route) {
 
 async function settle(page) {
   // networkidle never settles (version poller); wait for the shell instead.
-  await page.locator("main").waitFor({ timeout: 30_000 });
+  await page.locator("main, .label-page, .batch-label-sheet").first().waitFor({ timeout: 30_000 });
   await page.waitForTimeout(700); // count-up animations, fonts
+  if (await page.getByRole('heading', { name: 'We couldn’t load this page.' }).count()) throw new Error('Application error boundary rendered');
+  if (await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1)) throw new Error('Horizontal page overflow');
 }
 
 const browser = await chromium.launch({
@@ -128,7 +141,9 @@ const consoleErrors = new Map();
 for (const [vpName, viewport] of Object.entries(VIEWPORTS)) {
   const dir = path.join(OUT, vpName);
   mkdirSync(dir, { recursive: true });
-  const context = await browser.newContext({ viewport, deviceScaleFactor: 1 });
+  const context = await browser.newContext({ viewport, deviceScaleFactor: 1, reducedMotion: 'reduce' });
+  // The fixture points at a fictional sheet; keep this test independent of Google.
+  await context.route('https://docs.google.com/**', route => route.fulfill({contentType:'text/html',body:'<p>Local workbook embed fixture</p>'}));
   const page = await context.newPage();
   page.on("console", (msg) => {
     if (msg.type() === "error") {
@@ -141,7 +156,7 @@ for (const [vpName, viewport] of Object.entries(VIEWPORTS)) {
     try {
       await page.goto(BASE + route, { waitUntil: "domcontentloaded", timeout: 60_000 });
       await settle(page);
-      await page.screenshot({ path: path.join(dir, `${slug(route)}.png`), fullPage: true });
+      await page.screenshot({ path: path.join(dir, `${slug(route)}.png`), fullPage: true, caret: "initial" });
       console.log(`ok  ${vpName} ${route}`);
     } catch (err) {
       failures.push(`${vpName} ${route}: ${err.message.split("\n")[0]}`);
@@ -155,7 +170,7 @@ for (const [vpName, viewport] of Object.entries(VIEWPORTS)) {
       await settle(page);
       await s.act(page);
       await page.waitForTimeout(400);
-      await page.screenshot({ path: path.join(dir, `x-${s.name}.png`), fullPage: true });
+      await page.screenshot({ path: path.join(dir, `x-${s.name}.png`), fullPage: true, caret: "initial" });
       console.log(`ok  ${vpName} scenario ${s.name}`);
     } catch (err) {
       failures.push(`${vpName} scenario ${s.name}: ${err.message.split("\n")[0]}`);

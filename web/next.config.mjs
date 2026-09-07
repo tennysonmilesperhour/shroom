@@ -4,7 +4,9 @@
 // our open-access architecture does NOT call Supabase from the browser, the
 // CSP can omit it — but we leave the pattern in so a future feature can
 // reach Supabase without rewriting the CSP.
-const SUPABASE_HOST = "https://*.supabase.co";
+const SUPABASE_HOST = "https://*.supabase.co" +
+  (process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_SUPABASE_URL?.startsWith("http://127.0.0.1:")
+    ? ` ${process.env.NEXT_PUBLIC_SUPABASE_URL}` : "");
 
 // A build identifier that is ALWAYS present, computed once per build.
 //
@@ -80,8 +82,23 @@ const securityHeaders = [
 ];
 
 const nextConfig = {
+  // sharp 0.35 loads libvips dynamically; explicitly trace its Linux shared
+  // library into Vercel functions (a macOS-only local run cannot reveal this).
+  outputFileTracingIncludes: {
+    "/*": ["./node_modules/@img/sharp-libvips-linux-x64/**/*", "./node_modules/@img/sharp-linux-x64/**/*"],
+  },
+  distDir: process.env.SHROOM_NEXT_DIST_DIR || ".next",
+  experimental: { serverActions: { bodySizeLimit: "8mb" } },
+  async rewrites() {
+    return process.env.NODE_ENV === "development" && process.env.SHROOM_WORKBOOK_DEV_URL
+      ? [{ source: "/api/workbook", destination: `${process.env.SHROOM_WORKBOOK_DEV_URL}/api/workbook` }]
+      : [];
+  },
   images: {
     remotePatterns: [
+      ...(process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_SUPABASE_URL?.startsWith("http://127.0.0.1:")
+        ? [{ protocol: "http", hostname: "127.0.0.1", port: new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).port, pathname: "/storage/v1/object/sign/**" }]
+        : []),
       {
         protocol: "https",
         hostname: "*.supabase.co",

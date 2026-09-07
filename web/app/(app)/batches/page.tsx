@@ -1,3 +1,4 @@
+import { currentCollection } from "@/lib/collection";
 import { createServiceClient } from "@/utils/supabase/service";
 import { Card } from "@/components/ui";
 import GenerateTasks from "@/components/GenerateTasks";
@@ -70,16 +71,17 @@ interface PresetRaw {
 
 export default async function BatchesPage() {
   const supabase = createServiceClient();
+  const collection = await currentCollection();
   const [batches, protocols, strainOpts, roomOpts, presetRaw, savedViews] = await Promise.all([
     must<BatchRow[]>(
       supabase
         .from("batches")
-        .select("*, strains(name), rooms(name)")
+        .select("*, strains(name), rooms(name)").in("strain_id", collection.strainIds)
         .order("created_at", { ascending: false }),
       "load batches",
     ),
     must<ProtocolRow[]>(supabase.from("protocols").select("id,name").order("name"), "load protocols"),
-    must<StrainOpt[]>(supabase.from("strains").select("id,name").order("name"), "load strains"),
+    must<StrainOpt[]>(supabase.from("strains").select("id,name").in("id", collection.strainIds).order("name"), "load strains"),
     must<RoomOpt[]>(supabase.from("rooms").select("id,name").order("name"), "load rooms"),
     // soft: degrades to [] if the presets migration hasn't been applied yet, so
     // batch creation never breaks on a not-yet-migrated database.
@@ -89,7 +91,7 @@ export default async function BatchesPage() {
         .select(
           "id,name,strain_id,room_id,container_type,tub_size,spawn_type,substrate_type,bag_type,block_count,substrate_weight_kg, preset_materials(count)",
         )
-        .eq("active", true)
+        .eq("active", true).or(`strain_id.is.null,strain_id.in.(${collection.strainIds.join(",")})`)
         .order("name"),
     ),
     soft<SavedBatchView>(

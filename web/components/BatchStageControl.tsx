@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { STAGE_LABEL, STAGE_ORDER } from "@/lib/stages";
 import { moveBatchStage } from "@/app/(app)/batches/actions";
@@ -13,6 +13,7 @@ export default function BatchStageControl({ batchId, currentStage }: { batchId: 
   const [pending, startTransition] = useTransition();
   const router = useRouter();
   const { push } = useToast();
+  useEffect(() => { setSelected(currentStage); }, [currentStage]);
 
   function choose(stage: string) {
     if (stage === selected || pending) return;

@@ -27,6 +27,17 @@ on:
         type: choice
         default: supabase
         options: [supabase, sqlite, both]
+      request_id:
+        description: "Import receipt created by the app"
+        type: string
+        required: false
+
+concurrency:
+  group: sheet-sync
+  cancel-in-progress: false
+
+permissions:
+  contents: read
 
 jobs:
   import:
@@ -41,6 +52,8 @@ jobs:
         env:
           GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
           MASTER_SHEET_FILE_ID: ${{ secrets.MASTER_SHEET_FILE_ID }}
+          MASTER_SHEET_GOOGLE_ID: ${{ secrets.MASTER_SHEET_GOOGLE_ID }}
+          SHEET_IMPORT_REQUEST_ID: ${{ inputs.request_id }}
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |

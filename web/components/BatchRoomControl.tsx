@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { moveBatchRoom, undoBatchChange } from "@/app/(app)/batches/workflow-actions";
 import { queueOfflineMutation } from "@/lib/offline-queue";
@@ -19,6 +19,7 @@ export default function BatchRoomControl({
   const [pending, startTransition] = useTransition();
   const router = useRouter();
   const { push } = useToast();
+  useEffect(() => { setValue(currentRoomId == null ? "" : String(currentRoomId)); }, [currentRoomId]);
 
   function change(nextValue: string) {
     const before = value;

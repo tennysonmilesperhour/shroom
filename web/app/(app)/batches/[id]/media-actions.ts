@@ -1,5 +1,6 @@
 "use server";
 
+import sharp from "sharp";
 import { revalidatePath } from "next/cache";
 import type { EntityResult } from "@/components/EntityForm";
 import { createServiceClient } from "@/utils/supabase/service";
@@ -78,6 +79,13 @@ export async function uploadBatchMedia(formData: FormData): Promise<EntityResult
 
   const storagePath = `${batchId}/${crypto.randomUUID()}.${extensionFor(file)}`;
   const buffer = Buffer.from(await file.arrayBuffer());
+  try {
+    const metadata = await sharp(buffer, { limitInputPixels: 40_000_000 }).metadata();
+    const expected = file.type === "image/jpeg" ? "jpeg" : file.type === "image/png" ? "png" : "webp";
+    if (metadata.format !== expected) throw new Error("Image format mismatch");
+  } catch {
+    return { ok: false, message: "This photo is unreadable or exceeds 40 megapixels." };
+  }
   const { error: uploadError } = await supabase.storage
     .from(BATCH_MEDIA_BUCKET)
     .upload(storagePath, buffer, {
@@ -87,20 +95,8 @@ export async function uploadBatchMedia(formData: FormData): Promise<EntityResult
     });
   if (uploadError) return { ok: false, message: uploadError.message };
 
-  if (isCover) {
-    const { error: unsetError } = await supabase
-      .from("batch_media")
-      .update({ is_cover: false })
-      .eq("batch_id", batchId)
-      .eq("is_cover", true);
-    if (unsetError) {
-      await supabase.storage.from(BATCH_MEDIA_BUCKET).remove([storagePath]);
-      return { ok: false, message: unsetError.message };
-    }
-  }
-
   const capturedAt = capturedRaw ? new Date(capturedRaw) : new Date();
-  const { error: insertError } = await supabase.from("batch_media").insert({
+  const { error: insertError } = await supabase.rpc("save_batch_media", { p_media: {
     batch_id: batchId,
     storage_path: storagePath,
     original_filename: file.name.slice(0, 255),
@@ -112,7 +108,7 @@ export async function uploadBatchMedia(formData: FormData): Promise<EntityResult
     note,
     is_cover: isCover,
     client_mutation_id: clientMutationId,
-  });
+  } });
   if (insertError) {
     await supabase.storage.from(BATCH_MEDIA_BUCKET).remove([storagePath]);
     return { ok: false, message: insertError.message };
@@ -154,13 +150,7 @@ export async function setBatchCover(mediaId: number): Promise<EntityResult> {
     .eq("id", mediaId)
     .single<{ batch_id: number }>();
   if (error || !data) return { ok: false, message: error?.message ?? "Photo not found." };
-  const { error: unsetError } = await supabase
-    .from("batch_media")
-    .update({ is_cover: false })
-    .eq("batch_id", data.batch_id)
-    .eq("is_cover", true);
-  if (unsetError) return { ok: false, message: unsetError.message };
-  const { error: setError } = await supabase.from("batch_media").update({ is_cover: true }).eq("id", mediaId);
+  const { error: setError } = await supabase.rpc("set_batch_cover", { p_media_id: mediaId });
   if (setError) return { ok: false, message: setError.message };
   revalidatePath(`/batches/${data.batch_id}`);
   return { ok: true, message: "Cover photo updated" };

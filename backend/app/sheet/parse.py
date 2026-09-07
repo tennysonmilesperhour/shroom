@@ -286,6 +286,8 @@ def parse_strain_library(wb: Workbook) -> list[Strain]:
     c_grow = _col(headers, "grow again")
     c_tub = _col(headers, "tub", "bag id")
     c_notes = _col(headers, "notes")
+    c_type = _col(headers, "mushroom type", "collection")
+    c_species = _col(headers, "species")
 
     out: list[Strain] = []
     for row in matrix[h + 1:]:
@@ -299,10 +301,14 @@ def parse_strain_library(wb: Workbook) -> list[Strain]:
         if _is_order_note(name_raw):
             continue
         notes = util.clean(_at(row, c_notes))
+        collection = util.clean(_at(row, c_type)).lower() or "psychedelic"
+        collection = {"magic": "psychedelic", "function": "functional"}.get(collection, collection)
+        if collection not in {"psychedelic", "functional", "gourmet"}:
+            raise ValueError(f"Unknown Mushroom Type for {name_raw}: use Functional, Gourmet, or Psychedelic.")
         out.append(Strain(
             name=_strip_name(name_raw),
-            mushroom_type="psychedelic",
-            species=util.species_from_notes(notes) or "Psilocybe cubensis",
+            mushroom_type=collection,
+            species=util.clean(_at(row, c_species)) or util.species_from_notes(notes) or ("Psilocybe cubensis" if collection == "psychedelic" else ""),
             vendor=util.clean(_at(row, c_vendor)),
             potency=util.clean(_at(row, c_potency)),
             ease_rating=util.parse_rating(_at(row, c_ease)),
@@ -471,7 +477,7 @@ def parse_equipment(wb: Workbook) -> list[Equipment]:
 def parse_buyers(wb: Workbook) -> list[Customer]:
     ws = _get_sheet(wb, "Buyers & Pricing", "Buyers")
     matrix = _matrix(ws)
-    h = _find_header(matrix, ["name", "tier", "role", "status"])
+    h = _find_header(matrix, ["name", "tier"])
     if h < 0:
         return []
     headers = matrix[h]

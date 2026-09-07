@@ -1,3 +1,4 @@
+import { currentCollection } from "@/lib/collection";
 import Link from "next/link";
 import { createServiceClient } from "@/utils/supabase/service";
 import { Kpi, Card } from "@/components/ui";
@@ -62,19 +63,20 @@ interface StrainOptionRow {
 
 export default async function HarvestsPage() {
   const supabase = createServiceClient();
+  const collection = await currentCollection();
   const [rows, jars, batchOpts, baseHarvests, strainOpts] = await Promise.all([
     must<HarvestRow[]>(
-      supabase.from("v_dry_ratio").select("*").order("harvested_on", { ascending: false }),
+      supabase.from("v_dry_ratio").select("*").in("strain_id", collection.strainIds).order("harvested_on", { ascending: false }),
       "load harvests",
     ),
     must<JarRow[]>(
-      supabase.from("dry_inventory").select("*, strains(name)").order("jar_id"),
+      supabase.from("dry_inventory").select("*, strains(name)").in("strain_id", collection.strainIds).order("jar_id"),
       "load dried inventory",
     ),
     must<BatchOptionRow[]>(
       supabase
         .from("batches")
-        .select("id,lot_code,strains(name)")
+        .select("id,lot_code,strains(name)").in("strain_id", collection.strainIds)
         .order("created_at", { ascending: false })
         .returns<BatchOptionRow[]>(),
       "load batch options",
@@ -84,7 +86,7 @@ export default async function HarvestsPage() {
       "load harvest records",
     ),
     must<StrainOptionRow[]>(
-      supabase.from("strains").select("id,name").order("name"),
+      supabase.from("strains").select("id,name").in("id", collection.strainIds).order("name"),
       "load strain options",
     ),
   ]);

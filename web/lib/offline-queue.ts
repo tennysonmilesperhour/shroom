@@ -44,7 +44,9 @@ export function queueOfflineMutation(payload: OfflineMutation): QueuedMutation {
     createdAt: new Date().toISOString(),
     payload,
   };
-  const queue = [...readOfflineQueue(), item].slice(-500);
+  const current = readOfflineQueue();
+  if (current.length >= 500) throw new Error("Offline queue is full. Sync existing updates before adding more.");
+  const queue = [...current, item];
   if (!writeOfflineQueue(queue)) throw new Error("Offline storage is unavailable.");
   return item;
 }
@@ -88,20 +90,21 @@ export async function readOfflineMediaQueue(): Promise<QueuedMediaMutation[]> {
   const db = await mediaDb();
   return new Promise((resolve, reject) => {
     const request = db.transaction(MEDIA_STORE, "readonly").objectStore(MEDIA_STORE).getAll();
-    request.onsuccess = () => resolve((request.result as QueuedMediaMutation[]) ?? []);
+    request.onsuccess = () => { db.close(); resolve((request.result as QueuedMediaMutation[]) ?? []); };
     request.onerror = () => reject(request.error);
   });
 }
 
 export async function queueOfflineMedia(
-  input: Omit<QueuedMediaMutation, "id" | "createdAt">,
+  input: Omit<QueuedMediaMutation, "id" | "createdAt"> & { id?: string },
 ): Promise<QueuedMediaMutation> {
-  const item: QueuedMediaMutation = { ...input, id: crypto.randomUUID(), createdAt: new Date().toISOString() };
+  const item: QueuedMediaMutation = { ...input, id: input.id ?? crypto.randomUUID(), createdAt: new Date().toISOString() };
   const db = await mediaDb();
   await new Promise<void>((resolve, reject) => {
-    const request = db.transaction(MEDIA_STORE, "readwrite").objectStore(MEDIA_STORE).put(item);
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
+    const tx = db.transaction(MEDIA_STORE, "readwrite");
+    tx.objectStore(MEDIA_STORE).put(item);
+    tx.oncomplete = () => { db.close(); resolve(); };
+    tx.onerror = tx.onabort = () => { db.close(); reject(tx.error); };
   });
   window.dispatchEvent(new CustomEvent("shroom-offline-queue"));
   return item;
@@ -110,9 +113,10 @@ export async function queueOfflineMedia(
 export async function removeOfflineMedia(id: string): Promise<void> {
   const db = await mediaDb();
   await new Promise<void>((resolve, reject) => {
-    const request = db.transaction(MEDIA_STORE, "readwrite").objectStore(MEDIA_STORE).delete(id);
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
+    const tx = db.transaction(MEDIA_STORE, "readwrite");
+    tx.objectStore(MEDIA_STORE).delete(id);
+    tx.oncomplete = () => { db.close(); resolve(); };
+    tx.onerror = tx.onabort = () => { db.close(); reject(tx.error); };
   });
   window.dispatchEvent(new CustomEvent("shroom-offline-queue"));
 }

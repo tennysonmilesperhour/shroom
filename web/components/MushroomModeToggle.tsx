@@ -18,13 +18,13 @@ export default function MushroomModeToggle() {
     if (next === mode) return;
     setMode(next);
     document.documentElement.dataset.mushroomMode = next;
-    localStorage.setItem("shroom-mushroom-mode", next);
+    try { localStorage.setItem("shroom-mushroom-mode", next); } catch { /* Cookie still persists the collection when storage is blocked. */ }
     document.cookie = `shroom-mushroom-mode=${next}; path=/; max-age=31536000; samesite=lax`;
     router.refresh();
   }
 
   return (
-    <div className="mushroom-mode" role="group" aria-label="Mushroom dashboard">
+    <div className="mushroom-mode" role="group" aria-label="Active mushroom collection">
       <span className="mode-caption">Collection</span>
       <div className="mode-segmented">
         <button

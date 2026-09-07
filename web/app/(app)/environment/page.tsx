@@ -1,3 +1,4 @@
+import { currentCollection } from "@/lib/collection";
 import { createServiceClient } from "@/utils/supabase/service";
 import { Badge, Card } from "@/components/ui";
 import { cToF } from "@/lib/format";
@@ -46,6 +47,7 @@ const ACTIVE_STAGES = [
 
 export default async function EnvironmentPage() {
   const supabase = createServiceClient();
+  const collection = await currentCollection();
   const [rooms, batchRows] = await Promise.all([
     must<RoomStatus[]>(
       supabase.from("v_environment_status").select("*").order("room"),
@@ -55,7 +57,7 @@ export default async function EnvironmentPage() {
       supabase
         .from("batches")
         .select("*, strains(name)")
-        .in("stage", ACTIVE_STAGES)
+        .in("stage", ACTIVE_STAGES).in("strain_id", collection.strainIds)
         .order("created_at", { ascending: false }),
       "load batches",
     ),

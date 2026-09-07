@@ -70,8 +70,10 @@ def push(db: Session, writer) -> dict[str, dict]:
     """
     counts: dict[str, dict] = {}
     for table in build_tables(db):
+        owned = [i for i, label in enumerate(table.header) if label not in table.spec.unmanaged_headers]
         result = writer.upsert_tab(
-            table.tab, table.header, table.rows, table.spec.key_cols
+            table.tab, [table.header[i] for i in owned],
+            [[row[i] for i in owned] for row in table.rows], table.spec.key_cols
         )
         counts[table.spec.key] = {**result, "rows": len(table.rows)}
     writer.commit()

@@ -90,6 +90,44 @@ def test_lot_code_splits_into_tub_and_flush():
     assert layout.split_lot("T-01") == ("T-01", None)
 
 
+def test_export_keeps_operator_columns_even_when_projection_has_placeholders(seeded):
+    w = writer.InMemoryXlsxWriter()
+    w.replace_tab('Buyers & Pricing', ['Name', 'Tier', 'Role', 'Volume', 'Last Contact', 'Status', 'Notes'],
+        [['Daniel Childs', 'retail', 'owner', 'weekly', date(2026, 7, 1), 'Follow up', 'old notes']])
+    w.replace_tab('Strain Library', ['Strain', 'Status', 'Vendor', 'Inoculated', 'Potency', 'Ease', 'Grow Again', 'Tub/Bag ID', 'Notes'],
+        [['Stargazer', 'Active', 'old', date(2026, 6, 1), '', 2, 'Yes', 'Manual tub', 'old']])
+    export.push(seeded, w)
+    customer = list(w.wb['Buyers & Pricing'].values)[1]
+    assert customer[2:6] == ('owner', 'weekly', date(2026, 7, 1), 'Follow up')
+    strain = next(row for row in w.wb['Strain Library'].values if row[0] == 'Stargazer')
+    assert strain[3] == date(2026, 6, 1) and strain[7] == 'Manual tub'
+    w.close()
+
+
+def test_export_reconciliation_does_not_clear_unmapped_fields_or_deletions():
+    from backend.app.sheet.reconcile import is_exported
+    assert is_exported({'entity': 'harvest', 'op': 'update', 'payload': {'weight_kg': 0.125}})
+    for row in [
+        {'entity': 'harvest', 'op': 'delete', 'payload': {'batch_id': 1}},
+        {'entity': 'batch', 'op': 'update', 'payload': {'room_id': 2}},
+        {'entity': 'culture', 'op': 'insert', 'payload': {'strain_id': 1}},
+        {'entity': 'strain', 'op': 'update', 'payload': {}},
+    ]:
+        assert not is_exported(row)
+
+
+def test_functional_collection_survives_export_and_import(session):
+    session.add(models.Strain(name='Audit Oyster', mushroom_type='functional', species='Pleurotus ostreatus', active=True))
+    session.commit()
+    w = writer.InMemoryXlsxWriter()
+    export.push(session, w)
+    strains = parse.parse_workbook(w.wb).strains
+    assert len(strains) == 1
+    assert strains[0].mushroom_type == 'functional'
+    assert strains[0].species == 'Pleurotus ostreatus'
+    w.close()
+
+
 def test_zero_weight_grams_is_not_dropped():
     # A harvest logged before weighing has weight 0.0 — it must render as 0,
     # not a blank cell, so a real zero round-trips.
@@ -261,8 +299,8 @@ def test_upsert_preserves_operator_columns_and_rows(seeded, tmp_path):
     wb = Workbook(); ws = wb.active; ws.title = "Strain Library"
     spec = layout.BY_KEY["strains"]
     ws.append(list(spec.header) + ["Operator Note"])
-    ws.append(["Stargazer", "Active", "old", None, "", 7, "Yes", "", "", "KEEP ME"])
-    ws.append(["ManualOnly", "Active", "x", None, "", 5, "Yes", "", "", "hand-added"])
+    ws.append(["Stargazer", "Active", "old", None, "", 7, "Yes", "", "", "", "", "KEEP ME"])
+    ws.append(["ManualOnly", "Active", "x", None, "", 5, "Yes", "", "", "", "", "hand-added"])
     wb.save(path)
 
     w = writer.XlsxWriter(str(path))

@@ -1,3 +1,4 @@
+import { currentCollection } from "@/lib/collection";
 import Link from "next/link";
 import { createServiceClient } from "@/utils/supabase/service";
 import { Kpi, Card, Badge } from "@/components/ui";
@@ -51,7 +52,8 @@ const statusTone = (s: string): BadgeTone =>
 
 export default async function TasksPage() {
   const supabase = createServiceClient();
-  const [tasks, batchOpts, roomOpts, staffOpts] = await Promise.all([
+  const collection = await currentCollection();
+  const [allTasks, batchOpts, roomOpts, staffOpts] = await Promise.all([
     must<TaskRow[]>(
       supabase
         .from("tasks")
@@ -63,7 +65,7 @@ export default async function TasksPage() {
       "load tasks",
     ),
     must<BatchOptionRow[]>(
-      supabase.from("batches").select("id,lot_code").order("lot_code"),
+      supabase.from("batches").select("id,lot_code").in("strain_id", collection.strainIds).order("lot_code"),
       "load batch options",
     ),
     must<RoomOptionRow[]>(
@@ -75,6 +77,9 @@ export default async function TasksPage() {
       "load staff options",
     ),
   ]);
+
+  const batchIds = new Set(batchOpts.map((batch) => batch.id));
+  const tasks = allTasks.filter((task) => task.batch_id == null || batchIds.has(task.batch_id));
 
   const taskOptions = {
     batch_id: batchOpts.map((b) => ({ value: String(b.id), label: b.lot_code })),

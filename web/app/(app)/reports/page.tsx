@@ -1,4 +1,5 @@
 import { createServiceClient } from "@/utils/supabase/service";
+import { currentCollection } from "@/lib/collection";
 import { Kpi, Card } from "@/components/ui";
 import { kgToG, money } from "@/lib/format";
 import { must, maybe } from "@/lib/query";
@@ -48,16 +49,18 @@ interface LtvRow {
 
 export default async function ReportsPage() {
   const supabase = createServiceClient();
+  const collection = await currentCollection();
   const [yields, scoreboard, dry, circ, kpis, best, ltv] = await Promise.all([
     must<YieldRow[]>(
       supabase
         .from("v_yield_by_strain")
         .select("*")
+        .in("strain_id", collection.strainIds)
         .order("fresh_kg", { ascending: false }),
       "load yield by strain",
     ),
-    must<ScoreboardRow[]>(supabase.from("v_strain_scoreboard").select("*"), "load scoreboard"),
-    must<DryRow[]>(supabase.from("v_dry_ratio").select("*"), "load dry ratio"),
+    must<ScoreboardRow[]>(supabase.from("v_strain_scoreboard").select("*").in("id", collection.strainIds), "load scoreboard"),
+    must<DryRow[]>(supabase.from("v_dry_ratio").select("*").in("strain_id", collection.strainIds), "load dry ratio"),
     maybe<CircularRow>(
       supabase.from("v_circular_economy").select("*").single(),
       "load circular economy",
@@ -88,7 +91,7 @@ export default async function ReportsPage() {
         <div className="eyebrow">Intelligence</div>
         <h1 className="section">Reports &amp; analytics</h1>
         <p className="lead">
-          Production, quality, sales, and sustainability, all on one page.
+          Production and quality for {collection.label}. Sales, customers, and sustainability cover the whole operation.
         </p>
       </div>
 

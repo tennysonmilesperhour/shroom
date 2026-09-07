@@ -1,26 +1,25 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { EntityResult } from "@/components/EntityForm";
 import { enqueueSync } from "@/lib/sync";
-import { nextStage, normalizeStage, VALID_STAGES } from "@/lib/stages";
-import { recordBatchChange } from "@/lib/batch-history";
+import { normalizeStage, VALID_STAGES } from "@/lib/stages";
 
-interface BatchState {
-  id: number;
-  lot_code: string;
-  stage: string;
-  room_id: number | null;
-  colonized_on: string | null;
-  fruiting_on: string | null;
-  spent_on: string | null;
-}
-
-function stagePatch(current: BatchState, toStage: string): Record<string, unknown> {
-  const today = new Date().toISOString().slice(0, 10);
-  const patch: Record<string, unknown> = { stage: toStage };
-  if (toStage === "colonization" && !current.colonized_on) patch.colonized_on = today;
-  else if (toStage === "fruiting" && !current.fruiting_on) patch.fruiting_on = today;
-  else if (toStage === "spent" && !current.spent_on) patch.spent_on = today;
-  return patch;
+async function mutateBatch(
+  supabase: SupabaseClient,
+  batchId: number,
+  kind: "stage" | "advance" | "room",
+  stage: string | null,
+  roomId: number | null,
+  options: { action?: string; groupId?: string },
+): Promise<EntityResult> {
+  if (!Number.isSafeInteger(batchId) || batchId <= 0 ||
+      (roomId !== null && (!Number.isSafeInteger(roomId) || roomId <= 0))) {
+    return { ok: false, message: "Invalid batch or room." };
+  }
+  const { data, error } = await supabase.rpc("mutate_batch", {
+    p_batch_id: batchId, p_kind: kind, p_stage: stage, p_room_id: roomId,
+    p_action: options.action ?? null, p_group_id: options.groupId ?? null,
+  });
+  return error ? { ok: false, message: error.message } : data as EntityResult;
 }
 
 export async function setBatchStage(
@@ -29,61 +28,11 @@ export async function setBatchStage(
   requestedStage: string,
   options: { action?: string; groupId?: string } = {},
 ): Promise<EntityResult> {
-  const toStage = normalizeStage(requestedStage);
-  if (!Number.isFinite(batchId)) return { ok: false, message: "Invalid batch." };
-  if (!VALID_STAGES.has(toStage) || toStage === "contaminated") {
+  const stage = normalizeStage(requestedStage);
+  if (!VALID_STAGES.has(stage) || stage === "contaminated") {
     return { ok: false, message: "Invalid lifecycle stage." };
   }
-
-  const { data: current, error: readError } = await supabase
-    .from("batches")
-    .select("id,lot_code,stage,room_id,colonized_on,fruiting_on,spent_on")
-    .eq("id", batchId)
-    .single<BatchState>();
-  if (readError || !current) return { ok: false, message: readError?.message ?? "Batch not found." };
-  if (normalizeStage(current.stage) === toStage) return { ok: true, message: "No change" };
-
-  const patch = stagePatch(current, toStage);
-  const before: Record<string, unknown> = { stage: current.stage };
-  for (const key of ["colonized_on", "fruiting_on", "spent_on"] as const) {
-    if (Object.prototype.hasOwnProperty.call(patch, key)) before[key] = current[key];
-  }
-
-  const { error } = await supabase.from("batches").update(patch).eq("id", batchId);
-  if (error) return { ok: false, message: error.message };
-
-  const action = options.action ?? `Moved to ${toStage}`;
-  let undoId: number;
-  try {
-    ({ id: undoId } = await recordBatchChange(supabase, {
-      batchId,
-      lotCode: current.lot_code,
-      action,
-      before,
-      after: patch,
-      groupId: options.groupId,
-    }));
-  } catch (historyError) {
-    const { error: rollbackError } = await supabase.from("batches").update(before).eq("id", batchId);
-    const message = historyError instanceof Error ? historyError.message : "Could not record change history.";
-    if (!rollbackError) return { ok: false, message };
-    await supabase.from("stage_events").insert({
-      batch_id: batchId,
-      stage: toStage,
-      room_id: current.room_id,
-      note: `${action} (undo unavailable)`,
-    });
-    await enqueueSync(supabase, "batch", batchId, "update", patch);
-    return { ok: true, message: `${action} · undo is unavailable (${message})` };
-  }
-  await supabase.from("stage_events").insert({
-    batch_id: batchId,
-    stage: toStage,
-    room_id: current.room_id,
-    note: action,
-  });
-  await enqueueSync(supabase, "batch", batchId, "update", patch);
-  return { ok: true, message: action, undoId };
+  return mutateBatch(supabase, batchId, "stage", stage, null, options);
 }
 
 export async function advanceBatch(
@@ -91,18 +40,7 @@ export async function advanceBatch(
   batchId: number,
   options: { action?: string; groupId?: string } = {},
 ): Promise<EntityResult> {
-  const { data, error } = await supabase
-    .from("batches")
-    .select("stage")
-    .eq("id", batchId)
-    .single<{ stage: string }>();
-  if (error || !data) return { ok: false, message: error?.message ?? "Batch not found." };
-  const next = nextStage(data.stage);
-  if (!next) return { ok: false, message: "Batch is already at its final stage." };
-  return setBatchStage(supabase, batchId, next, {
-    ...options,
-    action: options.action ?? `Advanced to ${next}`,
-  });
+  return mutateBatch(supabase, batchId, "advance", null, null, options);
 }
 
 export async function setBatchRoom(
@@ -111,52 +49,7 @@ export async function setBatchRoom(
   roomId: number | null,
   options: { action?: string; groupId?: string } = {},
 ): Promise<EntityResult> {
-  if (!Number.isFinite(batchId) || (roomId !== null && !Number.isFinite(roomId))) {
-    return { ok: false, message: "Invalid batch or room." };
-  }
-  const { data: current, error: readError } = await supabase
-    .from("batches")
-    .select("id,lot_code,stage,room_id")
-    .eq("id", batchId)
-    .single<{ id: number; lot_code: string; stage: string; room_id: number | null }>();
-  if (readError || !current) return { ok: false, message: readError?.message ?? "Batch not found." };
-  if (current.room_id === roomId) return { ok: true, message: "No change" };
-
-  const { error } = await supabase.from("batches").update({ room_id: roomId }).eq("id", batchId);
-  if (error) return { ok: false, message: error.message };
-  const action = options.action ?? (roomId === null ? "Removed room assignment" : "Changed room");
-  const before = { room_id: current.room_id };
-  let undoId: number;
-  try {
-    ({ id: undoId } = await recordBatchChange(supabase, {
-      batchId,
-      lotCode: current.lot_code,
-      action,
-      before,
-      after: { room_id: roomId },
-      groupId: options.groupId,
-    }));
-  } catch (historyError) {
-    const { error: rollbackError } = await supabase.from("batches").update(before).eq("id", batchId);
-    const message = historyError instanceof Error ? historyError.message : "Could not record change history.";
-    if (!rollbackError) return { ok: false, message };
-    await supabase.from("stage_events").insert({
-      batch_id: batchId,
-      stage: "moved",
-      room_id: roomId,
-      note: `${action} (undo unavailable)`,
-    });
-    await enqueueSync(supabase, "batch", batchId, "update", { room_id: roomId });
-    return { ok: true, message: `${action} · undo is unavailable (${message})` };
-  }
-  await supabase.from("stage_events").insert({
-    batch_id: batchId,
-    stage: "moved",
-    room_id: roomId,
-    note: action,
-  });
-  await enqueueSync(supabase, "batch", batchId, "update", { room_id: roomId });
-  return { ok: true, message: action, undoId };
+  return mutateBatch(supabase, batchId, "room", null, roomId, options);
 }
 
 export async function addBatchObservationRecord(

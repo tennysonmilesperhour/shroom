@@ -22,6 +22,8 @@ import argparse
 import json
 import os
 import sys
+import uuid
+import httpx
 
 from ..database import SessionLocal, init_db
 from .parse import ParsedWorkbook, parse_workbook
@@ -40,14 +42,17 @@ def import_to_sqlite(parsed: ParsedWorkbook) -> dict[str, int]:
 
 def import_to_supabase(parsed: ParsedWorkbook, url: str, service_key: str) -> dict[str, int]:
     with SupabaseSink(url, service_key) as sink:
-        return sink.run(parsed)
+        return sink.run(parsed, request_id=os.environ.get("SHEET_IMPORT_REQUEST_ID"))
 
 
 def run(target: str, *, path: str | None = None, file_id: str | None = None,
         token: str | None = None, supabase_url: str | None = None,
         service_key: str | None = None) -> dict[str, dict[str, int]]:
     wb = resolve_workbook(path=path, file_id=file_id, token=token)
-    parsed = parse_workbook(wb)
+    try:
+        parsed = parse_workbook(wb)
+    finally:
+        wb.close()
     summary: dict[str, dict[str, int]] = {}
 
     if target in ("sqlite", "both"):
@@ -82,6 +87,26 @@ def main(argv: list[str] | None = None) -> int:
             supabase_url=args.supabase_url, service_key=args.service_key,
         )
     except Exception as exc:  # surface a clean message, not a traceback, to operators
+        # Complete the exact receipt created by the web button, even when parsing
+        # or Drive access fails before the transactional database importer runs.
+        request_id = os.environ.get("SHEET_IMPORT_REQUEST_ID")
+        url = args.supabase_url or os.environ.get("NEXT_PUBLIC_SUPABASE_URL") or os.environ.get("SUPABASE_URL")
+        key = args.service_key or os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+        if request_id and url and key:
+            from datetime import datetime, timezone
+            try:
+                uuid.UUID(request_id)
+                response = httpx.patch(
+                    f"{url.rstrip('/')}/rest/v1/sheet_imports",
+                    params={"request_id": f"eq.{request_id}", "status": "eq.running"},
+                    headers={"apikey": key, "Authorization": f"Bearer {key}"},
+                    json={"status": "error", "finished_at": datetime.now(timezone.utc).isoformat(),
+                          "detail": f"Import failed ({type(exc).__name__}). See the Sheet import workflow log."},
+                    timeout=20,
+                )
+                response.raise_for_status()
+            except Exception:
+                print("Could not update the import receipt; the page will mark it stalled after 15 minutes.", file=sys.stderr)
         print(f"Import failed: {exc}", file=sys.stderr)
         return 1
 
