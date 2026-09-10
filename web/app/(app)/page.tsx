@@ -194,17 +194,7 @@ export default async function Dashboard() {
     <>
       <OperationPulse vitals={vitals} />
 
-      <div>
-        <div className="eyebrow">{isFunctional ? "Functional & culinary" : "Magic collection"}</div>
-        <h1 className="section">
-          {isFunctional ? "From fruiting room to kitchen shelf" : "Today’s state of the mycelium"}
-        </h1>
-        <p className="lead mode-intro">
-          {isFunctional
-            ? "Production health for functional extracts, fresh culinary harvests, and the cultures behind them."
-            : "Cultivation signals, harvest potency, and the living library behind the magic collection."}
-        </p>
-      </div>
+      <h1 className="sr-only">Dashboard</h1>
 
       <RoutinePlanner routines={routineRows as Routine[]} />
 
