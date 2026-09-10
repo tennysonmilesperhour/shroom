@@ -125,7 +125,8 @@ function slug(route) {
 async function settle(page) {
   // networkidle never settles (version poller); wait for the shell instead.
   await page.locator("main, .label-page, .batch-label-sheet").first().waitFor({ timeout: 30_000 });
-  await page.waitForTimeout(700); // count-up animations, fonts
+  await page.evaluate(() => document.fonts.ready);
+  await page.waitForTimeout(700); // count-up animations
   if (await page.getByRole('heading', { name: 'We couldn’t load this page.' }).count()) throw new Error('Application error boundary rendered');
   if (await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1)) throw new Error('Horizontal page overflow');
 }

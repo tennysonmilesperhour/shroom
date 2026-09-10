@@ -72,7 +72,7 @@ export default function AdvisorPage() {
       </div>
 
       <div className="card">
-        <div style={{ marginBottom: 12 }}>
+        <div className="advisor-status" style={{ marginBottom: 12 }}>
           {status === null ? (
             <span className="badge muted">checking AI status…</span>
           ) : status.configured ? (

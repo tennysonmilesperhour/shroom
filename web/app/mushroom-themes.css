@@ -1,0 +1,137 @@
+/* Collection photography is local, decorative, and independent of section tint.
+   Scrims bound contrast even over the brightest/darkest parts of either photo. */
+:root {
+  --forest-photo: url('/images/backgrounds/magic-woodland.webp');
+  --forest-position: 62% center;
+  --forest-scrim: oklch(13% 0.025 260 / 0.84);
+  --faint: oklch(74% 0.025 220);
+}
+
+html[data-mushroom-mode="functional"] {
+  --forest-photo: url('/images/backgrounds/functional-oysters.webp');
+  --forest-position: 58% center;
+  --forest-scrim: oklch(20% 0.012 60 / 0.84);
+  --ink: oklch(22% 0.012 60);
+  --ink-2: oklch(26% 0.014 60);
+  --ink-3: oklch(30% 0.016 60);
+  --ink-deep: oklch(18% 0.010 60);
+  --text: oklch(97% 0.010 65);
+  --text-2: oklch(86% 0.018 65);
+  --muted: oklch(78% 0.018 60);
+  --faint: oklch(76% 0.018 60);
+  --lumen: oklch(85% 0.055 35);
+  --lumen-2: oklch(79% 0.075 35);
+  --indigo: oklch(78% 0.035 65);
+  --bruise: oklch(79% 0.070 20);
+  --moss: oklch(79% 0.080 145);
+  --spore: oklch(84% 0.065 70);
+  --line: oklch(80% 0.025 60 / 0.24);
+  --line-soft: oklch(80% 0.025 60 / 0.14);
+  --line-warm: oklch(85% 0.055 35 / 0.4);
+  --panel-edge: oklch(85% 0.055 35 / 0.14);
+  --panel-glow: oklch(85% 0.055 35 / 0.05);
+  --glow: 0 0 24px oklch(85% 0.055 35 / 0.12);
+  --glow-soft: 0 0 12px oklch(85% 0.055 35 / 0.10);
+}
+
+html[data-theme="light"] {
+  --forest-scrim: oklch(98% 0.006 250 / 0.88);
+  --faint: oklch(45% 0.025 258);
+  --muted: oklch(46% 0.030 258);
+}
+html[data-theme="light"][data-mushroom-mode="functional"] {
+  --forest-scrim: oklch(97% 0.012 65 / 0.88);
+  --ink: oklch(95% 0.014 65);
+  --ink-2: oklch(99% 0.008 65);
+  --ink-3: oklch(93% 0.018 65);
+  --ink-deep: oklch(90% 0.018 60);
+  --text: oklch(26% 0.015 60);
+  --text-2: oklch(37% 0.018 60);
+  --muted: oklch(45% 0.020 60);
+  --faint: oklch(45% 0.020 60);
+  --lumen: oklch(45% 0.095 30);
+  --lumen-2: oklch(40% 0.085 30);
+  --indigo: oklch(43% 0.035 65);
+  --bruise: oklch(44% 0.090 20);
+  --moss: oklch(44% 0.085 145);
+  --spore: oklch(45% 0.070 65);
+  --line: oklch(45% 0.025 60 / 0.23);
+  --line-soft: oklch(45% 0.025 60 / 0.13);
+  --line-warm: oklch(55% 0.080 35 / 0.40);
+}
+
+@media screen {
+  .shell { isolation: isolate; }
+  .shell::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: linear-gradient(var(--forest-scrim), var(--forest-scrim)),
+      var(--forest-photo) var(--forest-position) / cover no-repeat;
+    background-color: var(--ink-deep);
+  }
+  /* Photographs replace the decorative lattice and cursor lighting. */
+  .qbg, body::before, body::after { display: none; }
+  .shell .card, .shell .card.quiet, .shell .card.featured {
+    background: color-mix(in oklch, var(--ink-2) 96%, transparent);
+  }
+  .shell .sidebar, .shell .topbar, .shell .drawer, .mushroom-mode {
+    background: var(--ink-2);
+  }
+}
+
+/* Soft salmon is a surface highlight; selected labels keep dark oyster ink. */
+html[data-mushroom-mode="functional"] .mode-segmented {
+  background: var(--ink-3);
+}
+html[data-mushroom-mode="functional"] .mode-segmented button.active {
+  color: oklch(26% 0.015 60);
+  background: oklch(87% 0.045 35);
+  box-shadow: none;
+}
+html[data-mushroom-mode="functional"] :is(button.primary, a.primary) {
+  background: var(--lumen);
+  color: var(--ink-deep);
+  box-shadow: none;
+}
+html[data-theme="light"][data-mushroom-mode="functional"] :is(button.primary, a.primary) {
+  color: oklch(99% 0.008 65);
+}
+html[data-mushroom-mode="functional"] :is(.side a.active, .cmdk-item.active, .seg-ind) {
+  background: color-mix(in oklch, var(--lumen) 12%, var(--ink-2));
+}
+input::placeholder, textarea::placeholder { color: var(--muted); opacity: 1; }
+.mode-segmented button:focus-visible { outline: 2px solid var(--lumen); outline-offset: 3px; }
+
+@media (max-width: 880px) {
+  :root { --forest-position: 60% center; }
+  html[data-mushroom-mode="functional"] { --forest-position: 54% center; }
+}
+
+html[data-mushroom-mode="functional"] .sidebar nav.side a.active {
+  background: color-mix(in oklch, var(--lumen) 12%, var(--ink-2));
+  box-shadow: inset 0 0 0 1px var(--line-warm);
+}
+html[data-mushroom-mode="functional"] .spotlight {
+  background: var(--ink-2);
+}
+html[data-mushroom-mode="functional"] .spotlight::before {
+  background: radial-gradient(ellipse at top right, color-mix(in oklch, var(--lumen) 10%, transparent), transparent 65%);
+}
+html[data-mushroom-mode="functional"] :is(input, textarea, select) {
+  background: var(--ink-2);
+}
+
+/* Keep both collection labels readable on the light-theme switch. */
+html[data-theme="light"] .mode-segmented { background: var(--ink-3); }
+html[data-theme="light"] .mode-segmented button.active {
+  background: oklch(87% 0.045 285);
+  color: oklch(26% 0.025 258);
+  box-shadow: none;
+}
+html[data-theme="light"][data-mushroom-mode="functional"] .mode-segmented button.active {
+  background: oklch(87% 0.045 35);
+  color: oklch(26% 0.015 60);
+}

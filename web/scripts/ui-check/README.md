@@ -63,3 +63,12 @@ the path used in Claude remote sessions), `MOCK_SUPABASE_PORT`.
   doesn't know; the page then renders its empty state).
 - Fixtures deliberately include a few over-long names/notes so overflow bugs
   show up in the screenshots — keep that property when editing them.
+
+## Collection photography and contrast
+
+Run `node scripts/ui-check/themes.mjs` with the same `UI_CHECK_BASE`,
+`UI_CHECK_OUT`, and `UI_CHECK_CHROMIUM` settings. It clicks both collection
+buttons, reloads to verify persistence, captures both light/dark themes at
+390px and 1440px, and asserts at least 4.5:1 for primary, secondary, muted,
+and faint text against the worst-case photograph pixel beneath the scrim.
+It also checks the Functional selected-button contrast and page overflow.
