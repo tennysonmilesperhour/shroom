@@ -514,25 +514,6 @@ h3 { font-size: var(--text-h3); letter-spacing: -0.015em; line-height: 1.2; }
 }
 .mode-intro { max-width: 720px; margin: -2px 0 var(--space-5); }
 
-html[data-mushroom-mode="functional"] {
-  --lumen: oklch(80% 0.15 120);
-  --lumen-2: oklch(72% 0.13 130);
-  --indigo: oklch(68% 0.13 150);
-  --bruise: oklch(72% 0.13 75);
-  --moss: oklch(76% 0.16 135);
-  --spore: oklch(82% 0.15 85);
-  --line-warm: oklch(80% 0.15 120 / .25);
-}
-html[data-mushroom-mode="functional"] body {
-  background:
-    radial-gradient(1100px 680px at 82% -10%, oklch(70% 0.14 125 / .18), transparent 58%),
-    radial-gradient(900px 760px at 5% 15%, oklch(76% 0.13 75 / .10), transparent 55%),
-    radial-gradient(800px 520px at 55% 110%, oklch(62% 0.13 150 / .11), transparent 60%),
-    linear-gradient(180deg, oklch(15% .035 150), oklch(10% .025 145) 100%);
-}
-html[data-mushroom-mode="functional"] .mode-segmented button.active {
-  background: linear-gradient(110deg, oklch(70% .14 125 / .34), oklch(76% .13 75 / .22));
-}
 main {
   padding: var(--section-pad) clamp(1.25rem, 1rem + 2vw, 3rem);
   max-width: 1240px;
@@ -1182,6 +1163,7 @@ ol.steps li { margin: 4px 0; }
   line-height: 1.6;
   color: var(--text-2);
 }
+.advisor-status .badge { white-space: normal; overflow-wrap: anywhere; }
 .quick { display: flex; gap: var(--space-2); flex-wrap: wrap; margin-bottom: var(--space-3); }
 .quick button {
   background: oklch(60% 0.04 220 / 0.05);

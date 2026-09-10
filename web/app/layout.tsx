@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Fraunces, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import "./mushroom-themes.css";
 import QuantumBackground from "@/components/QuantumBackground";
 
 // Self-hosted, preloaded, swap-display. Replaces the parser-blocking
