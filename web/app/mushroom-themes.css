@@ -1,8 +1,8 @@
 /* Collection photography is local, decorative, and independent of section tint.
    Scrims bound contrast even over the brightest/darkest parts of either photo. */
 :root {
-  --forest-photo: url('/images/backgrounds/magic-woodland.webp');
-  --forest-position: 62% center;
+  --forest-photo: url('/images/backgrounds/magic-forest-cap.webp');
+  --forest-position: 35% center;
   --forest-scrim: oklch(13% 0.025 260 / 0.84);
   --faint: oklch(74% 0.025 220);
 }
@@ -106,7 +106,7 @@ input::placeholder, textarea::placeholder { color: var(--muted); opacity: 1; }
 .mode-segmented button:focus-visible { outline: 2px solid var(--lumen); outline-offset: 3px; }
 
 @media (max-width: 880px) {
-  :root { --forest-position: 60% center; }
+  :root { --forest-position: 35% center; }
   html[data-mushroom-mode="functional"] { --forest-position: 54% center; }
 }
 
