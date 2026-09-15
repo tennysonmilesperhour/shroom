@@ -156,3 +156,28 @@ html[data-theme="light"][data-mushroom-mode="functional"] .mode-segmented button
     opacity: 1;
   }
 }
+
+/* Near-black navigation with a clearly visible silver scroll thumb. */
+@media screen {
+  html:not([data-theme="light"]) .shell :is(.sidebar, .drawer) {
+    background: #020304;
+  }
+  .shell :is(.sidebar nav.side, .drawer-nav) {
+    scrollbar-width: thin;
+    scrollbar-color: #aeb8c4 transparent;
+  }
+  .shell :is(.sidebar nav.side, .drawer-nav)::-webkit-scrollbar { width: 6px; }
+  .shell :is(.sidebar nav.side, .drawer-nav)::-webkit-scrollbar-thumb {
+    background: #aeb8c4;
+    border-radius: 6px;
+  }
+  .shell :is(.sidebar nav.side, .drawer-nav)::-webkit-scrollbar-thumb:hover {
+    background: #dbe2eb;
+  }
+  html[data-theme="light"] .shell :is(.sidebar nav.side, .drawer-nav) {
+    scrollbar-color: #697583 transparent;
+  }
+  html[data-theme="light"] .shell :is(.sidebar nav.side, .drawer-nav)::-webkit-scrollbar-thumb {
+    background: #697583;
+  }
+}
