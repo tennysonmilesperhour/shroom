@@ -6,7 +6,7 @@ import { useEffect } from "react";
 //
 //   1. A bioluminescent aura that lazily tracks the pointer. We write smoothed
 //      --mx/--my CSS variables on <body>; globals.css paints body::after from
-//      them. rAF-throttled; no-op on coarse pointers and reduced-motion.
+//      them, plus local coordinates on hovered information surfaces. rAF-throttled; no-op on coarse pointers and reduced-motion.
 //   2. A click ripple on any [data-ripple] element, via a single delegated
 //      pointerdown listener (no per-button wiring).
 //
@@ -19,6 +19,7 @@ export default function CursorAura() {
 
     let cleanupAura: (() => void) | undefined;
     if (!reduced && fine) {
+      let surfaces: HTMLElement[] = [];
       let tx = 50,
         ty = 0,
         cx = 50,
@@ -29,6 +30,11 @@ export default function CursorAura() {
         cy += (ty - cy) * 0.08;
         body.style.setProperty("--mx", cx.toFixed(1) + "%");
         body.style.setProperty("--my", cy.toFixed(1) + "%");
+        for (const surface of surfaces) {
+          const rect = surface.getBoundingClientRect();
+          surface.style.setProperty("--aura-x", `${cx / 100 * innerWidth - rect.left}px`);
+          surface.style.setProperty("--aura-y", `${cy / 100 * innerHeight - rect.top}px`);
+        }
         if (Math.abs(tx - cx) + Math.abs(ty - cy) > 0.4) {
           raf = requestAnimationFrame(tick);
         } else {
@@ -36,6 +42,16 @@ export default function CursorAura() {
         }
       };
       const onMove = (e: PointerEvent) => {
+        surfaces = [];
+        let surface = (e.target instanceof Element ? e.target : null)?.closest<HTMLElement>(
+          ".card, .command-center, .cc-lane, .spotlight, .strain-card",
+        );
+        while (surface) {
+          surfaces.push(surface);
+          surface = surface.parentElement?.closest<HTMLElement>(
+            ".card, .command-center, .cc-lane, .spotlight, .strain-card",
+          );
+        }
         tx = (e.clientX / window.innerWidth) * 100;
         ty = (e.clientY / window.innerHeight) * 100;
         if (!raf) raf = requestAnimationFrame(tick);

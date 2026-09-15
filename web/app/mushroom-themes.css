@@ -74,8 +74,9 @@ html[data-theme="light"][data-mushroom-mode="functional"] {
   }
   /* Photographs replace the decorative lattice and cursor lighting. */
   .qbg, body::before, body::after { display: none; }
-  .shell .card, .shell .card.quiet, .shell .card.featured {
-    background: color-mix(in oklch, var(--ink-2) 81%, transparent);
+  .shell .card, .shell .card.quiet, .shell .card.featured,
+  .shell .command-center, .shell .spotlight {
+    background: color-mix(in oklch, var(--ink-2) 50%, transparent);
   }
   .shell .sidebar, .shell .topbar, .shell .drawer, .mushroom-mode {
     background: var(--ink-2);
@@ -114,9 +115,6 @@ html[data-mushroom-mode="functional"] .sidebar nav.side a.active {
   background: color-mix(in oklch, var(--lumen) 12%, var(--ink-2));
   box-shadow: inset 0 0 0 1px var(--line-warm);
 }
-html[data-mushroom-mode="functional"] .spotlight {
-  background: var(--ink-2);
-}
 html[data-mushroom-mode="functional"] .spotlight::before {
   background: radial-gradient(ellipse at top right, color-mix(in oklch, var(--lumen) 10%, transparent), transparent 65%);
 }
@@ -134,4 +132,27 @@ html[data-theme="light"] .mode-segmented button.active {
 html[data-theme="light"][data-mushroom-mode="functional"] .mode-segmented button.active {
   background: oklch(87% 0.045 35);
   color: oklch(26% 0.015 60);
+}
+
+/* A shared cursor light for every information surface, behind its content. */
+@media screen and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .shell :is(.card, .command-center, .cc-lane, .spotlight, .strain-card) {
+    position: relative;
+    isolation: isolate;
+  }
+  .shell :is(.card, .command-center, .cc-lane, .spotlight, .strain-card)::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: -1;
+    background: radial-gradient(300px circle at var(--aura-x, 50%) var(--aura-y, 50%),
+      color-mix(in oklch, var(--lumen) 12%, transparent), transparent 70%);
+    opacity: 0;
+    transition: opacity 260ms ease-out;
+  }
+  .shell :is(.card, .command-center, .cc-lane, .spotlight, .strain-card):hover::after {
+    opacity: 1;
+  }
 }

@@ -72,3 +72,7 @@ buttons, reloads to verify persistence, captures both light/dark themes at
 390px and 1440px, and asserts at least 4.5:1 for primary, secondary, muted,
 and faint text against the worst-case photograph pixel beneath the scrim.
 It also checks the Functional selected-button contrast and page overflow.
+
+Run `node scripts/ui-check/panel-glow.mjs` with the same environment settings to
+check cursor tracking on information panels, 50% background opacity, text contrast
+at the glow center in both collections/themes, and reduced-motion behavior.
