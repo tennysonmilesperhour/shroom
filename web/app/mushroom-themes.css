@@ -75,7 +75,7 @@ html[data-theme="light"][data-mushroom-mode="functional"] {
   /* Photographs replace the decorative lattice and cursor lighting. */
   .qbg, body::before, body::after { display: none; }
   .shell .card, .shell .card.quiet, .shell .card.featured {
-    background: color-mix(in oklch, var(--ink-2) 96%, transparent);
+    background: color-mix(in oklch, var(--ink-2) 81%, transparent);
   }
   .shell .sidebar, .shell .topbar, .shell .drawer, .mushroom-mode {
     background: var(--ink-2);
