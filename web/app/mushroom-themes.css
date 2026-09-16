@@ -157,10 +157,10 @@ html[data-theme="light"][data-mushroom-mode="functional"] .mode-segmented button
   }
 }
 
-/* Charcoal navigation with a clearly visible silver scroll thumb. */
+/* Translucent midnight-blue navigation with a silver scroll thumb. */
 @media screen {
   html:not([data-theme="light"]) .shell :is(.sidebar, .drawer) {
-    background: #11161c;
+    background: rgb(3 13 30 / 0.88);
   }
   .shell :is(.sidebar nav.side, .drawer) {
     scrollbar-width: thin;
