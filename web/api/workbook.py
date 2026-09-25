@@ -45,8 +45,7 @@ def preview_workbook(data: bytes) -> tuple[dict, dict]:
         counts = {table: len(rows) for table, rows in plan.items() if rows}
         if not counts:
             raise ValueError('No supported records found. Use the Master Cultivation Reference layout; keep its tab names and column headings.')
-        skipped = sum(1 for h in parsed.harvests if not h.harvested_on)
-        warnings = [f'{skipped} harvest row(s) have no date and will be skipped.'] if skipped else []
+        warnings = parsed.warnings()
         return plan, {
             'counts': counts, 'total': sum(counts.values()), 'sheets': wb.sheetnames,
             'warnings': warnings, 'sha256': hashlib.sha256(data).hexdigest(),

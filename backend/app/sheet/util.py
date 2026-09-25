@@ -30,10 +30,34 @@ def is_blank(value: object) -> bool:
     return clean(value) == ""
 
 
+# Day ranges ("May 29-30") collapse to the first day. The lookarounds keep an
+# ISO date ("2026-09-21") from being read as a range.
+_DAY_RANGE = re.compile(r"(?<![\d-])(\d{1,2})\s*[-–]\s*\d{1,2}(?![\d-])")
+
+_MONTH = r"(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\.?"
+# One date inside a longer note: "Sep 21, 2026 (wet) / dry Sep 24 · J-59".
+_DATE_TOKEN = re.compile(
+    r"\b\d{4}-\d{1,2}-\d{1,2}\b"
+    r"|\b\d{1,2}/\d{1,2}(?:/\d{2,4})?\b"
+    rf"|\b{_MONTH}\s+\d{{1,2}}(?:st|nd|rd|th)?(?:\s*[-–]\s*\d{{1,2}})?(?:,?\s+\d{{4}})?\b"
+    rf"|\b\d{{1,2}}(?:st|nd|rd|th)?\s+{_MONTH}(?:,?\s+\d{{4}})?\b",
+    re.I,
+)
+
+
+def _parse_date_text(text: str) -> date | None:
+    text = _DAY_RANGE.sub(r"\1", text.lstrip("~≈ ").strip())
+    try:
+        return dateparser.parse(text, default=datetime(2026, 1, 1)).date()
+    except (ValueError, OverflowError, TypeError):
+        return None
+
+
 def parse_date(value: object) -> date | None:
     """Parse the many date shapes in the sheet ('May 17, 2026', '~Jun 1, 2026',
     'May 29-30, 2026', a real datetime) into a date. Ranges take the first day.
-    Returns None when there's no usable date."""
+    A cell that carries a date plus notes ('Sep 21, 2026 (wet) / dry Sep 24 ·
+    J-59') yields its first date. Returns None when there's no usable date."""
     if value is None:
         return None
     if isinstance(value, datetime):
@@ -43,13 +67,11 @@ def parse_date(value: object) -> date | None:
     text = clean(value)
     if not text:
         return None
-    # Strip approximate markers and collapse day ranges ("May 29-30" -> "May 29").
-    text = text.lstrip("~≈ ").strip()
-    text = re.sub(r"(\d{1,2})\s*[-–]\s*\d{1,2}", r"\1", text)
-    try:
-        return dateparser.parse(text, default=datetime(2026, 1, 1)).date()
-    except (ValueError, OverflowError, TypeError):
-        return None
+    whole = _parse_date_text(text)
+    if whole is not None:
+        return whole
+    match = _DATE_TOKEN.search(text)
+    return _parse_date_text(match.group()) if match else None
 
 
 def first_number(value: object) -> float | None:
@@ -110,9 +132,35 @@ def money_range(value: object) -> tuple[float | None, float | None]:
     return (float(nums[0]), float(nums[1]))
 
 
+# A weight cell must be a number, optionally with a unit and a parenthetical:
+# '445', '85g (3oz)', '~9 g', '1,370', '1.2 kg'. Anything else is a note.
+_WEIGHT = re.compile(
+    r"^[~≈]?\s*(\d+(?:\.\d+)?)\s*(g|grams?|gr|kg)?\.?\s*(?:\([^)]*\))?\s*$", re.I)
+
+
 def grams(value: object) -> float | None:
-    """Weight in grams from cells like '15', '20g', '85g (3oz)'."""
-    return first_number(value)
+    """Weight in grams, or None when the cell isn't a plain weight.
+
+    Deliberately strict: 'see #121 — combined' is a pointer to another row,
+    not 121 g, so no digits are scraped out of free text."""
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, (int, float)):
+        return float(value)
+    text = clean(value).replace(",", "")
+    if not text:
+        return None
+    m = _WEIGHT.match(text)
+    if not m:
+        return None
+    n = float(m.group(1))
+    return n * 1000 if (m.group(2) or "").lower() == "kg" else n
+
+
+def unreadable_weight(value: object) -> str:
+    """The cell's text when it has content but isn't a weight, else ''."""
+    text = clean(value)
+    return text if text and grams(value) is None else ""
 
 
 # --- domain-specific normalizers ------------------------------------------- #

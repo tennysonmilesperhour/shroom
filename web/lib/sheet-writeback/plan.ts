@@ -72,26 +72,60 @@ export function findTab(titles: string[], ...candidates: string[]): string | nul
 
 const SHEETS_EPOCH = Date.UTC(1899, 11, 30);
 
-/** Any sheet date shape → ISO yyyy-mm-dd, or "" when there's no usable date. */
+const MONTH = "(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\\.?";
+// One date inside a longer note: "Sep 21, 2026 (wet) / dry Sep 24 · J-59".
+const DATE_TOKEN = new RegExp(
+  [
+    "\\b\\d{4}-\\d{1,2}-\\d{1,2}\\b",
+    "\\b\\d{1,2}/\\d{1,2}(?:/\\d{2,4})?\\b",
+    `\\b${MONTH}\\s+\\d{1,2}(?:st|nd|rd|th)?(?:\\s*[-–]\\s*\\d{1,2})?(?:,?\\s+\\d{4})?\\b`,
+    `\\b\\d{1,2}(?:st|nd|rd|th)?\\s+${MONTH}(?:,?\\s+\\d{4})?\\b`,
+  ].join("|"),
+  "i",
+);
+
+function parseDateText(raw: string): string {
+  // Day ranges ("May 29-30") take the first day; the lookarounds keep an ISO
+  // date from being read as a range.
+  const t = raw.replace(/^[~≈\s]+/, "").trim().replace(/(?<![\d-])(\d{1,2})\s*[-–]\s*\d{1,2}(?![\d-])/, "$1");
+  const iso = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(t);
+  if (iso) return `${iso[1]}-${iso[2].padStart(2, "0")}-${iso[3].padStart(2, "0")}`;
+  const us = /^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/.exec(t);
+  if (us) {
+    const y = !us[3] ? "2026" : us[3].length === 2 ? `20${us[3]}` : us[3];
+    return `${y}-${us[1].padStart(2, "0")}-${us[2].padStart(2, "0")}`;
+  }
+  if (!/[a-z]/i.test(t)) return "";
+  // The importer defaults a missing year to 2026.
+  const withYear = /\b\d{4}\b/.test(t) ? t : `${t} 2026`;
+  const ms = Date.parse(`${withYear.replace(/(\d)(st|nd|rd|th)\b/i, "$1")} UTC`);
+  return Number.isFinite(ms) ? new Date(ms).toISOString().slice(0, 10) : "";
+}
+
+/** Any sheet date shape → ISO yyyy-mm-dd, or "" when there's no usable date.
+    Mirrors util.parse_date: the whole cell first, else its first date. */
 export function parseDate(value: Cell): string {
   if (typeof value === "number" && Number.isFinite(value) && value > 20000 && value < 80000) {
     return new Date(SHEETS_EPOCH + Math.floor(value) * 86_400_000).toISOString().slice(0, 10);
   }
-  let t = clean(value);
+  const t = clean(value);
   if (!t) return "";
-  t = t.replace(/^[~≈\s]+/, "").replace(/(\d{1,2})\s*[-–]\s*\d{1,2}(?!\d)/, "$1");
-  const iso = /^(\d{4})-(\d{2})-(\d{2})/.exec(t);
-  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
-  const us = /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/.exec(t);
-  if (us) {
-    const y = us[3].length === 2 ? `20${us[3]}` : us[3];
-    return `${y}-${us[1].padStart(2, "0")}-${us[2].padStart(2, "0")}`;
-  }
-  // The importer defaults a missing year to 2026.
-  const withYear = /\b\d{4}\b/.test(t) ? t : `${t} 2026`;
-  const ms = Date.parse(`${withYear} UTC`);
-  if (!Number.isFinite(ms)) return "";
-  return new Date(ms).toISOString().slice(0, 10);
+  const whole = parseDateText(t);
+  if (whole) return whole;
+  const m = DATE_TOKEN.exec(t);
+  return m ? parseDateText(m[0]) : "";
+}
+
+const WEIGHT = /^[~≈]?\s*(\d+(?:\.\d+)?)\s*(g|grams?|gr|kg)?\.?\s*(?:\([^)]*\))?\s*$/i;
+
+/** Grams from a weight cell, or null when it isn't a plain weight (util.grams). */
+export function sheetGrams(value: Cell): number | null {
+  if (typeof value === "boolean") return null;
+  if (typeof value === "number") return Number.isFinite(value) ? value : null;
+  const m = WEIGHT.exec(clean(value).replace(/,/g, ""));
+  if (!m) return null;
+  const n = Number(m[1]);
+  return (m[2] ?? "").toLowerCase() === "kg" ? n * 1000 : n;
 }
 
 export function firstNumber(value: Cell): number | null {
@@ -528,9 +562,13 @@ export function planHarvest(grid: Grid, hv: HarvestRecord, opts: { allowAppend?:
   rules.push({ aliases: ["flush"], same: (c) => (firstNumber(c) ?? 1) === hv.flush_number, write: hv.flush_number });
   if (hv.harvested_on) rules.push({ aliases: ["harvest date"], same: (c) => parseDate(c) === hv.harvested_on, write: hv.harvested_on });
   const fresh = grams(hv.weight_kg);
-  if (fresh != null) rules.push({ aliases: ["fresh"], same: (c) => eqNum(c, fresh), write: fresh });
+  const eqGrams = (c: Cell, g: number) => {
+    const n = sheetGrams(c);
+    return n != null && Math.abs(n - g) < 0.005;
+  };
+  if (fresh != null) rules.push({ aliases: ["fresh"], same: (c) => eqGrams(c, fresh), write: fresh });
   const dry = grams(hv.dry_weight_kg);
-  if (dry != null) rules.push({ aliases: ["dry (g)", "dry"], same: (c) => eqNum(c, dry), write: dry });
+  if (dry != null) rules.push({ aliases: ["dry (g)", "dry"], same: (c) => eqGrams(c, dry), write: dry });
   if (hv.notes != null) rules.push({ aliases: ["notes"], same: (c) => eqText(c, hv.notes!), write: hv.notes });
   diffRow(grid, i, headers, rules, out);
   out.sourceRef = newRef;
