@@ -92,8 +92,8 @@ export default function AlkaloidSpectrum({ strains }: { strains: SpectrumStrain[
         >
           <defs>
             <radialGradient id="spectrum-hub" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="oklch(20% 0.04 235)" />
-              <stop offset="100%" stopColor="oklch(13% 0.03 245)" />
+              <stop offset="0%" style={{ stopColor: "var(--spectrum-hub-1)" }} />
+              <stop offset="100%" style={{ stopColor: "var(--spectrum-hub-2)" }} />
             </radialGradient>
           </defs>
 
