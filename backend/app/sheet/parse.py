@@ -85,6 +85,8 @@ class Jar:
     dry_weight_g: float = 0.0
     used_g: float = 0.0
     notes: str = ""
+    # Weight cells that held text instead of a number ("Dry (g): see J-12").
+    unparsed: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -95,6 +97,7 @@ class SourcedGood:
     incoming: str = ""
     last_updated: date | None = None
     notes: str = ""
+    unparsed: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -159,6 +162,10 @@ class Harvest:
     fresh_g: float = 0.0
     dry_g: float = 0.0
     notes: str = ""
+    # Weight cells that held text instead of a number ("Dry (g): see #121").
+    unparsed: list[str] = field(default_factory=list)
+    # The Harvest Date cell's text when it had content but no readable date.
+    date_text: str = ""
 
 
 @dataclass
@@ -176,6 +183,32 @@ class ParsedWorkbook:
     incidents: list[Incident] = field(default_factory=list)
     batches: list[Batch] = field(default_factory=list)
     harvests: list[Harvest] = field(default_factory=list)
+
+    def warnings(self, limit: int = 3) -> list[str]:
+        """Operator-facing notes on cells the importer couldn't read."""
+        out: list[str] = []
+
+        def summarize(items: list[str], what: str) -> None:
+            if not items:
+                return
+            shown = "; ".join(items[:limit])
+            more = f" (+{len(items) - limit} more)" if len(items) > limit else ""
+            out.append(f"{len(items)} {what}: {shown}{more}")
+
+        summarize(
+            [f"{h.lot_code}: {u}" for h in self.harvests for u in h.unparsed]
+            + [f"jar {j.jar_id}: {u}" for j in self.jars for u in j.unparsed]
+            + [f"{g.strain}: {u}" for g in self.sourced_goods for u in g.unparsed],
+            "weight cell(s) aren't numbers and were left blank (text kept in notes)",
+        )
+        summarize(
+            [f"{h.lot_code}: “{h.date_text}”" for h in self.harvests if not h.harvested_on and h.date_text],
+            "harvest date(s) couldn't be read and those rows will be skipped",
+        )
+        blank = sum(1 for h in self.harvests if not h.harvested_on and not h.date_text)
+        if blank:
+            out.append(f"{blank} harvest row(s) have no harvest date yet and will be skipped.")
+        return out
 
 
 # --------------------------------------------------------------------------- #
@@ -221,6 +254,22 @@ def _col(headers: list, *aliases: str) -> int:
             if a in h:
                 return i
     return -1
+
+
+def _weight(row: list, idx: int, column: str, unparsed: list[str]) -> float:
+    """Grams from a weight cell. Text that isn't a weight is recorded, not mined
+    for digits, and the weight is left at 0 (the app's "not recorded")."""
+    value = _at(row, idx)
+    bad = util.unreadable_weight(value)
+    if bad:
+        unparsed.append(f"{column}: {bad}")
+    return util.grams(value) or 0.0
+
+
+def _with_unparsed(notes: str, unparsed: list[str]) -> str:
+    """Keep an unreadable weight's text with the record so it isn't lost."""
+    extra = [u for u in unparsed if u.split(": ", 1)[1] not in notes]
+    return " · ".join([n for n in [notes, *extra] if n])
 
 
 def _at(row: list, idx: int):
@@ -526,13 +575,17 @@ def parse_jar_inventory(wb: Workbook) -> tuple[list[Jar], list[PriceTier]]:
                 if jar_id.upper().startswith("TOTAL"):
                     break
                 continue
+            unparsed: list[str] = []
+            dry = _weight(row, c_dry, "Dry (g)", unparsed)
+            used = _weight(row, c_used, "Used (g)", unparsed)
             jars.append(Jar(
                 jar_id=jar_id,
                 strain=_strip_name(_at(row, c_strain)),
                 flush_number=util.parse_int(_at(row, c_flush)),
-                dry_weight_g=util.first_number(_at(row, c_dry)) or 0.0,
-                used_g=util.first_number(_at(row, c_used)) or 0.0,
-                notes=util.clean(_at(row, c_notes)),
+                dry_weight_g=dry,
+                used_g=used,
+                notes=_with_unparsed(util.clean(_at(row, c_notes)), unparsed),
+                unparsed=unparsed,
             ))
 
     tiers: list[PriceTier] = []
@@ -574,13 +627,17 @@ def parse_sourced_goods(wb: Workbook) -> list[SourcedGood]:
         strain = util.clean(_at(row, c_strain))
         if not strain:
             continue
+        unparsed: list[str] = []
+        on_hand = _weight(row, c_on, "On-Hand (g)", unparsed)
+        used = _weight(row, c_used, "Used (g)", unparsed)
         out.append(SourcedGood(
             strain=_strip_name(strain),
-            on_hand_g=util.first_number(_at(row, c_on)) or 0.0,
-            used_g=util.first_number(_at(row, c_used)) or 0.0,
+            on_hand_g=on_hand,
+            used_g=used,
             incoming=util.clean(_at(row, c_incoming)),
             last_updated=util.parse_date(_at(row, c_updated)),
-            notes=util.clean(_at(row, c_notes)),
+            notes=_with_unparsed(util.clean(_at(row, c_notes)), unparsed),
+            unparsed=unparsed,
         ))
     return out
 
@@ -844,6 +901,10 @@ def parse_harvests(wb: Workbook) -> list[Harvest]:
         if not strain or strain.upper().startswith("TOTAL") or not tub:
             continue
         flush = util.parse_int(_at(row, c_flush)) or 1
+        unparsed: list[str] = []
+        fresh = _weight(row, c_fresh, "Fresh (g)", unparsed)
+        dry = _weight(row, c_dry, "Dry (g)", unparsed)
+        harvested_on = util.parse_date(_at(row, c_date))
         out.append(Harvest(
             # lot_code stays tub+flush: it's the harvest's stable natural key
             # (source_ref) in the sheet. `tub` is what resolves the batch now
@@ -852,10 +913,12 @@ def parse_harvests(wb: Workbook) -> list[Harvest]:
             tub=tub,
             strain=_strip_name(strain),
             flush_number=flush,
-            harvested_on=util.parse_date(_at(row, c_date)),
-            fresh_g=util.first_number(_at(row, c_fresh)) or 0.0,
-            dry_g=util.first_number(_at(row, c_dry)) or 0.0,
-            notes=util.clean(_at(row, c_notes)),
+            harvested_on=harvested_on,
+            fresh_g=fresh,
+            dry_g=dry,
+            notes=_with_unparsed(util.clean(_at(row, c_notes)), unparsed),
+            unparsed=unparsed,
+            date_text="" if harvested_on else util.clean(_at(row, c_date)),
         ))
     return out
 

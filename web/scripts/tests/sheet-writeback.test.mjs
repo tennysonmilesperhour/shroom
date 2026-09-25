@@ -90,3 +90,20 @@ test('helpers', () => {
   assert.equal(colLetter(27), 'AB');
   assert.equal(findTab(['Strain Library', 'Buyers & Pricing'], 'Buyers & Pricing', 'Buyers'), 'Buyers & Pricing');
 });
+
+test('dates: compound wet/dry notation and ISO text match the importer', () => {
+  assert.equal(parseDate('Sep 21, 2026 (wet) / dry Sep 24 · J-59'), '2026-09-21');
+  assert.equal(parseDate('2026-09-21'), '2026-09-21');
+  assert.equal(parseDate('May 29-30, 2026'), '2026-05-29');
+  assert.equal(parseDate('J-59'), '');
+});
+
+test('harvest: a note in the Dry (g) cell is not read as a weight', () => {
+  const grid = [
+    ['Strain', 'Tub', 'Flush', 'Harvest Date', 'Fresh (g)', 'Dry (g)', 'Notes'],
+    ['TAT', '5x5 tub', 1, 'Sep 5, 2026', 67, 'see #121 — combined', ''],
+  ];
+  // App now holds 0 g ("not recorded"); the note isn't 121 g, so it's a real difference only if dry changed.
+  const plan = planHarvest(grid, { tub: '5x5 tub', strain: 'TAT', flush_number: 1, harvested_on: '2026-09-05', weight_kg: 0.067, dry_weight_kg: 0.009, source_ref: '5x5 tub-F1' });
+  assert.deepEqual(plan.writes, [{ row: 1, col: 5, value: 9 }]);
+});

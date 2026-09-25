@@ -68,6 +68,8 @@ def run(target: str, *, path: str | None = None, file_id: str | None = None,
             )
         summary["supabase"] = import_to_supabase(parsed, url, key)
 
+    for warning in parsed.warnings():
+        print(f"Warning: {warning}", file=sys.stderr)
     return summary
 
 
