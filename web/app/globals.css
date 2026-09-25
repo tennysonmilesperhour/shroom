@@ -2667,6 +2667,9 @@ a.kpi-link:hover { border-color: var(--line-warm); }
 a.kpi-link:focus-visible { outline: 2px solid var(--lumen); outline-offset: 2px; }
 
 /* ── Strain spectrum (alkaloid color-wheel) ───────────────────────────── */
+/* Wheel field gradient; light theme overrides below. */
+:root { --spectrum-hub-1: oklch(20% 0.04 235); --spectrum-hub-2: oklch(13% 0.03 245); }
+html[data-theme="light"] { --spectrum-hub-1: oklch(99% 0.004 235); --spectrum-hub-2: oklch(94.5% 0.010 240); }
 .spectrum-card { display: flex; flex-direction: column; gap: var(--space-3); }
 .spectrum-head { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-3) var(--space-4); justify-content: space-between; }
 .spectrum-blurb { margin: 0; max-width: 46ch; font-size: 0.86rem; line-height: 1.5; }
