@@ -3,6 +3,7 @@
 import { createServiceClient } from "@/utils/supabase/service";
 import { activeSheetImport } from "@/lib/sheet-sync-status";
 import { revalidatePath } from "next/cache";
+import { writebackConfigured, writePendingQueue } from "@/lib/sheet-writeback";
 
 export interface SyncActionResult {
   ok: boolean;
@@ -94,50 +95,39 @@ export async function requestSheetSync(): Promise<SyncActionResult> {
   };
 }
 
-/** Push the app's data back into the Master Cultivation Reference (app → sheet).
+/** Write pending app changes into the Master Cultivation Reference (app → sheet).
  *
- * The write itself runs in the Python exporter (a non-destructive keyed upsert),
- * so this triggers the `sheet-export.yml` GitHub Actions workflow rather than
- * re-implementing the workbook write here — the same dispatch pattern the pull
- * button uses. The workflow, on success, clears the pending queue, so the
- * "Pending ops" counter settles on its own once the job finishes (~a minute).
+ * Runs the same cell-level write-back that happens automatically after each
+ * save (lib/sheet-writeback), over the whole pending backlog for the mapped
+ * tabs. Only fields that were changed in the app are written; rows the sheet
+ * can't represent unambiguously are reported and left pending.
  */
 export async function pushToSheet(): Promise<SyncActionResult> {
-  const token = process.env.GITHUB_DISPATCH_TOKEN;
-  const repo = process.env.GITHUB_REPO ?? "tennysonmilesperhour/shroom";
-  const ref = process.env.GITHUB_SYNC_REF ?? "main";
-  if (!token) {
+  if (!writebackConfigured()) {
     return {
       ok: false,
-      message:
-        "Cloud write-back is not connected yet. Your app changes are saved and remain in the pending list.",
+      message: "Sheet write-back isn’t connected. Set GOOGLE_SERVICE_ACCOUNT_JSON and MASTER_SHEET_GOOGLE_ID.",
     };
   }
-
-  const resp = await fetch(
-    `https://api.github.com/repos/${repo}/actions/workflows/sheet-export.yml/dispatches`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: "application/vnd.github+json",
-        "X-GitHub-Api-Version": "2022-11-28",
-      },
-      body: JSON.stringify({ ref, inputs: { mark_synced: true } }),
-    },
-  );
-
-  if (!resp.ok) {
-    const detail = (await resp.text()).slice(0, 300);
-    return {
-      ok: false,
-      message: `Couldn't start the push (GitHub ${resp.status}). ${detail}`.trim(),
-    };
+  const supabase = createServiceClient();
+  let outcomes;
+  try {
+    outcomes = await writePendingQueue(supabase);
+  } catch (e) {
+    return { ok: false, message: e instanceof Error ? e.message : "Write-back failed." };
   }
-
-  return {
-    ok: true,
-    message:
-      "Push started. Supported workbook fields will be written; unmatched changes remain pending.",
-  };
+  revalidatePath("/sync");
+  const count = (s: string) => outcomes.filter((o) => o.status === s).length;
+  const errors = outcomes.filter((o) => o.status === "error");
+  if (errors.length > 0 && count("written") === 0) {
+    return { ok: false, message: errors[0].detail ?? "Write-back failed." };
+  }
+  const skipped = outcomes.filter((o) => o.status === "skipped");
+  const parts = [
+    `${count("written")} record${count("written") === 1 ? "" : "s"} written to the sheet`,
+    count("unchanged") ? `${count("unchanged")} already matched` : "",
+    skipped.length ? `${skipped.length} left pending (e.g. ${skipped[0].detail})` : "",
+    errors.length ? `${errors.length} failed (${errors[0].detail})` : "",
+  ].filter(Boolean);
+  return { ok: true, count: count("written"), message: parts.join(" · ") };
 }

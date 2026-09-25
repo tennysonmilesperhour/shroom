@@ -4,9 +4,8 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { pushToSheet } from "./actions";
 
-// Triggers the reverse sync (app → sheet) by dispatching the sheet-export
-// workflow. Mirrors SyncFromSheetButton; the actual workbook write happens in
-// the Python exporter, and the pending queue clears itself when the job lands.
+// Writes the pending backlog (app → sheet) cell by cell via lib/sheet-writeback.
+// New edits are written automatically after each save; this catches up the rest.
 export default function PushToSheetButton() {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -24,7 +23,7 @@ export default function PushToSheetButton() {
   return (
     <span style={{ display: "inline-flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
       <button type="button" className="primary" onClick={run} disabled={pending}>
-        {pending ? "Starting push…" : "Push to sheet now"}
+        {pending ? "Writing to sheet…" : "Write pending changes to sheet"}
       </button>
       {msg && (
         <span className="muted" style={{ fontSize: 12 }}>

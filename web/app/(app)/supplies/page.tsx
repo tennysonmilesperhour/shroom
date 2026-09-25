@@ -6,6 +6,7 @@ import RowActions from "@/components/RowActions";
 import AddSupplyForm from "./AddSupplyForm";
 import AddEquipmentForm from "./AddEquipmentForm";
 import QuickAdjust from "./QuickAdjust";
+import ExportLinks from "@/components/ExportLinks";
 
 export const dynamic = "force-dynamic";
 
@@ -73,6 +74,7 @@ export default async function SuppliesPage() {
             </>
           )}
         </p>
+        <ExportLinks items={[["supplies", "Supplies"]]} />
       </div>
 
       <AddPanel label="New supply">

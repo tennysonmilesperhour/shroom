@@ -7,6 +7,7 @@ import { DRY_FLOOR } from "@/lib/format";
 import AddPanel from "@/components/AddPanel";
 import AddHarvestForm from "./AddHarvestForm";
 import RowActions from "@/components/RowActions";
+import ExportLinks from "@/components/ExportLinks";
 
 export const dynamic = "force-dynamic";
 
@@ -120,6 +121,7 @@ export default async function HarvestsPage() {
         <p className="lead">
           Flush-by-flush. Rows flagged when dry ratio falls below the {DRY_FLOOR}% floor.
         </p>
+        <ExportLinks items={[["harvests", "Harvests"]]} />
       </div>
 
       <div className="kpi-row">

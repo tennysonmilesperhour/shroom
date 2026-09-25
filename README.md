@@ -163,6 +163,7 @@ same tab/column layout the importer reads — so it round-trips.
 | App → file | `GET /api/sync/workbook.xlsx` | Download the app's data as a Master-Reference-layout `.xlsx`. |
 | status | `GET /api/sync/status` | Read/write config, plus **unsynced-change count** and last push/pull times so the UI can show how far behind the sheet is. |
 | live | *(automatic)* | With `SHEET_SYNC_AUTO=1`, creating/updating an entity schedules a **debounced, coalesced** push — a burst of edits becomes one write. |
+| live (web app) | *(automatic)* | With `GOOGLE_SERVICE_ACCOUNT_JSON` + `MASTER_SHEET_GOOGLE_ID` set in Vercel, every save of a strain, batch, harvest, or buyer in the Next.js app writes the **changed fields into the matching cells** (found by strain name / tub / tub + flush / buyer name) right after the response. See `web/lib/sheet-writeback/`. |
 
 The push is a natural-key upsert, so it's safe to run repeatedly and never
 duplicates rows or clobbers columns you maintain by hand on the sheet.

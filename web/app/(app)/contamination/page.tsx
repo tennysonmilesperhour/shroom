@@ -4,6 +4,7 @@ import { Badge, Card } from "@/components/ui";
 import { must } from "@/lib/query";
 import SightingForm from "./SightingForm";
 import RowActions from "@/components/RowActions";
+import ExportLinks from "@/components/ExportLinks";
 
 export const dynamic = "force-dynamic";
 
@@ -76,6 +77,7 @@ export default async function ContaminationPage() {
           Record sightings with a photo and action taken. The reference guide hints adjust based on
           the type you select.
         </p>
+        <ExportLinks items={[["contamination", "Contamination log"]]} />
       </div>
 
       <div className="grid two">

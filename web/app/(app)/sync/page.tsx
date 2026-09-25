@@ -6,6 +6,7 @@ import SyncFromSheetButton from "./SyncFromSheetButton";
 import PushToSheetButton from "./PushToSheetButton";
 import WorkbookUpload from "./WorkbookUpload";
 import { activeSheetImport, displayImportStatus } from "@/lib/sheet-sync-status";
+import { writebackConfigured } from "@/lib/sheet-writeback";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +34,7 @@ interface ImportRun {
 export default async function SyncPage() {
   const supabase = createServiceClient();
   const cloudConfigured = Boolean(process.env.GITHUB_DISPATCH_TOKEN);
+  const writeback = writebackConfigured();
 
   const cutoff = new Date().toISOString();
   const [pending, recent, imports, pendingCount] = await Promise.all([
@@ -144,12 +146,28 @@ export default async function SyncPage() {
 
       <Card title="Push to the sheet (website → sheet)">
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          {cloudConfigured ? <PushToSheetButton /> : <p className="muted">Cloud write-back is not connected yet.</p>}
+          {writeback ? (
+            <>
+              <p style={{ margin: 0 }}>
+                <Badge tone="green">live</Badge>{" "}
+                Edits to strains, batches, harvests, and buyers are written into the matching sheet cells a
+                moment after you save.
+              </p>
+              <PushToSheetButton />
+            </>
+          ) : (
+            <p className="muted" style={{ margin: 0 }}>
+              <Badge tone="amber">not connected</Badge> Add <code>GOOGLE_SERVICE_ACCOUNT_JSON</code> and{" "}
+              <code>MASTER_SHEET_GOOGLE_ID</code> to the Vercel project and share the sheet with the service
+              account as an Editor. Until then, changes stay in the pending list below.
+            </p>
+          )}
           <p className="muted" style={{ margin: 0, fontSize: 13 }}>
-            Writes supported strain, batch, harvest, and customer fields back into the{" "}
-            <strong>Master Cultivation Reference</strong> — a non-destructive
-            keyed upsert (owned rows updated in place, new ones appended,
-            hand-maintained columns left untouched). Only changes fully covered by those workbook fields are marked synced after the write finishes. Other fields and deletions stay pending for manual reconciliation.
+            Rows are found by their obvious key on the <strong>Master Cultivation Reference</strong>: strain
+            name (Strain Library), tub (Grow Cycle Log), tub + flush (Harvest Tracker), and buyer name
+            (Buyers &amp; Pricing). Only the fields you changed are written, and only when the cell&rsquo;s meaning
+            differs, so wording like &ldquo;🟢 In contact&rdquo; is kept. New records are appended; deletions and
+            anything ambiguous stay pending for you to reconcile. The button above writes the older backlog.
           </p>
           <hr style={{ border: 0, borderTop: "1px solid var(--line)", margin: "2px 0" }} />
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>

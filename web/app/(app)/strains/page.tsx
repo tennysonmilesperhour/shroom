@@ -10,6 +10,7 @@ import AddStrainForm from "./AddStrainForm";
 import AlkaloidSpectrum from "@/components/AlkaloidSpectrum";
 import type { SpectrumStrain } from "@/lib/spectrum";
 import RowActions from "@/components/RowActions";
+import ExportLinks from "@/components/ExportLinks";
 
 export const dynamic = "force-dynamic";
 
@@ -84,6 +85,7 @@ export default async function StrainsPage() {
         <p className="lead">
           {strains.length} strains tracked across vendor, genetics, potency, ease, grow-again status, and spore stock.
         </p>
+        <ExportLinks items={[["strains", "Strains"]]} />
       </div>
 
       <AddPanel label="New strain">

@@ -6,6 +6,7 @@ import type { BadgeTone } from "@/components/ui";
 import AddPanel from "@/components/AddPanel";
 import AddCustomerForm from "./AddCustomerForm";
 import RowActions from "@/components/RowActions";
+import ExportLinks from "@/components/ExportLinks";
 
 export const dynamic = "force-dynamic";
 
@@ -51,6 +52,7 @@ export default async function CustomersPage() {
         <p className="lead">
           CRM pipeline across distributors, wholesale, retail, wellness, and market channels.
         </p>
+        <ExportLinks items={[["customers", "Customers"]]} />
       </div>
 
       <AddPanel label="New customer">

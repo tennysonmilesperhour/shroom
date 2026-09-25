@@ -2,6 +2,7 @@
 
 import { useRef, useState, useTransition, type ReactNode, type FormEvent } from "react";
 import { useToast } from "@/components/ToastProvider";
+import { friendlyDbError } from "@/lib/db-errors";
 
 export interface EntityResult {
   ok: boolean;
@@ -79,7 +80,7 @@ export default function EntityForm({
             className="muted"
             style={{ color: result.ok ? "var(--moss)" : "var(--ember)" }}
           >
-            {result.message ?? (result.ok ? "Saved ✓" : "Failed")}
+            {(result.ok ? result.message : friendlyDbError(result.message)) ?? (result.ok ? "Saved ✓" : "Failed")}
           </span>
         )}
       </div>

@@ -9,6 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { friendlyDbError } from "@/lib/db-errors";
 
 export type ToastTone = "lumen" | "moss" | "ember" | "spore";
 
@@ -58,6 +59,8 @@ export default function ToastProvider({ children }: { children: ReactNode }) {
   const push = useCallback(
     ({ title, body, tone = "lumen", duration = 3800, actionLabel, onAction }: ToastInput) => {
       const id = nextId.current++;
+      // Failure toasts often carry a raw Postgres message from a server action.
+      if (tone === "ember") body = friendlyDbError(body);
       setItems((list) => [...list, { id, title, body, tone, duration, actionLabel, onAction }]);
       window.setTimeout(() => dismiss(id), duration);
     },
