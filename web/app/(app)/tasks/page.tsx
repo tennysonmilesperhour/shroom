@@ -8,6 +8,7 @@ import RowActions from "@/components/RowActions";
 import CompleteTaskButton from "@/components/CompleteTaskButton";
 import AddPanel from "@/components/AddPanel";
 import AddTaskForm from "./AddTaskForm";
+import ExportLinks from "@/components/ExportLinks";
 
 export const dynamic = "force-dynamic";
 
@@ -111,6 +112,7 @@ export default async function TasksPage() {
       <div>
         <div className="eyebrow">Operation</div>
         <h1 className="section">Tasks</h1>
+        <ExportLinks items={[["tasks", "Tasks"]]} />
       </div>
 
       <div className="kpi-row">

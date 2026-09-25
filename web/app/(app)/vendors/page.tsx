@@ -5,6 +5,7 @@ import { displayUrl, normalizeUrl } from "@/lib/external";
 import AddPanel from "@/components/AddPanel";
 import RowActions from "@/components/RowActions";
 import AddVendorForm from "./AddVendorForm";
+import ExportLinks from "@/components/ExportLinks";
 
 export const dynamic = "force-dynamic";
 
@@ -41,6 +42,7 @@ export default async function VendorsPage() {
         <p className="lead">
           Spore &amp; genetics, functional spawn, supplies, and wild-harvest sourcing partners.
         </p>
+        <ExportLinks items={[["vendors", "Vendors"]]} />
       </div>
 
       <AddPanel label="New vendor">

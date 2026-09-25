@@ -8,6 +8,7 @@ import AddBatchForm, { type PresetOption } from "./AddBatchForm";
 import BatchBoard from "./BatchBoard";
 import BatchTable, { type SavedBatchView } from "@/components/BatchTable";
 import { STAGE_ORDER, STAGE_LABEL, normalizeStage } from "@/lib/stages";
+import ExportLinks from "@/components/ExportLinks";
 
 export const dynamic = "force-dynamic";
 
@@ -142,6 +143,7 @@ export default async function BatchesPage() {
         <p className="lead">
           Each batch is a traceable lot moving container-by-container through the lifecycle.
         </p>
+        <ExportLinks items={[["batches", "Batches"]]} />
       </div>
 
       <AddPanel label="New batch" buttonLabel="Inoculate new batch">

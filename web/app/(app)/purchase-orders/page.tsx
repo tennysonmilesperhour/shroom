@@ -5,6 +5,7 @@ import { must } from "@/lib/query";
 import AddPanel from "@/components/AddPanel";
 import RowActions from "@/components/RowActions";
 import AddPurchaseOrderForm from "./AddPurchaseOrderForm";
+import ExportLinks from "@/components/ExportLinks";
 
 export const dynamic = "force-dynamic";
 
@@ -59,6 +60,7 @@ export default async function PurchaseOrdersPage() {
         <div className="eyebrow">Sourcing</div>
         <h1 className="section">Purchase orders</h1>
         <p className="lead">Supplier restock for spawn, grain, substrate, and lab supplies.</p>
+        <ExportLinks items={[["purchase-orders", "Purchase orders"]]} />
       </div>
 
       <AddPanel label="New purchase order">

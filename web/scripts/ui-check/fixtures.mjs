@@ -1703,6 +1703,7 @@ export default {
       harvest_id: 3,
       quantity: 2,
       unit_price: 84,
+      harvests: { id: 3, harvested_on: "2026-07-30", flush_number: 1, sku: "GT-DRY-0730", batches: { id: 1, lot_code: "GT-2608-A" } },
       orders: {
         id: 1,
         order_number: "ORD-2026-0012",

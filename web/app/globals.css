@@ -3643,3 +3643,12 @@ label.choice-chip { display: inline-flex; align-items: center; margin: 0; }
 /* Closed off-canvas drawers must not cast shadows over the phone viewport. */
 .drawer:not(.open), .fb-drawer:not(.open) { visibility: hidden; box-shadow: none; }
 .drawer.open, .fb-drawer.open { visibility: visible; }
+
+/* ── Data export links (list page headers) ─────────────────────────────── */
+.export-links {
+  display: flex; flex-wrap: wrap; align-items: center;
+  gap: var(--space-2) var(--space-4);
+  margin: calc(var(--space-6) * -0.5) 0 var(--space-5);
+  font-size: var(--text-sm);
+}
+.export-links a { min-height: 32px; display: inline-flex; align-items: center; }

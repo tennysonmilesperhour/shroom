@@ -64,6 +64,25 @@ the path used in Claude remote sessions), `MOCK_SUPABASE_PORT`.
 - Fixtures deliberately include a few over-long names/notes so overflow bugs
   show up in the screenshots — keep that property when editing them.
 
+## Sheet write-back and order line items
+
+`mock-google-sheets.mjs` stands in for Google's token endpoint and the Sheets
+values API. Start it next to the Supabase mock and give the app the extra env:
+
+```bash
+node scripts/ui-check/mock-google-sheets.mjs &
+SA="$(node scripts/ui-check/mock-google-sheets.mjs --key)"
+# add to the `npm run dev` line above:
+#   SHROOM_SHEETS_API_BASE=http://127.0.0.1:55322/v4/spreadsheets \
+#   MASTER_SHEET_GOOGLE_ID=mock GOOGLE_SERVICE_ACCOUNT_JSON="$SA"
+node scripts/ui-check/sheet-writeback.mjs
+```
+
+It edits a strain and a buyer through the real edit dialogs, asserts the mock
+sheet received exactly one cell write each (and none for a field the sheet
+doesn't hold), then adds a line item on an order. Restart both mocks between
+runs; their state is in memory.
+
 ## Collection photography and contrast
 
 Run `node scripts/ui-check/themes.mjs` with the same `UI_CHECK_BASE`,

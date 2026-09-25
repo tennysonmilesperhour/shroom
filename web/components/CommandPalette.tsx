@@ -76,7 +76,7 @@ function buildResults(index: CommandIndex): Result[] {
     group: "Customers",
   }));
   const orders: Result[] = index.orders.map((o) => ({
-    href: `/orders`,
+    href: `/orders/${o.id}`,
     title: o.order_number,
     hint: [o.customer, o.date].filter(Boolean).join(" · "),
     group: "Orders",

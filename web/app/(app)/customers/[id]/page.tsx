@@ -226,7 +226,11 @@ export default async function CustomerDetailPage({
             <tbody>
               {orders.map((o) => (
                 <tr key={o.id}>
-                  <td><b>{o.order_number}</b></td>
+                  <td>
+                    <Link href={`/orders/${o.id}`} className="row-anchor">
+                      <b>{o.order_number}</b>
+                    </Link>
+                  </td>
                   <td>{o.order_date}</td>
                   <td><Badge tone="muted">{o.channel}</Badge></td>
                   <td>

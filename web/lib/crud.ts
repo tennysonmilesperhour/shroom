@@ -115,6 +115,20 @@ export async function updateEntity(
     return result;
   }
 
+  // Edit dialogs submit every field they show. Snapshot the stored values so
+  // the sheet-sync queue records only what actually changed (the write-back
+  // must not overwrite sheet cells for fields nobody touched), and so a
+  // rename carries the old name the sheet row is still filed under.
+  let syncBefore: Record<string, unknown> | null = null;
+  if (entity.sync && key !== "batch") {
+    const { data: current } = await supabase
+      .from(entity.table)
+      .select(Object.keys(patch).join(","))
+      .eq("id", id)
+      .single<Record<string, unknown>>();
+    syncBefore = current ?? null;
+  }
+
   let batchBefore: Record<string, unknown> | null = null;
   let batchLot = "";
   if (key === "batch") {
@@ -127,6 +141,7 @@ export async function updateEntity(
     if (currentError || !current) return { ok: false, message: currentError?.message ?? "Batch not found." };
     batchLot = String(current.lot_code ?? "");
     batchBefore = Object.fromEntries(Object.keys(patch).map((field) => [field, current[field]]));
+    syncBefore = batchBefore;
   }
   // .select() so PostgREST reports the affected rows — an update whose filter
   // matches nothing returns no error, which would otherwise read as success.
@@ -161,7 +176,13 @@ export async function updateEntity(
     }
     revalidatePath(`/batches/${id}`);
   }
-  if (entity.sync) await enqueueSync(supabase, entity.sync, id, "update", patch);
+  if (entity.sync) {
+    const changed = syncBefore ? changedFields(syncBefore, patch) : patch;
+    if (syncBefore && typeof syncBefore.name === "string" && "name" in changed) {
+      changed.previous_name = syncBefore.name;
+    }
+    if (Object.keys(changed).length > 0) await enqueueSync(supabase, entity.sync, id, "update", changed);
+  }
   revalidatePath(entity.listPath);
   return { ok: true, message: `${cap(entity.label)} updated ✓`, undoId };
 }
@@ -274,6 +295,17 @@ async function deleteBatchEntity(id: number, entity: EntityDef): Promise<EntityR
   revalidatePath(`/batches/${id}`);
   revalidatePath("/");
   return { ok: true, message: `Batch ${batch.lot_code} deleted${cleanupNote}` };
+}
+
+function sameValue(a: unknown, b: unknown): boolean {
+  const blank = (v: unknown) => v == null || v === "";
+  if (blank(a) && blank(b)) return true;
+  if (typeof a === "number" || typeof b === "number") return Number(a) === Number(b);
+  return String(a) === String(b);
+}
+
+function changedFields(before: Record<string, unknown>, patch: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(patch).filter(([k, v]) => !sameValue(before[k], v)));
 }
 
 function cap(s: string): string {

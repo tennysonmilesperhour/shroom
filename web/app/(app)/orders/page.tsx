@@ -6,6 +6,7 @@ import { must } from "@/lib/query";
 import AddPanel from "@/components/AddPanel";
 import AddOrderForm from "./AddOrderForm";
 import RowActions from "@/components/RowActions";
+import ExportLinks from "@/components/ExportLinks";
 
 export const dynamic = "force-dynamic";
 
@@ -68,6 +69,7 @@ export default async function OrdersPage() {
         <p className="lead">
           Sales across every channel: wholesale, distributor, retail, farmers market, and online.
         </p>
+        <ExportLinks items={[["orders", "Orders"], ["order-lines", "Line items"]]} />
       </div>
 
       <div className="kpi-row">
@@ -107,7 +109,11 @@ export default async function OrdersPage() {
             <tbody>
               {orders.map((o) => (
                 <tr key={o.id}>
-                  <td><b>{o.order_number}</b></td>
+                  <td>
+                    <Link href={`/orders/${o.id}`} className="row-anchor">
+                      <b>{o.order_number}</b>
+                    </Link>
+                  </td>
                   <td>
                     {o.customers ? (
                       <Link href={`/customers/${o.customers.id}`} className="row-anchor">
@@ -137,6 +143,7 @@ export default async function OrdersPage() {
                       entity="order"
                       id={o.id}
                       label={o.order_number}
+                      viewHref={`/orders/${o.id}`}
                       initial={{
                         order_number: o.order_number,
                         customer_id: o.customer_id,

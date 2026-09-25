@@ -624,7 +624,7 @@ export default async function BatchDetailPage({
                 <tr key={d.id}>
                   <td>
                     {d.orders ? (
-                      <Link href={`/orders`} className="row-anchor">
+                      <Link href={`/orders/${d.orders.id}`} className="row-anchor">
                         <b>{d.orders.order_number}</b>
                       </Link>
                     ) : (

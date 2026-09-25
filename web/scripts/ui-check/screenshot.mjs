@@ -41,6 +41,7 @@ const ROUTES = [
   "/environment",
   "/contamination",
   "/orders",
+  "/orders/1",
   "/customers",
   "/customers/1",
   "/catalog",
