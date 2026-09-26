@@ -31,6 +31,11 @@ def render(direction='apply'):
 DO $profile_update$
 DECLARE payload jsonb := '{encoded}'::jsonb;
 BEGIN
+  -- Freeze all target rows before checking; prevent a concurrent edit between
+  -- the guard and UPDATE from turning the batch into a partial application.
+  PERFORM s.id FROM public.strains s
+  JOIN jsonb_array_elements(payload) p ON s.id = (p->>'id')::bigint
+  ORDER BY s.id FOR UPDATE OF s;
   IF EXISTS (
     SELECT 1 FROM jsonb_array_elements(payload) p
     LEFT JOIN public.strains s ON s.id = (p->>'id')::bigint AND s.name = p->>'name'

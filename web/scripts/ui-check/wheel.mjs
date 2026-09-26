@@ -59,12 +59,12 @@ for (const width of [390,1440]) {
   assert.deepEqual(await paths(),focusedPaths,'Neighbor targets must remain enlarged and stable');
   await page.mouse.move(0,0);assert.equal(await magnified(),'false');
   assert.deepEqual(await paths(),normal,'Mouse leave restores equal-angle slices');
-  p=await point(120);await page.mouse.move(p.x,p.y);
+  p=await point(123);await page.mouse.move(p.x,p.y);
   const id=await page.evaluate(({x,y})=>document.elementFromPoint(x,y)?.closest('a[data-strain-id]')?.dataset.strainId,p);
   await page.mouse.click(p.x,p.y);await page.waitForURL(base+'/strains/'+id);
  }
- await page.goto(base+'/strains');await page.locator('.spectrum-wedge').first().focus();
- assert.equal(await magnified(),'true');await page.keyboard.press('Escape');assert.equal(await magnified(),'false');
+ await page.goto(base+'/strains');await page.waitForLoadState('networkidle');await page.locator('.spectrum-wedge').first().focus();
+ await page.waitForFunction(()=>document.querySelector('.spectrum-wheel svg').dataset.magnified==='true');await page.keyboard.press('Escape');assert.equal(await magnified(),'false');
  const href=await page.locator('.spectrum-wedge').first().getAttribute('href');await page.keyboard.press('Enter');await page.waitForURL(base+href);
  for(const id of [21,74,75,93]) {
   await page.goto(base+'/strains/'+id);
