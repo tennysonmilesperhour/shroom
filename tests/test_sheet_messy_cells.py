@@ -46,8 +46,8 @@ def _workbook() -> Workbook:
     for row in [
         ["HARVEST TRACKER"],
         ["#", "Strain", "Tub", "Flush", "Harvest Date", "Fresh (g)", "Dry (g)", "Dry %", "Notes"],
-        [112, "TAT (True Albino Teacher)", "5x5 tub", "F1", datetime(2026, 9, 5), 67, "see #121 — combined", "", ""],
-        [121, "TAT (True Albino Teacher)", "5x5 tub", "F2", "Sep 21, 2026 (wet) / dry Sep 24 · J-59", 410, 9, "", "combined dry with #112"],
+        [112, "TAT (True Albino Teacher)", "TAT-01", "F1", datetime(2026, 9, 5), 67, "see #121 — combined", "", ""],
+        [121, "TAT (True Albino Teacher)", "TAT-01", "F2", "Sep 21, 2026 (wet) / dry Sep 24 · J-59", 410, 9, "", "combined dry with #112"],
         [130, "Golden Teacher", "T-01", "F3", "pending", 0, "", "", ""],
         [131, "Golden Teacher", "T-01", "F4", None, None, None, "", ""],
     ]:
@@ -63,7 +63,7 @@ def _workbook() -> Workbook:
 
 def test_harvest_weights_never_mine_digits_from_notes():
     parsed = parse_workbook(_workbook())
-    tat1 = next(h for h in parsed.harvests if h.lot_code == "5x5 tub-F1")
+    tat1 = next(h for h in parsed.harvests if h.lot_code == "TAT-01-F1")
     assert tat1.fresh_g == 67
     assert tat1.dry_g == 0.0  # "not recorded", never 121
     assert "Dry (g): see #121 — combined" in tat1.notes
@@ -72,7 +72,7 @@ def test_harvest_weights_never_mine_digits_from_notes():
 
 def test_compound_harvest_date_is_imported():
     parsed = parse_workbook(_workbook())
-    tat2 = next(h for h in parsed.harvests if h.lot_code == "5x5 tub-F2")
+    tat2 = next(h for h in parsed.harvests if h.lot_code == "TAT-01-F2")
     assert tat2.harvested_on == date(2026, 9, 21)
     assert tat2.dry_g == 9
     assert tat2.date_text == ""
