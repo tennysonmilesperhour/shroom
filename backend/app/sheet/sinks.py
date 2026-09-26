@@ -382,19 +382,31 @@ class _PlanSink(SupabaseSink):
 def build_import_plan(parsed: ParsedWorkbook) -> dict[str, list[dict]]:
     """Resolve sheet relationships by natural key inside one DB transaction.
 
-    A workbook containing only a Harvest Tracker still creates its referenced
-    batch and strain. Inferred rows never overwrite an existing app record.
+    Referenced strains must be declared in a strain table. Never invent a
+    strain from free text or let the database default decide its collection.
+    Harvests may ensure a batch for a known strain without overwriting it.
     """
     from copy import deepcopy
-    from .parse import Strain, Batch
+    from .parse import Batch, validate_container_id
     parsed = deepcopy(parsed)
     known_strains = {s.name.lower() for s in parsed.strains}
-    inferred_strains = set()
-    for name in [b.strain for b in parsed.batches] + [h.strain for h in parsed.harvests] + [j.strain for j in parsed.jars]:
-        if name and name.lower() not in known_strains:
-            parsed.strains.append(Strain(name=name))
-            known_strains.add(name.lower())
-            inferred_strains.add(name)
+    referenced_names = [b.strain for b in parsed.batches] + [h.strain for h in parsed.harvests] + [j.strain for j in parsed.jars]
+    unknown = sorted({name for name in referenced_names if name and name.lower() not in known_strains})
+    if unknown:
+        raise ValueError(
+            "Unknown strain(s): " + "; ".join(unknown[:5]) +
+            (f" (+{len(unknown) - 5} more)" if len(unknown) > 5 else "") +
+            ". Add their canonical names and Mushroom Type to Strain Library "
+            "before importing. Move narrative notes out of data tables."
+        )
+    for batch in parsed.batches:
+        validate_container_id(batch.lot_code, "Batch")
+        if not batch.strain:
+            raise ValueError(f"Batch {batch.lot_code} needs a declared strain.")
+    for harvest in parsed.harvests:
+        validate_container_id(harvest.tub, "Harvest")
+        if not harvest.strain:
+            raise ValueError(f"Harvest {harvest.lot_code} needs a declared strain.")
     known_batches = {b.lot_code for b in parsed.batches}
     inferred_batches = set()
     for h in parsed.harvests:
@@ -404,11 +416,6 @@ def build_import_plan(parsed: ParsedWorkbook) -> dict[str, list[dict]]:
             inferred_batches.add(h.tub)
     sink = _PlanSink(parsed)
     sink._run_tables(parsed)
-    for row in sink.tables["strains"]:
-        if row["name"] in inferred_strains:
-            name = row["name"]
-            row.clear()
-            row.update({"name": name, "_ensure_only": True})
     for row in sink.tables["batches"]:
         if row["lot_code"] in inferred_batches:
             row["_ensure_only"] = True

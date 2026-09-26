@@ -350,7 +350,12 @@ def parse_strain_library(wb: Workbook) -> list[Strain]:
         if _is_order_note(name_raw):
             continue
         notes = util.clean(_at(row, c_notes))
-        collection = util.clean(_at(row, c_type)).lower() or "psychedelic"
+        collection = util.clean(_at(row, c_type)).lower()
+        if not collection:
+            raise ValueError(
+                f"Missing Mushroom Type for {name_raw}. Add a Mushroom Type column "
+                "with Functional, Gourmet, or Psychedelic; imports cannot guess the collection."
+            )
         collection = {"magic": "psychedelic", "function": "functional"}.get(collection, collection)
         if collection not in {"psychedelic", "functional", "gourmet"}:
             raise ValueError(f"Unknown Mushroom Type for {name_raw}: use Functional, Gourmet, or Psychedelic.")
@@ -809,6 +814,20 @@ def _join_text(a: str, b: str) -> str:
     return b if not a else f"{a} || {b}"
 
 
+# Workbook IDs must identify one physical container, not an annotation or list.
+# Keep support for established IDs such as T-01, G-03, LM-01, and T1.
+_CONTAINER_ID = re.compile(r"[A-Za-z]{1,12}-?\d+(?:-[A-Za-z0-9]+)?\Z")
+
+
+def validate_container_id(value: str, context: str) -> None:
+    if not _CONTAINER_ID.fullmatch(value):
+        raise ValueError(
+            f"{context}: '{value[:100]}' is not a single container ID. "
+            "Use an ID such as T-01 or LM-01; move annotations and summaries "
+            "outside the import table. Split multiple containers into separate rows."
+        )
+
+
 def parse_grow_cycle(wb: Workbook) -> list[Batch]:
     ws = _get_sheet(wb, "Grow Cycle Log", "Grow Cycle", "Cycle Log")
     matrix = _matrix(ws)
@@ -832,11 +851,12 @@ def parse_grow_cycle(wb: Workbook) -> list[Batch]:
     # back into the tub they came off; the per-flush detail lives on the
     # harvests, which already carry flush_number.
     by_tub: dict[str, Batch] = {}
-    for row in matrix[h + 1:]:
+    for row_number, row in enumerate(matrix[h + 1:], start=h + 2):
         strain = util.clean(_at(row, c_strain))
         tub = util.clean(_at(row, c_tub))
         if not strain or not tub or strain.upper().startswith("TOTAL"):
             continue
+        validate_container_id(tub, f"Grow Cycle Log row {row_number}")
         harvested = util.parse_date(_at(row, c_harv))
         pins = util.parse_date(_at(row, c_pins))
         trans = util.parse_date(_at(row, c_trans))
@@ -870,6 +890,12 @@ def parse_grow_cycle(wb: Workbook) -> list[Batch]:
                 notes=util.clean(_at(row, c_notes)),
             )
             continue
+        if existing.strain.casefold() != _strip_name(strain).casefold():
+            raise ValueError(
+                f"Grow Cycle Log row {row_number}: {tub} has conflicting strains "
+                f"'{existing.strain}' and '{_strip_name(strain)}'. Resolve the "
+                "strain or assign a separate batch ID before importing."
+            )
         existing.stage = _furthest_stage(existing.stage, stage)
         existing.inoculated_on = _earliest(existing.inoculated_on, util.parse_date(_at(row, c_inoc)))
         existing.transferred_on = _earliest(existing.transferred_on, trans)
@@ -895,11 +921,12 @@ def parse_harvests(wb: Workbook) -> list[Harvest]:
     c_dry = _col(headers, "dry (g)", "dry")
     c_notes = _col(headers, "notes")
     out: list[Harvest] = []
-    for row in matrix[h + 1:]:
+    for row_number, row in enumerate(matrix[h + 1:], start=h + 2):
         strain = util.clean(_at(row, c_strain))
         tub = util.clean(_at(row, c_tub))
         if not strain or strain.upper().startswith("TOTAL") or not tub:
             continue
+        validate_container_id(tub, f"Harvest Tracker row {row_number}")
         flush = util.parse_int(_at(row, c_flush)) or 1
         unparsed: list[str] = []
         fresh = _weight(row, c_fresh, "Fresh (g)", unparsed)
@@ -939,6 +966,8 @@ def _merge_strains(*groups: list[Strain]) -> list[Strain]:
                 order.append(key)
                 continue
             existing = by_name[key]
+            if existing.mushroom_type != s.mushroom_type:
+                raise ValueError(f"Conflicting Mushroom Types for {s.name}; reconcile the strain tables before importing.")
             for f in s.__dataclass_fields__:
                 new = getattr(s, f)
                 old = getattr(existing, f)

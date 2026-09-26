@@ -43,6 +43,7 @@ def build(path: str | Path) -> str:
          datetime(2026, 5, 4), "Moderate", "8/10", "Yes", "T-01", "P. cubensis. F1 445g."],
         ["Illusion Weaver", "Active — F3 fruiting", "Local shop", datetime(2026, 3, 30),
          datetime(2026, 5, 4), "Moderate", "7/10", "Yes", "T-02", "P. cubensis. Perimeter pinning."],
+        ["BV (Bluey Vuittons)", "Colonizing", "", "TBD", "TBD", "", "", "", "T-03", ""],
         ["MEDICINAL — COLONIZING"],
         ["Golden Teacher (bag)", "Colonizing", "Sporeworks", datetime(2026, 5, 21),
          "TBD", "Moderate-High", "9/10", "TBD", "G-03", "Classic, reliable, beginner-friendly."],
@@ -59,6 +60,11 @@ def build(path: str | Path) -> str:
         ["NEW SPORES — order #6849 shipped", "Awaiting inoculation", "Sporeworks",
          "TBD", "TBD", "-", "-", "-", "-", "Tracking to follow."],
     ])
+
+    sl.cell(2, 11, "Mushroom Type")
+    for row in range(3, sl.max_row + 1):
+        if sl.cell(row, 2).value:
+            sl.cell(row, 11, "psychedelic")
 
     fr = wb.create_sheet("Fridge & Incoming")
     _add(fr, [

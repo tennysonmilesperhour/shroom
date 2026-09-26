@@ -80,3 +80,24 @@ spine**. Supabase, whose schema was built for these tabs, receives all of them.
   Customer`) and **RLS** are model features with no sheet column — preserved.
 - A grow-cycle row's `(tub, flush)` becomes the synthesized **lot code**
   (`T-01-F1`) that links a batch to its harvest across both stores.
+
+## Import validation and the September 2026 repair
+
+Imports now fail before writing if a grow/harvest container cell contains a
+sentence, annotation, list, or unassigned ID. Use one stable ID (e.g. `T-27`)
+per container and keep confirmation text in Notes. A physical container cannot
+have conflicting strain names within the grow-cycle table.
+
+Every strain referenced by batches, harvests, or jars must be declared in the
+workbook's strain tables. Strain Library rows require an explicit Mushroom Type
+(`functional`, `gourmet`, or `psychedelic`); conflicting classifications across
+tables are rejected. Harvest-only files must include the referenced strain
+records. This intentionally replaces auto-creation of unknown strains, which
+allowed narrative text to become strains with the database's Functional default.
+
+Do not re-upload the unchanged September workbook after a database cleanup:
+first move narrative sections into a separate, non-imported Notes worksheet,
+resolve annotated/ambiguous container IDs, and reconcile strain aliases and
+classifications. Strict validation reports a blocking row rather than silently
+skipping a potentially real grow. Import validation does not remove existing
+corrupt or duplicated rows. Those require a separate, backed-up reconciliation.
