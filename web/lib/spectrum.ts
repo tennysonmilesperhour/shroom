@@ -13,7 +13,7 @@ export interface SpectrumStrain {
   totalPct: number | null;
   lowPct: number | null;
   highPct: number | null;
-  hue: number; // oklch degrees, 0-360
+  hue: number | null; // oklch degrees, 0-360; null means not characterized
   potencyTier: string | null;
   evidenceGrade: string | null;
   tags: string[];

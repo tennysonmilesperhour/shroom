@@ -64,14 +64,14 @@ export default async function StrainsPage() {
   );
 
   const spectrum: SpectrumStrain[] = strains
-    .filter((s) => s.mushroom_type === "psychedelic" && s.spectrum_hue != null)
+    .filter((s) => s.mushroom_type === "psychedelic")
     .map((s) => ({
       id: s.id,
       name: s.name,
       totalPct: s.alkaloid_total_pct,
       lowPct: s.alkaloid_total_low_pct,
       highPct: s.alkaloid_total_high_pct,
-      hue: s.spectrum_hue as number,
+      hue: s.spectrum_hue,
       potencyTier: s.potency_tier,
       evidenceGrade: s.evidence_grade,
       tags: s.experience_tags ?? [],
@@ -100,10 +100,9 @@ export default async function StrainsPage() {
               <h3 style={{ margin: "2px 0 0" }}>Psilocybe alkaloid &amp; experience wheel</h3>
             </div>
             <p className="muted spectrum-blurb">
-              The {spectrum.length} psychedelic strains as a color spectrum of reported character — each
-              wedge a strain, its length the measured potency (longer = stronger). Total-potency differences
-              between cubensis strains are small and dominated by cultivation; the &ldquo;character&rdquo;
-              spectrum is community lore, not proven pharmacology.
+              All {spectrum.length} Magic library entries are included. Colored wedges show reported character;
+              gray wedges have no character profile yet. Filled length shows recorded potency.
+              Outlined wedges have no potency value. Character reports are anecdotal.
             </p>
           </div>
           <AlkaloidSpectrum strains={spectrum} />
