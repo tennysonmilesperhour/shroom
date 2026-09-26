@@ -61,6 +61,15 @@ const ROUTES = [
 
 // Click-through scenarios captured at both widths.
 const SCENARIOS = [
+  { name: "strain-wheel-uncharacterized", route: "/strains", act: async (page) => {
+    const picker = page.getByLabel(/Find a strain/);
+    await picker.selectOption("3");
+    await page.getByText("Not yet characterized", { exact: true }).waitFor();
+    const options = await picker.locator("option").count() - 1;
+    const wedges = await page.locator(".spectrum-wedge").count();
+    const cards = await page.locator(".strain-card").count();
+    if (options !== cards || wedges !== cards) throw new Error(`Wheel coverage: ${wedges} wedges, ${options} options, ${cards} library entries`);
+  } },
   { name: "photo-upload", route: "/batches/1", act: async (page) => {
     await page.getByRole("button", { name: /Take or upload photo/ }).click();
     await page.locator('input[type="file"]').waitFor();

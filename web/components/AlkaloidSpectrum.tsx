@@ -63,8 +63,8 @@ export default function AlkaloidSpectrum({ strains }: { strains: SpectrumStrain[
 
   // Sort by hue so the wedges sweep through the colour spectrum (gentle → intense),
   // matching the character scale beneath the wheel.
-  const ordered = [...strains].sort((a, b) => a.hue - b.hue);
-  const per = 360 / ordered.length;
+  const ordered = [...strains].sort((a, b) => (a.hue ?? 361) - (b.hue ?? 361) || a.name.localeCompare(b.name));
+  const per = 360 / Math.max(ordered.length, 1);
 
   // Radial scale: spread the wedges across the *actual* potency range on hand
   // rather than the fixed 0.4–2.6% window, so the weakest strain starts at the
@@ -87,8 +87,8 @@ export default function AlkaloidSpectrum({ strains }: { strains: SpectrumStrain[
       <figure className="spectrum-wheel">
         <svg
           viewBox={`0 0 ${SIZE} ${SIZE}`}
-          role="img"
-          aria-label="Strain spectrum: each colored wedge is a strain; wedge length encodes measured potency, color encodes reported character."
+          role="group"
+          aria-label="Strain spectrum: every Magic library entry has a wedge. Gray means character unknown; an outline means potency unknown."
         >
           <defs>
             <radialGradient id="spectrum-hub" cx="50%" cy="50%" r="50%">
@@ -102,11 +102,12 @@ export default function AlkaloidSpectrum({ strains }: { strains: SpectrumStrain[
 
           {/* strain wedges — each an equal-angle slice colored by its hue */}
           {ordered.map((s, i) => {
-            const a0 = i * per + WEDGE_GAP / 2;
-            const a1 = (i + 1) * per - WEDGE_GAP / 2;
+            const gap = Math.min(WEDGE_GAP, per * 0.2);
+            const a0 = i * per + gap / 2;
+            const a1 = (i + 1) * per - gap / 2;
             const rData = displayFrac(s.totalPct) * OUTER_R;
             const isActive = s.id === activeId;
-            const color = hueColor(s.hue, 74, 0.18);
+            const color = s.hue == null ? "var(--muted)" : hueColor(s.hue, 74, 0.18);
             return (
               <a
                 key={s.id}
@@ -128,17 +129,18 @@ export default function AlkaloidSpectrum({ strains }: { strains: SpectrumStrain[
                 onFocus={() => setActiveId(s.id)}
                 onBlur={() => setActiveId((cur) => (cur === s.id ? null : cur))}
                 className="spectrum-wedge"
-                aria-label={`${s.name}, ${s.potencyTier ?? "potency unknown"}, ${s.totalPct ?? "?"}% total tryptamine`}
+                aria-label={`${s.name}, ${s.hue == null ? "not yet characterized, " : ""}${s.totalPct == null ? "potency not recorded" : `${s.totalPct}% total tryptamine`}`}
               >
                 {/* ghost slice to the edge — gives the full pie + a generous hit area */}
                 <path d={wedgePath(a0, a1, OUTER_R)} fill={color} opacity={isActive ? 0.22 : 0.12} />
                 {/* solid slice whose length is the measured potency */}
                 <path
-                  d={wedgePath(a0, a1, rData)}
-                  fill={color}
+                  d={wedgePath(a0, a1, s.totalPct == null ? OUTER_R : rData)}
+                  fill={s.totalPct == null ? "none" : color}
                   opacity={isActive ? 1 : 0.85}
-                  stroke={isActive ? "var(--text)" : "transparent"}
-                  strokeWidth={isActive ? 1.5 : 0}
+                  stroke={isActive ? "var(--text)" : s.totalPct == null ? color : "transparent"}
+                  strokeWidth={isActive ? 1.5 : s.totalPct == null ? 0.7 : 0}
+                  strokeDasharray={s.totalPct == null ? "2 3" : undefined}
                   strokeLinejoin="round"
                 />
               </a>
@@ -146,7 +148,7 @@ export default function AlkaloidSpectrum({ strains }: { strains: SpectrumStrain[
           })}
 
           {/* potency guide rings (drawn over the wedges, non-interactive) */}
-          {POTENCY_GUIDES.filter((pct) => pct >= dataMin - 1e-6 && pct <= dataMax + 1e-6).map((pct) => {
+          {POTENCY_GUIDES.filter((pct) => totals.length > 0 && pct >= dataMin - 1e-6 && pct <= dataMax + 1e-6).map((pct) => {
             const r = displayFrac(pct) * OUTER_R;
             return (
               <g key={pct} style={{ pointerEvents: "none" }}>
@@ -181,21 +183,35 @@ export default function AlkaloidSpectrum({ strains }: { strains: SpectrumStrain[
       </figure>
 
       <div className="spectrum-side">
+        <label className="spectrum-picker">
+          Find a strain ({strains.length})
+          <select value={activeId ?? ""} onChange={(e) => {
+            const id = e.target.value ? Number(e.target.value) : null;
+            setActiveId(id);
+            lastTapRef.current = id;
+          }}>
+            <option value="">Choose a strain</option>
+            {[...strains].sort((a, b) => a.name.localeCompare(b.name)).map((s) => (
+              <option key={s.id} value={s.id}>{s.name}{s.hue == null ? " — not yet characterized" : ""}</option>
+            ))}
+          </select>
+        </label>
         <div className="spectrum-readout" aria-live="polite" ref={readoutRef}>
           {active ? (
             <>
               <div className="spectrum-readout-top">
                 <span
                   className="spectrum-swatch"
-                  style={{ background: hueColor(active.hue, 74, 0.18) }}
+                  style={{ background: active.hue == null ? "var(--muted)" : hueColor(active.hue, 74, 0.18) }}
                   aria-hidden
                 />
                 <strong>{active.name}</strong>
               </div>
               <div className="spectrum-readout-meta">
-                <span>{active.potencyTier ?? "—"}</span>
+                <span>{active.hue == null ? "Not yet characterized" : active.potencyTier ?? "Potency tier not recorded"}</span>
                 <span>
-                  {active.lowPct ?? "?"}–{active.highPct ?? "?"}% total
+                  {active.totalPct == null ? "Potency not recorded" : active.lowPct != null && active.highPct != null
+                    ? `${active.lowPct}–${active.highPct}% total` : `${active.totalPct}% total`}
                 </span>
                 <span>{evidenceLabel(active.evidenceGrade)}</span>
               </div>
@@ -224,14 +240,15 @@ export default function AlkaloidSpectrum({ strains }: { strains: SpectrumStrain[
           <div>
             <dt>Wedge length</dt>
             <dd>
-              Measured total tryptamine (% dry weight) — <em>lab-grounded</em>. Longer = stronger.
+              Recorded total tryptamine (% dry weight). Longer = higher recorded value.
+              Dashed outline = potency not recorded; it does not indicate low potency.
             </dd>
           </div>
           <div>
             <dt>Wedge color</dt>
             <dd>
               Reported experiential character — <em>anecdotal</em>. Amber = gentle, cyan = bright/balanced,
-              violet = intense.
+              violet = intense. Gray = not yet characterized.
             </dd>
           </div>
         </dl>

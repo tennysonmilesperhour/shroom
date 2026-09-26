@@ -2678,6 +2678,9 @@ html[data-theme="light"] { --spectrum-hub-1: oklch(99% 0.004 235); --spectrum-hu
 .spectrum-wheel svg { width: 100%; height: auto; overflow: visible; }
 .spectrum-side { flex: 1 1 240px; display: flex; flex-direction: column; gap: var(--space-3); min-width: 220px; }
 
+.spectrum-picker { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.spectrum-picker select { width: 100%; min-width: 0; max-width: 100%; }
+
 .spectrum-wedge { cursor: pointer; outline: none; }
 .spectrum-wedge path { transition: opacity 120ms ease; }
 .spectrum-wedge:focus-visible path { stroke: var(--lumen); stroke-width: 2; }
