@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -11,6 +11,8 @@ import {
   POTENCY_MAX,
   type SpectrumStrain,
 } from "@/lib/spectrum";
+
+import { angleDistance, magnifyAngle, FOCUS_HALF_WIDTH, FOCUS_SCALE } from "@/lib/spectrum-focus";
 
 const SIZE = 360;
 const CX = SIZE / 2;
@@ -44,27 +46,34 @@ export default function AlkaloidSpectrum({ strains }: { strains: SpectrumStrain[
   const router = useRouter();
   const [activeId, setActiveId] = useState<number | null>(null);
   const active = strains.find((s) => s.id === activeId) ?? null;
-  const readoutRef = useRef<HTMLDivElement>(null);
-  // Which wedge the last tap selected, and what kind of pointer produced the
-  // current click. On phones the tap's synthetic mouseenter re-renders the
-  // wedge mid-tap and the follow-up click is dropped or lands "already
-  // active" depending on timing — so navigation was a coin flip. Touch now
-  // gets an explicit two-tap flow: first tap selects and reveals the
-  // profile, second tap opens the strain. Mouse behavior is unchanged.
-  const lastTapRef = useRef<number | null>(null);
-  const pointerTypeRef = useRef<string>("mouse");
-
-  const selectWedge = (id: number) => {
-    setActiveId(id);
-    // The readout sits below the wheel on phones; make the tapped strain's
-    // profile actually appear, otherwise the tap looks like it did nothing.
-    readoutRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
-  };
+  const wheelRef = useRef<SVGSVGElement>(null);
+  const [focusAngle, setFocusAngle] = useState<number | null>(null);
+  const touch = useRef<{ x: number; y: number; moved: boolean; openId: number | null } | null>(null);
+  const pointerTypeRef = useRef("mouse");
+  useEffect(() => {
+    const dismiss = (event: PointerEvent) => {
+      if (!wheelRef.current?.contains(event.target as Node)) setFocusAngle(null);
+    };
+    document.addEventListener("pointerdown", dismiss);
+    return () => document.removeEventListener("pointerdown", dismiss);
+  }, []);
 
   // Sort by hue so the wedges sweep through the colour spectrum (gentle → intense),
   // matching the character scale beneath the wheel.
   const ordered = [...strains].sort((a, b) => (a.hue ?? 361) - (b.hue ?? 361) || a.name.localeCompare(b.name));
   const per = 360 / Math.max(ordered.length, 1);
+
+  const pointAngle = (event: React.PointerEvent<SVGSVGElement>) => {
+    const box = event.currentTarget.getBoundingClientRect();
+    const x = (event.clientX - box.left) * SIZE / box.width - CX;
+    const y = (event.clientY - box.top) * SIZE / box.height - CY;
+    if (Math.hypot(x, y) < HUB_R || Math.hypot(x, y) > OUTER_R) return null;
+    return (Math.atan2(-y, x) * 180 / Math.PI + 360) % 360;
+  };
+  const focusAt = (angle: number | null) => {
+    setFocusAngle(angle);
+    setActiveId(angle == null ? null : ordered[Math.floor(angle / per)]?.id ?? null);
+  };
 
   // Radial scale: spread the wedges across the *actual* potency range on hand
   // rather than the fixed 0.4–2.6% window, so the weakest strain starts at the
@@ -86,6 +95,52 @@ export default function AlkaloidSpectrum({ strains }: { strains: SpectrumStrain[
     <div className="spectrum">
       <figure className="spectrum-wheel">
         <svg
+          ref={wheelRef}
+          data-magnified={focusAngle != null}
+          style={{ touchAction: "none" }}
+          onPointerDown={(event) => {
+            pointerTypeRef.current = event.pointerType;
+            if (event.pointerType === "mouse") return;
+            if (!event.isPrimary) return;
+            event.preventDefault();
+            const angle = pointAngle(event);
+            const target = (event.target as Element).closest("a[data-strain-id]");
+            const nearby = angle != null && focusAngle != null &&
+              Math.abs(angleDistance(angle, focusAngle)) <= FOCUS_HALF_WIDTH * FOCUS_SCALE;
+            touch.current = { x: event.clientX, y: event.clientY, moved: false,
+              openId: nearby && target ? Number(target.getAttribute("data-strain-id")) : null };
+            event.currentTarget.setPointerCapture(event.pointerId);
+            if (!nearby) focusAt(angle);
+          }}
+          onPointerMove={(event) => {
+            if (event.pointerType === "mouse") {
+              const angle = pointAngle(event);
+              // Hold the lens while crossing enlarged neighbors so their real
+              // click targets stay larger instead of moving away from the cursor.
+              if (angle == null || focusAngle == null ||
+                Math.abs(angleDistance(angle, focusAngle)) > FOCUS_HALF_WIDTH * FOCUS_SCALE) {
+                focusAt(angle);
+              } else {
+                const target = (event.target as Element).closest("a[data-strain-id]");
+                setActiveId(target ? Number(target.getAttribute("data-strain-id")) : null);
+              }
+            } else if (event.isPrimary && touch.current) {
+              if (Math.hypot(event.clientX - touch.current.x, event.clientY - touch.current.y) > 8) {
+                touch.current.moved = true;
+                focusAt(pointAngle(event));
+              }
+            }
+          }}
+          onPointerUp={(event) => {
+            if (event.pointerType === "mouse" || !event.isPrimary) return;
+            event.preventDefault();
+            const gesture = touch.current;
+            touch.current = null;
+            if (gesture && !gesture.moved && gesture.openId != null) router.push(`/strains/${gesture.openId}`);
+          }}
+          onPointerCancel={() => { touch.current = null; focusAt(null); }}
+          onPointerLeave={(event) => { if (event.pointerType === "mouse") focusAt(null); }}
+          onKeyDown={(event) => { if (event.key === "Escape") focusAt(null); }}
           viewBox={`0 0 ${SIZE} ${SIZE}`}
           role="group"
           aria-label="Strain spectrum: every Magic library entry has a wedge. Gray means character unknown; an outline means potency unknown."
@@ -103,8 +158,8 @@ export default function AlkaloidSpectrum({ strains }: { strains: SpectrumStrain[
           {/* strain wedges — each an equal-angle slice colored by its hue */}
           {ordered.map((s, i) => {
             const gap = Math.min(WEDGE_GAP, per * 0.2);
-            const a0 = i * per + gap / 2;
-            const a1 = (i + 1) * per - gap / 2;
+            const a0 = magnifyAngle(i * per + gap / 2, focusAngle);
+            const a1 = magnifyAngle((i + 1) * per - gap / 2, focusAngle);
             const rData = displayFrac(s.totalPct) * OUTER_R;
             const isActive = s.id === activeId;
             const color = s.hue == null ? "var(--muted)" : hueColor(s.hue, 74, 0.18);
@@ -112,28 +167,19 @@ export default function AlkaloidSpectrum({ strains }: { strains: SpectrumStrain[
               <a
                 key={s.id}
                 href={`/strains/${s.id}`}
-                onPointerDown={(e) => {
-                  pointerTypeRef.current = e.pointerType;
+                data-strain-id={s.id}
+                onClick={(event) => {
+                  event.preventDefault();
+                  if (event.detail === 0 || pointerTypeRef.current === "mouse") router.push(`/strains/${s.id}`);
                 }}
-                onClick={(e) => {
-                  e.preventDefault();
-                  if (pointerTypeRef.current === "touch" && lastTapRef.current !== s.id) {
-                    lastTapRef.current = s.id;
-                    selectWedge(s.id);
-                    return;
-                  }
-                  router.push(`/strains/${s.id}`);
-                }}
-                onMouseEnter={() => setActiveId(s.id)}
-                onMouseLeave={() => setActiveId((cur) => (cur === s.id ? null : cur))}
-                onFocus={() => setActiveId(s.id)}
-                onBlur={() => setActiveId((cur) => (cur === s.id ? null : cur))}
+                onFocus={() => { setActiveId(s.id); setFocusAngle((i + 0.5) * per); }}
+                onBlur={() => { setActiveId(null); setFocusAngle(null); }}
                 className="spectrum-wedge"
                 aria-label={`${s.name}, ${s.hue == null ? "not yet characterized, " : ""}${s.totalPct == null ? "potency not recorded" : `${s.totalPct}% total tryptamine`}`}
               >
                 {/* ghost slice to the edge — gives the full pie + a generous hit area */}
                 <path d={wedgePath(a0, a1, OUTER_R)} fill={color} opacity={isActive ? 0.22 : 0.12} />
-                {/* solid slice whose length is the measured potency */}
+                {/* Recorded reference potency; magnification changes angles only. */}
                 <path
                   d={wedgePath(a0, a1, s.totalPct == null ? OUTER_R : rData)}
                   fill={s.totalPct == null ? "none" : color}
@@ -180,6 +226,8 @@ export default function AlkaloidSpectrum({ strains }: { strains: SpectrumStrain[
             <span>intense</span>
           </span>
         </figcaption>
+        <p className="muted spectrum-help">Hover to magnify · Touch or drag, then tap a larger slice to open</p>
+        <button type="button" className="ghost spectrum-reset" disabled={focusAngle == null} onClick={() => focusAt(null)}>Reset magnification</button>
       </figure>
 
       <div className="spectrum-side">
@@ -188,7 +236,7 @@ export default function AlkaloidSpectrum({ strains }: { strains: SpectrumStrain[
           <select value={activeId ?? ""} onChange={(e) => {
             const id = e.target.value ? Number(e.target.value) : null;
             setActiveId(id);
-            lastTapRef.current = id;
+            setFocusAngle(id == null ? null : (ordered.findIndex((s) => s.id === id) + 0.5) * per);
           }}>
             <option value="">Choose a strain</option>
             {[...strains].sort((a, b) => a.name.localeCompare(b.name)).map((s) => (
@@ -196,7 +244,7 @@ export default function AlkaloidSpectrum({ strains }: { strains: SpectrumStrain[
             ))}
           </select>
         </label>
-        <div className="spectrum-readout" aria-live="polite" ref={readoutRef}>
+        <div className="spectrum-readout" aria-live="polite">
           {active ? (
             <>
               <div className="spectrum-readout-top">
@@ -230,8 +278,7 @@ export default function AlkaloidSpectrum({ strains }: { strains: SpectrumStrain[
             </>
           ) : (
             <p className="muted" style={{ margin: 0 }}>
-              Tap or hover a wedge to read its profile. Tap again (or click) to
-              open the strain.
+              Hover to magnify nearby slices, then click to open. On a phone, touch or drag to magnify, then tap an enlarged slice to open it.
             </p>
           )}
         </div>

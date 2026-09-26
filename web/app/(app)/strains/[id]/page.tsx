@@ -129,7 +129,7 @@ export default async function StrainDetailPage({
         .from("v_yield_by_strain")
         .select("fresh_kg,biological_efficiency_pct,batches")
         .eq("strain_id", id)
-        .single(),
+        .maybeSingle(),
       "load yield for strain",
     ),
     soft<SporeListingRow>(
@@ -207,14 +207,14 @@ export default async function StrainDetailPage({
         <Kpi label="Batches grown" countTo={yieldRow?.batches ?? batches.length} />
       </div>
 
-      {strain.mushroom_type === "psychedelic" && strain.alkaloid_total_pct != null && (() => {
+      {strain.mushroom_type === "psychedelic" && (strain.alkaloid_total_pct != null || strain.experience_summary || strain.profile_source) && (() => {
         const split = alkaloidSplit(strain.alkaloid_total_pct, strain.psilocin_psilocybin_ratio);
         const pbPct = split ? (split.psilocybin / (split.psilocybin + split.psilocin)) * 100 : 0;
-        const hue = strain.spectrum_hue ?? 295;
+        const hue = strain.spectrum_hue;
         return (
           <Card title="Alkaloid profile & reported experience" className="profile-card">
             <div className="profile-head">
-              <span className="profile-swatch" style={{ background: hueColor(hue, 74, 0.18) }} aria-hidden />
+              <span className="profile-swatch" style={{ background: hue == null ? "var(--muted)" : hueColor(hue, 74, 0.18) }} aria-hidden />
               {strain.potency_tier && <Badge tone="violet">{strain.potency_tier}</Badge>}
               <Badge tone={evidenceTone(strain.evidence_grade)}>
                 {evidenceLabel(strain.evidence_grade)}
@@ -225,10 +225,10 @@ export default async function StrainDetailPage({
               <div className="profile-bar-label">
                 <span>Total tryptamine</span>
                 <span>
-                  <b>{strain.alkaloid_total_pct}%</b>{" "}
-                  <span className="muted">
+                  <b>{strain.alkaloid_total_pct == null ? "Not recorded" : `${strain.alkaloid_total_pct}%`}</b>{" "}
+                  {strain.alkaloid_total_low_pct != null && strain.alkaloid_total_high_pct != null && <span className="muted">
                     ({strain.alkaloid_total_low_pct}–{strain.alkaloid_total_high_pct}% dry wt)
-                  </span>
+                  </span>}
                 </span>
               </div>
               {split && (
@@ -265,10 +265,12 @@ export default async function StrainDetailPage({
             </dl>
 
             <p className="profile-caveat muted">
-              Potency is lab-grounded; the experiential &ldquo;character&rdquo; is anecdotal and shaped
-              heavily by dose, set and setting. Sample-to-sample potency within a strain can vary by
-              up to ~100%.
-              {strain.profile_source ? ` Source: ${strain.profile_source}` : ""}
+              Reported experiences are anecdotal, influenced by dose, set and setting, and do not
+              establish predictable differences between strains. Reference measurements do not
+              measure this library’s stock. Color is an editorial guide to reported character.
+              {strain.profile_source && <> Source: {strain.profile_source.split(/(https?:\/\/[^\s]+)/g).map((part, index) =>
+                /^https?:\/\//.test(part) ? <a key={index} href={part} target="_blank" rel="noreferrer">{displayUrl(part)}</a> : part
+              )}</>}
             </p>
           </Card>
         );

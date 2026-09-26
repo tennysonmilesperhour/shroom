@@ -1,0 +1,999 @@
+[
+  {
+    "id": 19,
+    "name": "Reishi",
+    "status": "identity/evidence gap",
+    "before": {
+      "experience_summary": "",
+      "profile_source": "",
+      "spectrum_hue": null,
+      "experience_tags": [],
+      "evidence_grade": "",
+      "alkaloid_total_pct": null
+    },
+    "after": {
+      "experience_summary": "The name Reishi conflicts with this record’s Magic classification and Psilocybe cubensis species label. Identity needs reconciliation before assigning a psychedelic profile.",
+      "profile_source": "Reviewed 2026-09-25. Local library identity audit; no external profile assigned.",
+      "spectrum_hue": null,
+      "experience_tags": [],
+      "evidence_grade": "",
+      "alkaloid_total_pct": null
+    }
+  },
+  {
+    "id": 20,
+    "name": "Natalensis",
+    "status": "identity/evidence gap",
+    "before": {
+      "experience_summary": "",
+      "profile_source": "",
+      "spectrum_hue": null,
+      "experience_tags": [],
+      "evidence_grade": "",
+      "alkaloid_total_pct": null
+    },
+    "after": {
+      "experience_summary": "Natalensis requires identity verification. Recent taxonomy distinguishes P. ochraceocentrata from P. natalensis; a commercial label alone does not establish which species this stock represents. No cross-species potency or experience profile has been imported.",
+      "profile_source": "Reviewed 2026-09-25. Bradshaw et al., 2026, taxonomy reference only. https://doi.org/10.1098/rspb.2025.2270",
+      "spectrum_hue": null,
+      "experience_tags": [],
+      "evidence_grade": "",
+      "alkaloid_total_pct": null
+    }
+  },
+  {
+    "id": 21,
+    "name": "Gorilla Wizard",
+    "status": "sourced",
+    "before": {
+      "experience_summary": "",
+      "profile_source": "",
+      "spectrum_hue": null,
+      "experience_tags": [],
+      "evidence_grade": "",
+      "alkaloid_total_pct": null
+    },
+    "after": {
+      "experience_summary": "One first-person Gorilla Wizard report describes relaxation, pronounced body sensations, euphoria and geometric visuals, with sleepiness later in the experience. This is an individual report, not a predictable strain effect.",
+      "profile_source": "Reviewed 2026-09-25. Miss Cadabra, first-person report. https://www.linkedin.com/posts/miss-cadabra-25b254267_its-time-for-another-fruit-review-with-fruits-activity-7112599751941881856-oxiD",
+      "spectrum_hue": 235,
+      "experience_tags": [
+        "relaxing",
+        "body-heavy",
+        "visual",
+        "euphoric"
+      ],
+      "evidence_grade": "anecdotal",
+      "alkaloid_total_pct": null
+    }
+  },
+  {
+    "id": 47,
+    "name": "PE6 (Penis Envy 6)",
+    "status": "name-linked context",
+    "before": {
+      "experience_summary": "",
+      "profile_source": "",
+      "spectrum_hue": null,
+      "experience_tags": [],
+      "evidence_grade": "",
+      "alkaloid_total_pct": null
+    },
+    "after": {
+      "experience_summary": "Name-linked reference for PE6; this entry is not independently characterized. Existing library reports describe intense, visual, introspective, body-load experiences. Any borrowed character is family-level context, not a measurement or guaranteed effect for this isolate.",
+      "profile_source": "Reviewed 2026-09-25. Existing library record 11 (PE6); prior character descriptions were not independently validated in this review.",
+      "spectrum_hue": 292,
+      "experience_tags": [
+        "intense",
+        "visual",
+        "introspective",
+        "body-load"
+      ],
+      "evidence_grade": "anecdotal",
+      "alkaloid_total_pct": null
+    }
+  },
+  {
+    "id": 53,
+    "name": "Hillbilly Pumpkin",
+    "status": "sourced",
+    "before": {
+      "experience_summary": "",
+      "profile_source": "",
+      "spectrum_hue": null,
+      "experience_tags": [],
+      "evidence_grade": "",
+      "alkaloid_total_pct": null
+    },
+    "after": {
+      "experience_summary": "A Hillbilly Pumpkin-labeled first-person account describes an unexpectedly overwhelming experience. The report does not establish a characteristic potency or a reliably gentle profile; ordinary Hillbilly measurements have not been assigned to this selection.",
+      "profile_source": "Reviewed 2026-09-25. First-person report, 2026. https://www.reddit.com/r/PsilocybinMushrooms/comments/1q2qzpw/",
+      "spectrum_hue": 275,
+      "experience_tags": [
+        "intense"
+      ],
+      "evidence_grade": "anecdotal",
+      "alkaloid_total_pct": null
+    }
+  },
+  {
+    "id": 54,
+    "name": "Trinity",
+    "status": "sourced",
+    "before": {
+      "experience_summary": "",
+      "profile_source": "",
+      "spectrum_hue": null,
+      "experience_tags": [],
+      "evidence_grade": "",
+      "alkaloid_total_pct": null
+    },
+    "after": {
+      "experience_summary": "A first-person Trinity report describes prominent visual patterns, tactile sensations, positive mood and sociability. No assay establishes the potency of this library entry.",
+      "profile_source": "Reviewed 2026-09-25. First-person report; preparation and potency claims in the source are not adopted. https://www.reddit.com/r/shrooms/comments/pksgy6/subjective_review_trinity/",
+      "spectrum_hue": 195,
+      "experience_tags": [
+        "visual",
+        "tactile",
+        "social"
+      ],
+      "evidence_grade": "anecdotal",
+      "alkaloid_total_pct": null
+    }
+  },
+  {
+    "id": 55,
+    "name": "Ghost",
+    "status": "sourced",
+    "before": {
+      "experience_summary": "",
+      "profile_source": "",
+      "spectrum_hue": null,
+      "experience_tags": [],
+      "evidence_grade": "",
+      "alkaloid_total_pct": null
+    },
+    "after": {
+      "experience_summary": "April Pride describes Ghost experiences as intense and introspective, with visual and bodily effects. These are anecdotal descriptions, not evidence of therapeutic benefit or an assay of this stock.",
+      "profile_source": "Reviewed 2026-09-25. April Pride, episode 65, 2023. https://aprilpride.substack.com/p/psilocybe-ghosts-shadow-work-explained",
+      "spectrum_hue": 285,
+      "experience_tags": [
+        "intense",
+        "introspective",
+        "visual"
+      ],
+      "evidence_grade": "anecdotal",
+      "alkaloid_total_pct": null
+    }
+  },
+  {
+    "id": 56,
+    "name": "Cambodian",
+    "status": "sourced",
+    "before": {
+      "experience_summary": "",
+      "profile_source": "",
+      "spectrum_hue": null,
+      "experience_tags": [],
+      "evidence_grade": "",
+      "alkaloid_total_pct": null
+    },
+    "after": {
+      "experience_summary": "A Cambodian-labeled first-person account describes visual changes, euphoria and an immersive, emotionally intense experience. The report does not establish a consistent effect profile or potency for other samples.",
+      "profile_source": "Reviewed 2026-09-25. gumshoe, Erowid report 79749, published 2018. https://erowid.org/experiences/exp.php?ID=79749",
+      "spectrum_hue": 220,
+      "experience_tags": [
+        "visual",
+        "euphoric",
+        "emotional"
+      ],
+      "evidence_grade": "anecdotal",
+      "alkaloid_total_pct": null
+    }
+  },
+  {
+    "id": 57,
+    "name": "Mazatapec",
+    "status": "sourced",
+    "before": {
+      "experience_summary": "",
+      "profile_source": "",
+      "spectrum_hue": null,
+      "experience_tags": [],
+      "evidence_grade": "",
+      "alkaloid_total_pct": null
+    },
+    "after": {
+      "experience_summary": "Rose City Laboratories reports psilocybin averaging 6.38 mg/g (range 4.93–8.42; 13 samples) under the spelling Mazapatec. These are producer-labeled reference samples, not total tryptamine or measurements of this stock. Experiential character remains unverified.",
+      "profile_source": "Reviewed 2026-09-25. Rose City Laboratories, Historical Potency Data, 2024; outliers removed and producer-supplied names. https://static1.squarespace.com/static/5fb8053ee029577d48c89898/t/6737c2d687690d6a90d8c281/1731707606907/RCL-Historical-Study-BB-Sister-Lab.pdf",
+      "spectrum_hue": null,
+      "experience_tags": [],
+      "evidence_grade": "mixed",
+      "alkaloid_total_pct": null
+    }
+  },
+  {
+    "id": 61,
+    "name": "Albino Texas PE6",
+    "status": "identity/evidence gap",
+    "before": {
+      "experience_summary": "",
+      "profile_source": "",
+      "spectrum_hue": null,
+      "experience_tags": [],
+      "evidence_grade": "",
+      "alkaloid_total_pct": null
+    },
+    "after": {
+      "experience_summary": "Albino Texas PE6 appears as a distinct label in firsthand collection records. No usable strain-specific assay or consistent experience profile was verified. PE6 and Albino Penis Envy values have not been substituted.",
+      "profile_source": "Reviewed 2026-09-25. Firsthand identity discussion, 2023; identity remains unverified. https://www.reddit.com/r/MycologyandGenetics/comments/15t00l6/",
+      "spectrum_hue": null,
+      "experience_tags": [],
+      "evidence_grade": "",
+      "alkaloid_total_pct": null
+    }
+  },
+  {
+    "id": 62,
+    "name": "Albino Bluey Vuitton",
+    "status": "sourced",
+    "before": {
+      "experience_summary": "",
+      "profile_source": "",
+      "spectrum_hue": null,
+      "experience_tags": [],
+      "evidence_grade": "",
+      "alkaloid_total_pct": null
+    },
+    "after": {
+      "experience_summary": "First-person comments for Albino Bluey Vuitton describe prominent visual and bodily sensations, with substantial variation in reported intensity. Identity is self-reported and no batch assay was verified for this entry.",
+      "profile_source": "Reviewed 2026-09-25. First-person comments, March 2026; unverified lineage claims are not adopted. https://www.reddit.com/r/shegrowsfungigenetics/comments/1rzqt25/",
+      "spectrum_hue": 245,
+      "experience_tags": [
+        "visual",
+        "body-focused",
+        "intense"
+      ],
+      "evidence_grade": "anecdotal",
+      "alkaloid_total_pct": null
+    }
+  },
+  {
+    "id": 69,
+    "name": "Hillbilly x Yeti",
+    "status": "identity/evidence gap",
+    "before": {
+      "experience_summary": "",
+      "profile_source": "",
+      "spectrum_hue": null,
+      "experience_tags": [],
+      "evidence_grade": "",
+      "alkaloid_total_pct": null
+    },
+    "after": {
+      "experience_summary": "Firsthand records use the Hillbilly x Yeti name, but no usable assay or experience profile specific to this cross was verified. Parent profiles do not establish the cross’s characteristics.",
+      "profile_source": "Reviewed 2026-09-25. Firsthand name record, 2025. https://www.reddit.com/r/mushroom/comments/1lz710t/",
+      "spectrum_hue": null,
+      "experience_tags": [],
+      "evidence_grade": "",
+      "alkaloid_total_pct": null
+    }
+  },
+  {
+    "id": 72,
+    "name": "Golden Teacher (GT)",
+    "status": "name-linked context",
+    "before": {
+      "experience_summary": "",
+      "profile_source": "",
+      "spectrum_hue": null,
+      "experience_tags": [],
+      "evidence_grade": "",
+      "alkaloid_total_pct": null
+    },
+    "after": {
+      "experience_summary": "Name-linked reference for Golden Teacher; this entry is not independently characterized. Existing library reports describe gentle, introspective, spiritual, balanced experiences. Any borrowed character is family-level context, not a measurement or guaranteed effect for this isolate.",
+      "profile_source": "Reviewed 2026-09-25. Existing library record 7 (Golden Teacher); prior character descriptions were not independently validated in this review.",
+      "spectrum_hue": 78,
+      "experience_tags": [
+        "gentle",
+        "introspective",
+        "spiritual",
+        "balanced"
+      ],
+      "evidence_grade": "anecdotal",
+      "alkaloid_total_pct": null
+    }
+  },
+  {
+    "id": 74,
+    "name": "Lizard King",
+    "status": "sourced",
+    "before": {
+      "experience_summary": "",
+      "profile_source": "",
+      "spectrum_hue": null,
+      "experience_tags": [],
+      "evidence_grade": "",
+      "alkaloid_total_pct": null
+    },
+    "after": {
+      "experience_summary": "Rose City Laboratories reports psilocybin averaging 6.09 mg/g (range 4.72–7.37; five Lizard King samples). This measures psilocybin alone in external samples; total tryptamine and a consistent experiential character remain unknown for this entry.",
+      "profile_source": "Reviewed 2026-09-25. Rose City Laboratories, Historical Potency Data, 2024; outliers removed and producer-supplied names. https://static1.squarespace.com/static/5fb8053ee029577d48c89898/t/6737c2d687690d6a90d8c281/1731707606907/RCL-Historical-Study-BB-Sister-Lab.pdf",
+      "spectrum_hue": null,
+      "experience_tags": [],
+      "evidence_grade": "mixed",
+      "alkaloid_total_pct": null
+    }
+  },
+  {
+    "id": 75,
+    "name": "Jack Frost",
+    "status": "sourced",
+    "before": {
+      "experience_summary": "",
+      "profile_source": "",
+      "spectrum_hue": null,
+      "experience_tags": [],
+      "evidence_grade": "",
+      "alkaloid_total_pct": null
+    },
+    "after": {
+      "experience_summary": "A 2026 study reports 4.95 mg/g total tryptamines (0.495% dry weight) for its Jack Frost reference material. Other measured tryptamines were below detection. This single study value is not a typical strain range or an assay of this stock; experiential character remains unverified.",
+      "profile_source": "Reviewed 2026-09-25. Sharchaton et al., Journal of Fungi 12(7):486, Table 1. https://doi.org/10.3390/jof12070486",
+      "spectrum_hue": null,
+      "experience_tags": [],
+      "evidence_grade": "mixed",
+      "alkaloid_total_pct": 0.495
+    }
+  },
+  {
+    "id": 76,
+    "name": "Magnolia Teacher",
+    "status": "identity/evidence gap",
+    "before": {
+      "experience_summary": "",
+      "profile_source": "",
+      "spectrum_hue": null,
+      "experience_tags": [],
+      "evidence_grade": "",
+      "alkaloid_total_pct": null
+    },
+    "after": {
+      "experience_summary": "The Magnolia Teacher name was found in a firsthand collection record, but no usable strain-specific assay or experience report was verified. Blue Magnolia and Golden Teacher profiles have not been substituted.",
+      "profile_source": "Reviewed 2026-09-25. Firsthand name record only, 2025. https://www.reddit.com/r/shroomers/comments/1izquk1/",
+      "spectrum_hue": null,
+      "experience_tags": [],
+      "evidence_grade": "",
+      "alkaloid_total_pct": null
+    }
+  },
+  {
+    "id": 78,
+    "name": "Nepal Chitwan",
+    "status": "identity/evidence gap",
+    "before": {
+      "experience_summary": "",
+      "profile_source": "",
+      "spectrum_hue": null,
+      "experience_tags": [],
+      "evidence_grade": "",
+      "alkaloid_total_pct": null
+    },
+    "after": {
+      "experience_summary": "Nepal Chitwan appears in community reports, but no sufficiently documented chemical profile or consistent strain-specific character was verified in this review. Total potency, timing and color remain unknown.",
+      "profile_source": "Reviewed 2026-09-25. Research gap: exact-name literature and first-person report search, 2026-09-25. No primary assay verified.",
+      "spectrum_hue": null,
+      "experience_tags": [],
+      "evidence_grade": "",
+      "alkaloid_total_pct": null
+    }
+  },
+  {
+    "id": 79,
+    "name": "ODPE",
+    "status": "identity/evidence gap",
+    "before": {
+      "experience_summary": "",
+      "profile_source": "",
+      "spectrum_hue": null,
+      "experience_tags": [],
+      "evidence_grade": "",
+      "alkaloid_total_pct": null
+    },
+    "after": {
+      "experience_summary": "The ODPE label needs a traceable identity/source before a characteristic profile can be assigned. No usable primary assay or sufficiently documented experience report was verified for this entry.",
+      "profile_source": "Reviewed 2026-09-25. Research gap: exact-name primary-source search, 2026-09-25; no profile inferred from Penis Envy.",
+      "spectrum_hue": null,
+      "experience_tags": [],
+      "evidence_grade": "",
+      "alkaloid_total_pct": null
+    }
+  },
+  {
+    "id": 80,
+    "name": "Storm Trooper",
+    "status": "identity/evidence gap",
+    "before": {
+      "experience_summary": "",
+      "profile_source": "",
+      "spectrum_hue": null,
+      "experience_tags": [],
+      "evidence_grade": "",
+      "alkaloid_total_pct": null
+    },
+    "after": {
+      "experience_summary": "No usable primary assay or sufficiently documented experience profile was verified for the Storm Trooper label. Similar-sounding names have not been treated as equivalent.",
+      "profile_source": "Reviewed 2026-09-25. Research gap: exact-name primary-source search, 2026-09-25.",
+      "spectrum_hue": null,
+      "experience_tags": [],
+      "evidence_grade": "",
+      "alkaloid_total_pct": null
+    }
+  },
+  {
+    "id": 82,
+    "name": "Pink Buffalo",
+    "status": "sourced",
+    "before": {
+      "experience_summary": "",
+      "profile_source": "",
+      "spectrum_hue": null,
+      "experience_tags": [],
+      "evidence_grade": "",
+      "alkaloid_total_pct": null
+    },
+    "after": {
+      "experience_summary": "Reports collected by DoubleBlind describe euphoria and visual effects, while its lab-source interview cautions against assuming distinct strain effects. Rose City Laboratories lists psilocybin averaging 6.43 mg/g (4.81–7.19; five samples); this is not total tryptamine or this stock’s potency.",
+      "profile_source": "Reviewed 2026-09-25. DoubleBlind, original interviews and reported anecdotes, 2023. https://doubleblindmag.com/thai-pink-buffalo-mushrooms/ Rose City Laboratories, 2024. https://static1.squarespace.com/static/5fb8053ee029577d48c89898/t/6737c2d687690d6a90d8c281/1731707606907/RCL-Historical-Study-BB-Sister-Lab.pdf",
+      "spectrum_hue": 145,
+      "experience_tags": [
+        "euphoric",
+        "visual"
+      ],
+      "evidence_grade": "mixed",
+      "alkaloid_total_pct": null
+    }
+  },
+  {
+    "id": 83,
+    "name": "True Albino Teacher",
+    "status": "sourced",
+    "before": {
+      "experience_summary": "",
+      "profile_source": "",
+      "spectrum_hue": null,
+      "experience_tags": [],
+      "evidence_grade": "",
+      "alkaloid_total_pct": null
+    },
+    "after": {
+      "experience_summary": "A True Albino Teacher-labeled first-person account describes intense internal imagery, body heaviness and creative thinking, alongside fear, confusion and nausea. This individual experience does not establish a typical response or potency.",
+      "profile_source": "Reviewed 2026-09-25. Colorblind Chameleon, Erowid report 119030, 2025. https://www.erowid.org/experiences/exp.php?ID=119030",
+      "spectrum_hue": 285,
+      "experience_tags": [
+        "intense",
+        "visual",
+        "body-heavy",
+        "creative"
+      ],
+      "evidence_grade": "anecdotal",
+      "alkaloid_total_pct": null
+    }
+  },
+  {
+    "id": 85,
+    "name": "B+ (ISO)",
+    "status": "name-linked context",
+    "before": {
+      "experience_summary": "",
+      "profile_source": "",
+      "spectrum_hue": null,
+      "experience_tags": [],
+      "evidence_grade": "",
+      "alkaloid_total_pct": null
+    },
+    "after": {
+      "experience_summary": "Name-linked reference for B+; this entry is not independently characterized. Existing library reports describe gentle, balanced, warm, beginner experiences. Any borrowed character is family-level context, not a measurement or guaranteed effect for this isolate.",
+      "profile_source": "Reviewed 2026-09-25. Existing library record 17 (B+); prior character descriptions were not independently validated in this review.",
+      "spectrum_hue": 82,
+      "experience_tags": [
+        "gentle",
+        "balanced",
+        "warm",
+        "beginner"
+      ],
+      "evidence_grade": "anecdotal",
+      "alkaloid_total_pct": null
+    }
+  },
+  {
+    "id": 86,
+    "name": "Blue Meanie (ISO)",
+    "status": "name-linked context",
+    "before": {
+      "experience_summary": "",
+      "profile_source": "",
+      "spectrum_hue": null,
+      "experience_tags": [],
+      "evidence_grade": "",
+      "alkaloid_total_pct": null
+    },
+    "after": {
+      "experience_summary": "Name-linked reference for Blue Meanie; this entry is not independently characterized. Existing library reports describe fast-onset, euphoric, giggly, visual experiences. Any borrowed character is family-level context, not a measurement or guaranteed effect for this isolate.",
+      "profile_source": "Reviewed 2026-09-25. Existing library record 6 (Blue Meanie); prior character descriptions were not independently validated in this review.",
+      "spectrum_hue": 160,
+      "experience_tags": [
+        "fast-onset",
+        "euphoric",
+        "giggly",
+        "visual"
+      ],
+      "evidence_grade": "anecdotal",
+      "alkaloid_total_pct": null
+    }
+  },
+  {
+    "id": 87,
+    "name": "Bluey Vuitton (BV) (ISO)",
+    "status": "name-linked context",
+    "before": {
+      "experience_summary": "",
+      "profile_source": "",
+      "spectrum_hue": null,
+      "experience_tags": [],
+      "evidence_grade": "",
+      "alkaloid_total_pct": null
+    },
+    "after": {
+      "experience_summary": "Name-linked reference for BV (Bluey Vuittons); this entry is not independently characterized. Existing library reports describe balanced, visual, clean experiences. Any borrowed character is family-level context, not a measurement or guaranteed effect for this isolate.",
+      "profile_source": "Reviewed 2026-09-25. Existing library record 8 (BV (Bluey Vuittons)); prior character descriptions were not independently validated in this review.",
+      "spectrum_hue": 195,
+      "experience_tags": [
+        "balanced",
+        "visual",
+        "clean"
+      ],
+      "evidence_grade": "anecdotal",
+      "alkaloid_total_pct": null
+    }
+  },
+  {
+    "id": 88,
+    "name": "Enigma (ISO)",
+    "status": "name-linked context",
+    "before": {
+      "experience_summary": "",
+      "profile_source": "",
+      "spectrum_hue": null,
+      "experience_tags": [],
+      "evidence_grade": "",
+      "alkaloid_total_pct": null
+    },
+    "after": {
+      "experience_summary": "Name-linked reference for Enigma; this entry is not independently characterized. Existing library reports describe exceptional, intense, visual, heavy experiences. Any borrowed character is family-level context, not a measurement or guaranteed effect for this isolate.",
+      "profile_source": "Reviewed 2026-09-25. Existing library record 12 (Enigma); prior character descriptions were not independently validated in this review.",
+      "spectrum_hue": 300,
+      "experience_tags": [
+        "exceptional",
+        "intense",
+        "visual",
+        "heavy"
+      ],
+      "evidence_grade": "anecdotal",
+      "alkaloid_total_pct": null
+    }
+  },
+  {
+    "id": 89,
+    "name": "Golden Teacher (ISO)",
+    "status": "name-linked context",
+    "before": {
+      "experience_summary": "",
+      "profile_source": "",
+      "spectrum_hue": null,
+      "experience_tags": [],
+      "evidence_grade": "",
+      "alkaloid_total_pct": null
+    },
+    "after": {
+      "experience_summary": "Name-linked reference for Golden Teacher; this entry is not independently characterized. Existing library reports describe gentle, introspective, spiritual, balanced experiences. Any borrowed character is family-level context, not a measurement or guaranteed effect for this isolate.",
+      "profile_source": "Reviewed 2026-09-25. Existing library record 7 (Golden Teacher); prior character descriptions were not independently validated in this review.",
+      "spectrum_hue": 78,
+      "experience_tags": [
+        "gentle",
+        "introspective",
+        "spiritual",
+        "balanced"
+      ],
+      "evidence_grade": "anecdotal",
+      "alkaloid_total_pct": null
+    }
+  },
+  {
+    "id": 90,
+    "name": "Hillbilly Pumpkin (ISO)",
+    "status": "name-linked context",
+    "before": {
+      "experience_summary": "",
+      "profile_source": "",
+      "spectrum_hue": null,
+      "experience_tags": [],
+      "evidence_grade": "",
+      "alkaloid_total_pct": null
+    },
+    "after": {
+      "experience_summary": "Name-linked reference for Hillbilly Pumpkin; this entry is not independently characterized. A Hillbilly Pumpkin-labeled first-person account describes an unexpectedly overwhelming experience. The report does not establish a characteristic potency or a reliably gentle profile; ordinary Hillbilly measurements have not been assigned to this selection. Any borrowed character is family-level context, not a measurement or guaranteed effect for this isolate.",
+      "profile_source": "Reviewed 2026-09-25. First-person report, 2026. https://www.reddit.com/r/PsilocybinMushrooms/comments/1q2qzpw/",
+      "spectrum_hue": 275,
+      "experience_tags": [
+        "intense"
+      ],
+      "evidence_grade": "anecdotal",
+      "alkaloid_total_pct": null
+    }
+  },
+  {
+    "id": 91,
+    "name": "Jack Frost (ISO)",
+    "status": "name-linked context",
+    "before": {
+      "experience_summary": "",
+      "profile_source": "",
+      "spectrum_hue": null,
+      "experience_tags": [],
+      "evidence_grade": "",
+      "alkaloid_total_pct": null
+    },
+    "after": {
+      "experience_summary": "Name-linked reference for Jack Frost; this entry is not independently characterized. The related record has external chemical references but no verified experiential color. Any borrowed character is family-level context, not a measurement or guaranteed effect for this isolate.",
+      "profile_source": "Reviewed 2026-09-25. Sharchaton et al., Journal of Fungi 12(7):486, Table 1. https://doi.org/10.3390/jof12070486",
+      "spectrum_hue": null,
+      "experience_tags": [],
+      "evidence_grade": "",
+      "alkaloid_total_pct": null
+    }
+  },
+  {
+    "id": 92,
+    "name": "MDK (ISO)",
+    "status": "name-linked context",
+    "before": {
+      "experience_summary": "",
+      "profile_source": "",
+      "spectrum_hue": null,
+      "experience_tags": [],
+      "evidence_grade": "",
+      "alkaloid_total_pct": null
+    },
+    "after": {
+      "experience_summary": "Name-linked reference for MDK (Mexican Dutch King); this entry is not independently characterized. A Mexican Dutch King first-person account describes closed-eye imagery, introspection and emotional release, with body heaviness, nausea and fear. Other reports differ substantially; this is not a standardized effect or potency profile. Any borrowed character is family-level context, not a measurement or guaranteed effect for this isolate.",
+      "profile_source": "Reviewed 2026-09-25. First-person account, 2020. https://www.reddit.com/r/shrooms/comments/hddvc4/",
+      "spectrum_hue": 260,
+      "experience_tags": [
+        "introspective",
+        "visual",
+        "emotional",
+        "body-heavy"
+      ],
+      "evidence_grade": "anecdotal",
+      "alkaloid_total_pct": null
+    }
+  },
+  {
+    "id": 93,
+    "name": "JMF (Jedi Mind Fuck) (ISO)",
+    "status": "name-linked context",
+    "before": {
+      "experience_summary": "",
+      "profile_source": "",
+      "spectrum_hue": null,
+      "experience_tags": [],
+      "evidence_grade": "",
+      "alkaloid_total_pct": null
+    },
+    "after": {
+      "experience_summary": "Name-linked reference for Jedi Mind Fuck; this entry is not independently characterized. Existing library reports describe intense, visual, introspective, emotional experiences. Any borrowed character is family-level context, not a measurement or guaranteed effect for this isolate.",
+      "profile_source": "Reviewed 2026-09-25. Existing library record 3 (Jedi Mind Fuck); prior character descriptions were not independently validated in this review.",
+      "spectrum_hue": 288,
+      "experience_tags": [
+        "intense",
+        "visual",
+        "introspective",
+        "emotional"
+      ],
+      "evidence_grade": "anecdotal",
+      "alkaloid_total_pct": null
+    }
+  },
+  {
+    "id": 94,
+    "name": "PE6 (Penis Envy 6) (ISO)",
+    "status": "name-linked context",
+    "before": {
+      "experience_summary": "",
+      "profile_source": "",
+      "spectrum_hue": null,
+      "experience_tags": [],
+      "evidence_grade": "",
+      "alkaloid_total_pct": null
+    },
+    "after": {
+      "experience_summary": "Name-linked reference for PE6; this entry is not independently characterized. Existing library reports describe intense, visual, introspective, body-load experiences. Any borrowed character is family-level context, not a measurement or guaranteed effect for this isolate.",
+      "profile_source": "Reviewed 2026-09-25. Existing library record 11 (PE6); prior character descriptions were not independently validated in this review.",
+      "spectrum_hue": 292,
+      "experience_tags": [
+        "intense",
+        "visual",
+        "introspective",
+        "body-load"
+      ],
+      "evidence_grade": "anecdotal",
+      "alkaloid_total_pct": null
+    }
+  },
+  {
+    "id": 95,
+    "name": "Tidal Wave (ISO)",
+    "status": "name-linked context",
+    "before": {
+      "experience_summary": "",
+      "profile_source": "",
+      "spectrum_hue": null,
+      "experience_tags": [],
+      "evidence_grade": "",
+      "alkaloid_total_pct": null
+    },
+    "after": {
+      "experience_summary": "Name-linked reference for Tidal Wave; this entry is not independently characterized. Existing library reports describe potent, balanced, visual, euphoric experiences. Any borrowed character is family-level context, not a measurement or guaranteed effect for this isolate.",
+      "profile_source": "Reviewed 2026-09-25. Existing library record 16 (Tidal Wave); prior character descriptions were not independently validated in this review.",
+      "spectrum_hue": 205,
+      "experience_tags": [
+        "potent",
+        "balanced",
+        "visual",
+        "euphoric"
+      ],
+      "evidence_grade": "anecdotal",
+      "alkaloid_total_pct": null
+    }
+  },
+  {
+    "id": 96,
+    "name": "Trinity (ISO)",
+    "status": "name-linked context",
+    "before": {
+      "experience_summary": "",
+      "profile_source": "",
+      "spectrum_hue": null,
+      "experience_tags": [],
+      "evidence_grade": "",
+      "alkaloid_total_pct": null
+    },
+    "after": {
+      "experience_summary": "Name-linked reference for Trinity; this entry is not independently characterized. A first-person Trinity report describes prominent visual patterns, tactile sensations, positive mood and sociability. No assay establishes the potency of this library entry. Any borrowed character is family-level context, not a measurement or guaranteed effect for this isolate.",
+      "profile_source": "Reviewed 2026-09-25. First-person report; preparation and potency claims in the source are not adopted. https://www.reddit.com/r/shrooms/comments/pksgy6/subjective_review_trinity/",
+      "spectrum_hue": 195,
+      "experience_tags": [
+        "visual",
+        "tactile",
+        "social"
+      ],
+      "evidence_grade": "anecdotal",
+      "alkaloid_total_pct": null
+    }
+  },
+  {
+    "id": 97,
+    "name": "TAT (True Albino Teacher) (ISO)",
+    "status": "name-linked context",
+    "before": {
+      "experience_summary": "",
+      "profile_source": "",
+      "spectrum_hue": null,
+      "experience_tags": [],
+      "evidence_grade": "",
+      "alkaloid_total_pct": null
+    },
+    "after": {
+      "experience_summary": "Name-linked reference for True Albino Teacher; this entry is not independently characterized. A True Albino Teacher-labeled first-person account describes intense internal imagery, body heaviness and creative thinking, alongside fear, confusion and nausea. This individual experience does not establish a typical response or potency. Any borrowed character is family-level context, not a measurement or guaranteed effect for this isolate.",
+      "profile_source": "Reviewed 2026-09-25. Colorblind Chameleon, Erowid report 119030, 2025. https://www.erowid.org/experiences/exp.php?ID=119030",
+      "spectrum_hue": 285,
+      "experience_tags": [
+        "intense",
+        "visual",
+        "body-heavy",
+        "creative"
+      ],
+      "evidence_grade": "anecdotal",
+      "alkaloid_total_pct": null
+    }
+  },
+  {
+    "id": 106,
+    "name": "Shakti",
+    "status": "sourced",
+    "before": {
+      "experience_summary": "",
+      "profile_source": "",
+      "spectrum_hue": null,
+      "experience_tags": [],
+      "evidence_grade": "",
+      "alkaloid_total_pct": null
+    },
+    "after": {
+      "experience_summary": "One Shakti report describes vivid patterns, euphoria and strong emotions, followed by anxiety and disorientation. Rose City Laboratories reports psilocybin averaging 10.65 mg/g (8.3–12.5; nine samples); these external measurements are not total tryptamine or this stock’s potency.",
+      "profile_source": "Reviewed 2026-09-25. First-person report. https://www.reddit.com/r/shrooms/comments/1i54opc/ Rose City Laboratories, 2024. https://static1.squarespace.com/static/5fb8053ee029577d48c89898/t/6737c2d687690d6a90d8c281/1731707606907/RCL-Historical-Study-BB-Sister-Lab.pdf",
+      "spectrum_hue": 280,
+      "experience_tags": [
+        "visual",
+        "emotional",
+        "intense"
+      ],
+      "evidence_grade": "mixed",
+      "alkaloid_total_pct": null
+    }
+  },
+  {
+    "id": 154,
+    "name": "MDK (Mexican Dutch King)",
+    "status": "sourced",
+    "before": {
+      "experience_summary": "",
+      "profile_source": "",
+      "spectrum_hue": null,
+      "experience_tags": [],
+      "evidence_grade": "",
+      "alkaloid_total_pct": null
+    },
+    "after": {
+      "experience_summary": "A Mexican Dutch King first-person account describes closed-eye imagery, introspection and emotional release, with body heaviness, nausea and fear. Other reports differ substantially; this is not a standardized effect or potency profile.",
+      "profile_source": "Reviewed 2026-09-25. First-person account, 2020. https://www.reddit.com/r/shrooms/comments/hddvc4/",
+      "spectrum_hue": 260,
+      "experience_tags": [
+        "introspective",
+        "visual",
+        "emotional",
+        "body-heavy"
+      ],
+      "evidence_grade": "anecdotal",
+      "alkaloid_total_pct": null
+    }
+  },
+  {
+    "id": 156,
+    "name": "TAT (True Albino Teacher)",
+    "status": "name-linked context",
+    "before": {
+      "experience_summary": "",
+      "profile_source": "",
+      "spectrum_hue": null,
+      "experience_tags": [],
+      "evidence_grade": "",
+      "alkaloid_total_pct": null
+    },
+    "after": {
+      "experience_summary": "Name-linked reference for True Albino Teacher; this entry is not independently characterized. A True Albino Teacher-labeled first-person account describes intense internal imagery, body heaviness and creative thinking, alongside fear, confusion and nausea. This individual experience does not establish a typical response or potency. Any borrowed character is family-level context, not a measurement or guaranteed effect for this isolate.",
+      "profile_source": "Reviewed 2026-09-25. Colorblind Chameleon, Erowid report 119030, 2025. https://www.erowid.org/experiences/exp.php?ID=119030",
+      "spectrum_hue": 285,
+      "experience_tags": [
+        "intense",
+        "visual",
+        "body-heavy",
+        "creative"
+      ],
+      "evidence_grade": "anecdotal",
+      "alkaloid_total_pct": null
+    }
+  },
+  {
+    "id": 157,
+    "name": "LIZARD KING",
+    "status": "name-linked context",
+    "before": {
+      "experience_summary": "",
+      "profile_source": "",
+      "spectrum_hue": null,
+      "experience_tags": [],
+      "evidence_grade": "",
+      "alkaloid_total_pct": null
+    },
+    "after": {
+      "experience_summary": "Name-linked reference for Lizard King; this entry is not independently characterized. The related record has external chemical references but no verified experiential color. Any borrowed character is family-level context, not a measurement or guaranteed effect for this isolate.",
+      "profile_source": "Reviewed 2026-09-25. Rose City Laboratories, Historical Potency Data, 2024; outliers removed and producer-supplied names. https://static1.squarespace.com/static/5fb8053ee029577d48c89898/t/6737c2d687690d6a90d8c281/1731707606907/RCL-Historical-Study-BB-Sister-Lab.pdf",
+      "spectrum_hue": null,
+      "experience_tags": [],
+      "evidence_grade": "",
+      "alkaloid_total_pct": null
+    }
+  },
+  {
+    "id": 160,
+    "name": "JMF (Jedi Mind Fuck)",
+    "status": "name-linked context",
+    "before": {
+      "experience_summary": "",
+      "profile_source": "",
+      "spectrum_hue": null,
+      "experience_tags": [],
+      "evidence_grade": "",
+      "alkaloid_total_pct": null
+    },
+    "after": {
+      "experience_summary": "Name-linked reference for Jedi Mind Fuck; this entry is not independently characterized. Existing library reports describe intense, visual, introspective, emotional experiences. Any borrowed character is family-level context, not a measurement or guaranteed effect for this isolate.",
+      "profile_source": "Reviewed 2026-09-25. Existing library record 3 (Jedi Mind Fuck); prior character descriptions were not independently validated in this review.",
+      "spectrum_hue": 288,
+      "experience_tags": [
+        "intense",
+        "visual",
+        "introspective",
+        "emotional"
+      ],
+      "evidence_grade": "anecdotal",
+      "alkaloid_total_pct": null
+    }
+  },
+  {
+    "id": 161,
+    "name": "Functional line — Lion's Mane, Blue Oyster, Shiitake, Black King, King Trumpet",
+    "status": "identity/evidence gap",
+    "before": {
+      "experience_summary": "",
+      "profile_source": "",
+      "spectrum_hue": null,
+      "experience_tags": [],
+      "evidence_grade": "",
+      "alkaloid_total_pct": null
+    },
+    "after": {
+      "experience_summary": "This record names a functional mushroom group rather than one strain. It needs identity/classification reconciliation; a psychedelic color, potency or experience profile would be misleading.",
+      "profile_source": "Reviewed 2026-09-25. Local library identity audit; composite record retained unchanged.",
+      "spectrum_hue": null,
+      "experience_tags": [],
+      "evidence_grade": "",
+      "alkaloid_total_pct": null
+    }
+  },
+  {
+    "id": 163,
+    "name": "Cambodian / Mazatapec / Trinity / Blue Meanie / Hillbilly Pumpkin / Illusion Weaver / B+ / Gorilla Wizard",
+    "status": "identity/evidence gap",
+    "before": {
+      "experience_summary": "",
+      "profile_source": "",
+      "spectrum_hue": null,
+      "experience_tags": [],
+      "evidence_grade": "",
+      "alkaloid_total_pct": null
+    },
+    "after": {
+      "experience_summary": "This record combines eight strain names. It cannot have one defensible potency or experience profile; consult the individual strain records instead.",
+      "profile_source": "Reviewed 2026-09-25. Local library identity audit; composite record retained unchanged.",
+      "spectrum_hue": null,
+      "experience_tags": [],
+      "evidence_grade": "",
+      "alkaloid_total_pct": null
+    }
+  },
+  {
+    "id": 239,
+    "name": "White Ape",
+    "status": "identity/evidence gap",
+    "before": {
+      "experience_summary": "",
+      "profile_source": "",
+      "spectrum_hue": null,
+      "experience_tags": [],
+      "evidence_grade": "",
+      "alkaloid_total_pct": null
+    },
+    "after": {
+      "experience_summary": "White Ape is an ambiguous label in this library. It has not been assumed to mean Albino Penis Envy, and no assay or experience profile has been transferred without confirmation.",
+      "profile_source": "Reviewed 2026-09-25. Research gap: exact-name primary-source search and local identity audit, 2026-09-25.",
+      "spectrum_hue": null,
+      "experience_tags": [],
+      "evidence_grade": "",
+      "alkaloid_total_pct": null
+    }
+  }
+]

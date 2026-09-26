@@ -61,6 +61,38 @@ const ROUTES = [
 
 // Click-through scenarios captured at both widths.
 const SCENARIOS = [
+  { name: "strain-wheel-magnification", route: "/strains", act: async (page) => {
+    const wheel = page.locator(".spectrum-wheel svg");
+    await wheel.scrollIntoViewIfNeeded();
+    const box = await wheel.boundingBox();
+    const x = box.x + box.width * 0.7;
+    const y = box.y + box.height * 0.3;
+    const before = await page.locator(".spectrum-wedge path").first().getAttribute("d");
+    if (page.viewportSize().width < 600) await page.touchscreen.tap(x, y);
+    else await page.mouse.move(x, y);
+    await page.waitForFunction(() => document.querySelector(".spectrum-wheel svg").dataset.magnified === "true");
+    const after = await page.locator(".spectrum-wedge path").first().getAttribute("d");
+    if (before === after) throw new Error("Wheel did not magnify");
+    if (!page.url().endsWith("/strains")) throw new Error("First touch navigated");
+    if (page.viewportSize().width < 600) {
+      await page.touchscreen.tap(x, y);
+      await page.waitForURL(/\/strains\/\d+$/);
+      await page.goto(BASE + "/strains");
+      await settle(page);
+      await wheel.scrollIntoViewIfNeeded();
+      const b = await wheel.boundingBox();
+      await page.touchscreen.tap(b.x + b.width * 0.7, b.y + b.height * 0.3);
+    } else {
+      await page.mouse.move(0, 0);
+      await page.waitForFunction(() => document.querySelector(".spectrum-wheel svg").dataset.magnified === "false");
+      await page.mouse.move(x, y);
+    }
+  } },
+  { name: "strain-profile-without-potency", route: "/strains/3", act: async (page) => {
+    await page.getByText("Alkaloid profile & reported experience", { exact: true }).waitFor();
+    await page.getByText("Not recorded", { exact: true }).waitFor();
+    if (await page.locator(".profile-split").count()) throw new Error("Unknown potency rendered an alkaloid split");
+  } },
   { name: "strain-wheel-uncharacterized", route: "/strains", act: async (page) => {
     const picker = page.getByLabel(/Find a strain/);
     await picker.selectOption("3");
@@ -152,7 +184,7 @@ const consoleErrors = new Map();
 for (const [vpName, viewport] of Object.entries(VIEWPORTS)) {
   const dir = path.join(OUT, vpName);
   mkdirSync(dir, { recursive: true });
-  const context = await browser.newContext({ viewport, deviceScaleFactor: 1, reducedMotion: 'reduce' });
+  const context = await browser.newContext({ viewport, hasTouch: vpName === "mobile", deviceScaleFactor: 1, reducedMotion: 'reduce' });
   // The fixture points at a fictional sheet; keep this test independent of Google.
   await context.route('https://docs.google.com/**', route => route.fulfill({contentType:'text/html',body:'<p>Local workbook embed fixture</p>'}));
   const page = await context.newPage();

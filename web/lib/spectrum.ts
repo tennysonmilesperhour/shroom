@@ -81,8 +81,8 @@ export function alkaloidSplit(
   totalPct: number | null,
   ratio: number | null,
 ): { psilocybin: number; psilocin: number } | null {
-  if (totalPct == null) return null;
-  const r = ratio ?? 0.1;
+  if (totalPct == null || ratio == null) return null;
+  const r = ratio;
   const psilocybin = totalPct / (1 + r);
   const psilocin = totalPct - psilocybin;
   return { psilocybin, psilocin };
