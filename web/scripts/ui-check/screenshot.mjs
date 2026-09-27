@@ -72,7 +72,8 @@ const SCENARIOS = [
     else await page.mouse.move(x, y);
     await page.waitForFunction(() => document.querySelector(".spectrum-wheel svg").dataset.magnified === "true");
     const after = await page.locator(".spectrum-wedge path").first().getAttribute("d");
-    if (before === after) throw new Error("Wheel did not magnify");
+    if (before !== after) throw new Error("Local zoom moved the base wheel");
+    await page.locator(".spectrum-lens").waitFor();
     if (!page.url().endsWith("/strains")) throw new Error("First touch navigated");
     if (page.viewportSize().width < 600) {
       await page.touchscreen.tap(x, y);

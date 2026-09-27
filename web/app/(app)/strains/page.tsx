@@ -63,8 +63,11 @@ export default async function StrainsPage() {
     "load strain library",
   );
 
+  // These two audited functional records are mislabeled Magic in the source.
+  // Keep their library/history records, but exclude them from the psychedelic wheel.
+  const excludedSpectrumIds = new Set([19, 161]);
   const spectrum: SpectrumStrain[] = strains
-    .filter((s) => s.mushroom_type === "psychedelic")
+    .filter((s) => s.mushroom_type === "psychedelic" && !excludedSpectrumIds.has(s.id))
     .map((s) => ({
       id: s.id,
       name: s.name,
@@ -100,7 +103,7 @@ export default async function StrainsPage() {
               <h3 style={{ margin: "2px 0 0" }}>Psilocybe alkaloid &amp; experience wheel</h3>
             </div>
             <p className="muted spectrum-blurb">
-              All {spectrum.length} Magic library entries are included. Colored wedges show reported character;
+              {spectrum.length} Magic library entries are shown. Colored wedges show reported character;
               gray wedges have no character profile yet. Filled length shows recorded potency.
               Outlined wedges have no potency value. Character reports are anecdotal.
             </p>

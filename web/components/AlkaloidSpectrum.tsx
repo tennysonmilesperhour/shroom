@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -12,7 +12,7 @@ import {
   type SpectrumStrain,
 } from "@/lib/spectrum";
 
-import { angleDistance, magnifyAngle, FOCUS_HALF_WIDTH, FOCUS_SCALE } from "@/lib/spectrum-focus";
+import { angleDistance, lensSlices, FOCUS_HALF_WIDTH, FOCUS_RADIUS_SCALE } from "@/lib/spectrum-focus";
 
 const SIZE = 360;
 const CX = SIZE / 2;
@@ -46,6 +46,7 @@ export default function AlkaloidSpectrum({ strains }: { strains: SpectrumStrain[
   const router = useRouter();
   const [activeId, setActiveId] = useState<number | null>(null);
   const active = strains.find((s) => s.id === activeId) ?? null;
+  const lensId = useId();
   const wheelRef = useRef<SVGSVGElement>(null);
   const [focusAngle, setFocusAngle] = useState<number | null>(null);
   const touch = useRef<{ x: number; y: number; moved: boolean; openId: number | null } | null>(null);
@@ -67,8 +68,11 @@ export default function AlkaloidSpectrum({ strains }: { strains: SpectrumStrain[
     const box = event.currentTarget.getBoundingClientRect();
     const x = (event.clientX - box.left) * SIZE / box.width - CX;
     const y = (event.clientY - box.top) * SIZE / box.height - CY;
-    if (Math.hypot(x, y) < HUB_R || Math.hypot(x, y) > OUTER_R) return null;
-    return (Math.atan2(-y, x) * 180 / Math.PI + 360) % 360;
+    const angle = (Math.atan2(-y, x) * 180 / Math.PI + 360) % 360;
+    const inLens = focusAngle != null && Math.abs(angleDistance(angle, focusAngle)) <= FOCUS_HALF_WIDTH;
+    const radius = inLens ? OUTER_R * FOCUS_RADIUS_SCALE : OUTER_R;
+    if (Math.hypot(x, y) < HUB_R || Math.hypot(x, y) > radius) return null;
+    return angle;
   };
   const focusAt = (angle: number | null) => {
     setFocusAngle(angle);
@@ -91,6 +95,8 @@ export default function AlkaloidSpectrum({ strains }: { strains: SpectrumStrain[
     return RADIUS_FLOOR + (1 - RADIUS_FLOOR) * Math.pow(t, RADIUS_GAMMA);
   };
 
+  const lensPath = focusAngle == null ? "" : wedgePath(focusAngle - FOCUS_HALF_WIDTH, focusAngle + FOCUS_HALF_WIDTH, OUTER_R * FOCUS_RADIUS_SCALE);
+
   return (
     <div className="spectrum">
       <figure className="spectrum-wheel">
@@ -106,9 +112,9 @@ export default function AlkaloidSpectrum({ strains }: { strains: SpectrumStrain[
             const angle = pointAngle(event);
             const target = (event.target as Element).closest("a[data-strain-id]");
             const nearby = angle != null && focusAngle != null &&
-              Math.abs(angleDistance(angle, focusAngle)) <= FOCUS_HALF_WIDTH * FOCUS_SCALE;
+              Math.abs(angleDistance(angle, focusAngle)) <= FOCUS_HALF_WIDTH;
             touch.current = { x: event.clientX, y: event.clientY, moved: false,
-              openId: nearby && target ? Number(target.getAttribute("data-strain-id")) : null };
+              openId: nearby && target?.classList.contains("spectrum-lens-wedge") ? Number(target.getAttribute("data-strain-id")) : null };
             event.currentTarget.setPointerCapture(event.pointerId);
             if (!nearby) focusAt(angle);
           }}
@@ -118,7 +124,7 @@ export default function AlkaloidSpectrum({ strains }: { strains: SpectrumStrain[
               // Hold the lens while crossing enlarged neighbors so their real
               // click targets stay larger instead of moving away from the cursor.
               if (angle == null || focusAngle == null ||
-                Math.abs(angleDistance(angle, focusAngle)) > FOCUS_HALF_WIDTH * FOCUS_SCALE) {
+                Math.abs(angleDistance(angle, focusAngle)) > FOCUS_HALF_WIDTH) {
                 focusAt(angle);
               } else {
                 const target = (event.target as Element).closest("a[data-strain-id]");
@@ -150,6 +156,7 @@ export default function AlkaloidSpectrum({ strains }: { strains: SpectrumStrain[
               <stop offset="0%" style={{ stopColor: "var(--spectrum-hub-1)" }} />
               <stop offset="100%" style={{ stopColor: "var(--spectrum-hub-2)" }} />
             </radialGradient>
+            <clipPath id={lensId}><path d={lensPath} /></clipPath>
           </defs>
 
           {/* field */}
@@ -158,8 +165,8 @@ export default function AlkaloidSpectrum({ strains }: { strains: SpectrumStrain[
           {/* strain wedges — each an equal-angle slice colored by its hue */}
           {ordered.map((s, i) => {
             const gap = Math.min(WEDGE_GAP, per * 0.2);
-            const a0 = magnifyAngle(i * per + gap / 2, focusAngle);
-            const a1 = magnifyAngle((i + 1) * per - gap / 2, focusAngle);
+            const a0 = i * per + gap / 2;
+            const a1 = (i + 1) * per - gap / 2;
             const rData = displayFrac(s.totalPct) * OUTER_R;
             const isActive = s.id === activeId;
             const color = s.hue == null ? "var(--muted)" : hueColor(s.hue, 74, 0.18);
@@ -179,7 +186,7 @@ export default function AlkaloidSpectrum({ strains }: { strains: SpectrumStrain[
               >
                 {/* ghost slice to the edge — gives the full pie + a generous hit area */}
                 <path d={wedgePath(a0, a1, OUTER_R)} fill={color} opacity={isActive ? 0.22 : 0.12} />
-                {/* Recorded reference potency; magnification changes angles only. */}
+                {/* Original potency scale stays fixed underneath the lens. */}
                 <path
                   d={wedgePath(a0, a1, s.totalPct == null ? OUTER_R : rData)}
                   fill={s.totalPct == null ? "none" : color}
@@ -213,6 +220,42 @@ export default function AlkaloidSpectrum({ strains }: { strains: SpectrumStrain[
             );
           })}
 
+          {/* A separate magnified copy covers only one eighth of the circle.
+              No base path or neighboring angle changes when the lens moves. */}
+          {focusAngle != null && (
+            <g className="spectrum-lens" aria-hidden="true">
+              <path d={lensPath} fill="var(--spectrum-hub-2)" className="spectrum-lens-backdrop" />
+              <g clipPath={`url(#${lensId})`}>
+                {ordered.flatMap((s, i) => {
+                  const gap = Math.min(WEDGE_GAP, per * 0.2);
+                  const color = s.hue == null ? "var(--muted)" : hueColor(s.hue, 74, 0.18);
+                  const isActive = s.id === activeId;
+                  return lensSlices(i * per + gap / 2, (i + 1) * per - gap / 2, focusAngle).map(([a0, a1], part) => (
+                    <a key={`${s.id}-${part}`} href={`/strains/${s.id}`} tabIndex={-1}
+                      data-strain-id={s.id} className="spectrum-lens-wedge"
+                      onPointerDown={(event) => { if (event.pointerType === "mouse") event.preventDefault(); }}
+                      onClick={(event) => {
+                        event.preventDefault();
+                        if (pointerTypeRef.current === "mouse") router.push(`/strains/${s.id}`);
+                      }}>
+                      <path d={wedgePath(a0, a1, OUTER_R * FOCUS_RADIUS_SCALE)} fill={color} opacity={isActive ? 0.3 : 0.18} />
+                      <path d={wedgePath(a0, a1, (s.totalPct == null ? OUTER_R : displayFrac(s.totalPct) * OUTER_R) * FOCUS_RADIUS_SCALE)}
+                        fill={s.totalPct == null ? "none" : color} opacity={isActive ? 1 : 0.9}
+                        stroke={isActive ? "var(--text)" : s.totalPct == null ? color : "transparent"}
+                        strokeWidth={isActive ? 1.5 : s.totalPct == null ? 0.7 : 0}
+                        strokeDasharray={s.totalPct == null ? "2 3" : undefined} strokeLinejoin="round" />
+                    </a>
+                  ));
+                })}
+                {POTENCY_GUIDES.filter((pct) => totals.length > 0 && pct >= dataMin && pct <= dataMax).map((pct) => (
+                  <circle key={pct} cx={CX} cy={CY} r={displayFrac(pct) * OUTER_R * FOCUS_RADIUS_SCALE}
+                    fill="none" stroke="var(--line)" strokeDasharray="2 4" pointerEvents="none" />
+                ))}
+              </g>
+              <path d={lensPath} fill="none" stroke="var(--muted)" strokeWidth="1" pointerEvents="none" />
+            </g>
+          )}
+
           {/* center cap hides the converging wedge tips */}
           <circle cx={CX} cy={CY} r={HUB_R} fill="url(#spectrum-hub)" stroke="var(--line)" style={{ pointerEvents: "none" }} />
         </svg>
@@ -226,7 +269,7 @@ export default function AlkaloidSpectrum({ strains }: { strains: SpectrumStrain[
             <span>intense</span>
           </span>
         </figcaption>
-        <p className="muted spectrum-help">Hover to magnify · Touch or drag, then tap a larger slice to open</p>
+        <p className="muted spectrum-help">Hover for a local zoom · Touch or drag, then tap an enlarged slice</p>
         <button type="button" className="ghost spectrum-reset" disabled={focusAngle == null} onClick={() => focusAt(null)}>Reset magnification</button>
       </figure>
 
