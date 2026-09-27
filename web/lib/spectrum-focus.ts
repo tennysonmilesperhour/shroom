@@ -1,17 +1,19 @@
-/** Circular fisheye: widen a small neighborhood, keeping its center and the
- * opposite point fixed. Potency radii are deliberately unaffected. */
-export const FOCUS_HALF_WIDTH = 18;
-export const FOCUS_SCALE = 2;
+/** A fixed 45-degree lens overlays the wheel; the underlying slices never move. */
+export const FOCUS_HALF_WIDTH = 22.5;
+export const FOCUS_SCALE = 1.75;
+export const FOCUS_RADIUS_SCALE = 1.12;
 export function angleDistance(angle: number, focus: number): number {
   return ((angle - focus + 540) % 360) - 180;
 }
-export function magnifyAngle(angle: number, focus: number | null): number {
-  if (focus == null) return angle;
-  const delta = angleDistance(angle, focus);
-  const distance = Math.abs(delta);
-  const mapped = distance <= FOCUS_HALF_WIDTH
-    ? distance * FOCUS_SCALE
-    : FOCUS_HALF_WIDTH * FOCUS_SCALE + (distance - FOCUS_HALF_WIDTH) *
-      (180 - FOCUS_HALF_WIDTH * FOCUS_SCALE) / (180 - FOCUS_HALF_WIDTH);
-  return angle + Math.sign(delta) * (mapped - distance);
+/** Clip a circular slice to the source area seen through the lens, then enlarge
+ * it locally. Multiple pieces handle slices crossing the 0/360-degree seam. */
+export function lensSlices(start: number, end: number, focus: number): [number, number][] {
+  const half = FOCUS_HALF_WIDTH / FOCUS_SCALE;
+  const pieces: [number, number][] = [];
+  for (const offset of [-360, 0, 360]) {
+    const a = Math.max(start + offset, focus - half);
+    const b = Math.min(end + offset, focus + half);
+    if (b > a) pieces.push([focus + (a - focus) * FOCUS_SCALE, focus + (b - focus) * FOCUS_SCALE]);
+  }
+  return pieces;
 }

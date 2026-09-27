@@ -31,7 +31,8 @@ for (const width of [390,1440]) {
  let p=await point(3);
  if(width===390) await page.touchscreen.tap(p.x,p.y);else await page.mouse.move(p.x,p.y);
  await page.waitForFunction(()=>document.querySelector('.spectrum-wheel svg').dataset.magnified==='true');
- assert.notDeepEqual(await paths(),normal);
+ assert.deepEqual(await paths(),normal,'Base wheel must remain fixed while magnified');
+ await page.locator('.spectrum-lens-wedge').first().waitFor();
  assert.equal(new URL(page.url()).pathname,'/strains');
  for(const theme of ['light','dark']) {
   await page.evaluate(t=>document.documentElement.dataset.theme=t,theme);
@@ -54,9 +55,10 @@ for (const width of [390,1440]) {
   await cdp.send('Input.dispatchTouchEvent',{type:'touchCancel',touchPoints:[]});
   assert.equal(await magnified(),'false');
  } else {
-  const focusedPaths = await paths();
+  const focusedPaths = await page.locator(".spectrum-lens path").evaluateAll(ns=>ns.map(n=>n.getAttribute("d")));
   p=await point(13);await page.mouse.move(p.x,p.y);
-  assert.deepEqual(await paths(),focusedPaths,'Neighbor targets must remain enlarged and stable');
+  assert.deepEqual(await page.locator('.spectrum-lens path').evaluateAll(ns=>ns.map(n=>n.getAttribute('d'))),focusedPaths,'Neighbor targets must remain enlarged and stable');
+  assert.deepEqual(await paths(),normal,'The rest of the circle must not move');
   await page.mouse.move(0,0);assert.equal(await magnified(),'false');
   assert.deepEqual(await paths(),normal,'Mouse leave restores equal-angle slices');
   p=await point(123);await page.mouse.move(p.x,p.y);
