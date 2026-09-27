@@ -16,8 +16,9 @@ for (const width of [390,1440]) {
  const picker=page.getByLabel(/Find a strain/);
  await picker.waitFor();
  const count=await page.locator('.spectrum-wedge').count();
- assert.equal(count,57,'Use the complete live-library fixture');
- assert.equal(await picker.locator('option').count(),58);
+ assert.equal(count,55,'Use the complete live-library fixture');
+ assert.equal(await page.locator('.spectrum-wedge[data-strain-id="19"], .spectrum-wedge[data-strain-id="161"]').count(),0);
+ assert.equal(await picker.locator('option').count(),56);
  for (const option of await picker.locator('option').all()) {
   const value=await option.getAttribute('value');
   if(value) {await picker.selectOption(value);assert.ok(await page.locator('.spectrum-readout strong').isVisible());}
@@ -76,7 +77,7 @@ for (const width of [390,1440]) {
   if(id===21) await page.locator('.profile-card').screenshot({path:path.join(out,`profile-${width}.png`)});
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false);
  }
- console.log(`PASS ${width}: 57 entries, magnification, navigation, reset, keyboard, sourced profiles, no overflow`);
+ console.log(`PASS ${width}: 55 entries, magnification, navigation, reset, keyboard, sourced profiles, no overflow`);
  await context.close();
 }
 assert.deepEqual(errors,[]);await browser.close();
