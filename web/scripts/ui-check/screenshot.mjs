@@ -27,6 +27,7 @@ const VIEWPORTS = {
 
 const ROUTES = [
   "/label/batch/1",
+  "/label/batch/1?size=md",
   "/label/batches?ids=1",
   "/label/harvest/1",
   "/",

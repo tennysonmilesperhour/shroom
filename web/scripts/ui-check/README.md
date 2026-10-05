@@ -64,6 +64,16 @@ the path used in Claude remote sessions), `MOCK_SUPABASE_PORT`.
 - Fixtures deliberately include a few over-long names/notes so overflow bugs
   show up in the screenshots — keep that property when editing them.
 
+## Labels
+
+`node scripts/ui-check/labels.mjs` (same `UI_CHECK_*` settings) opens every
+label page at every stock size, 6×4 default included. It fails if a preview
+scrolls sideways or loses the stock's proportions at 390px or 1440px, or if
+the printed PDF is not exactly one page per label at the stock size. It saves
+the previews plus each label as it prints (`print-*.png`, actual size) to
+`ui-check-shots/labels/`. Add new stock to `SIZES` there when you add it to
+`web/lib/label-size.ts`.
+
 ## Sheet write-back and order line items
 
 `mock-google-sheets.mjs` stands in for Google's token endpoint and the Sheets

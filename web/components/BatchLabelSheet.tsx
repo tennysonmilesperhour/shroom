@@ -1,5 +1,5 @@
 import Image from "next/image";
-import type { LabelSize } from "@/lib/label-size";
+import { labelSheetStyle, type LabelSize } from "@/lib/label-size";
 
 export interface BatchLabelData {
   id: number;
@@ -16,10 +16,7 @@ export interface BatchLabelData {
 
 export default function BatchLabelSheet({ data, size }: { data: BatchLabelData; size: LabelSize }) {
   return (
-    <div
-      className="label-sheet batch-label-sheet"
-      style={{ width: `${size.w}in`, height: `${size.h}in` }}
-    >
+    <div className="label-sheet batch-label-sheet" data-size={size.key} style={labelSheetStyle(size)}>
       <div className="batch-label-copy">
         <div className="label-row label-top">
           <span className="label-type">Batch · {data.stage.replace(/_/g, " ")}</span>

@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { createServiceClient } from "@/utils/supabase/service";
 import PrintLabel from "@/components/PrintLabel";
-import { sizeFor } from "@/lib/label-size";
+import { labelSheetStyle, sizeFor } from "@/lib/label-size";
 
 export const dynamic = "force-dynamic";
 
@@ -65,10 +65,7 @@ export default async function HarvestLabelPage({
         <PrintLabel size={size} basePath={`/label/harvest/${id}`} />
       </div>
 
-      <div
-        className="label-sheet"
-        style={{ width: `${size.w}in`, height: `${size.h}in` }}
-      >
+      <div className="label-sheet" data-size={size.key} style={labelSheetStyle(size)}>
         <div className="label-row label-top">
           <span className="label-type">{typeLabel || "mushroom"}</span>
           {data.grade && <span className="label-grade">Grade {data.grade}</span>}

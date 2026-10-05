@@ -3269,7 +3269,10 @@ html[data-pulse-burst="1"] .qbg { animation: qbg-flare 4s var(--ease-out) 1; }
 /* ── 22. Flush label (print) ────────────────────────────────────────────────
    Screen: a centered preview with size presets + Print button. Print: only the
    label sheet, monochrome, at the exact stock size (@page injected by
-   PrintLabel). Fixed black-on-white so it prints crisply from any theme. */
+   PrintLabel). Fixed black-on-white so it prints crisply from any theme.
+   Every size inside a sheet is a multiple of --lu: one design px times the
+   stock's scale (labelSheetStyle), so 6×4 stock gets proportionally larger
+   type and QR. On screen --lu also shrinks so a wide sheet fits a phone. */
 .label-page {
   min-height: 100vh;
   display: flex;
@@ -3277,6 +3280,7 @@ html[data-pulse-burst="1"] .qbg { animation: qbg-flare 4s var(--ease-out) 1; }
   align-items: center;
   gap: var(--space-5);
   padding: var(--space-7) var(--space-4);
+  container-type: inline-size;
 }
 .label-toolbar-wrap {
   width: min(560px, 92vw);
@@ -3319,41 +3323,51 @@ html[data-pulse-burst="1"] .qbg { animation: qbg-flare 4s var(--ease-out) 1; }
 
 /* The label itself — fixed monochrome so print never depends on theme. */
 .label-sheet {
+  --lu: calc(var(--label-scale, 1) * 1px);
   box-sizing: border-box;
+  width: var(--label-w);
+  height: var(--label-h);
   background: #fff;
   color: #111;
   border: 1px solid oklch(45% 0.03 258 / 0.3);
   border-radius: 6px;
   box-shadow: var(--shadow-lift);
-  padding: 0.12in 0.16in;
+  padding: calc(11.52 * var(--lu)) calc(15.36 * var(--lu));
   display: flex;
   flex-direction: column;
-  gap: 0.03in;
+  gap: calc(2.88 * var(--lu));
   font-family: var(--font-sans);
   overflow: hidden;
 }
-.label-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+@media screen {
+  .label-sheet {
+    --lu: min(calc(var(--label-scale, 1) * 1px), calc(100cqw / var(--label-wu)));
+    width: calc(var(--label-wu) * var(--lu));
+    height: calc(var(--label-hu) * var(--lu));
+  }
+}
+.label-row { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; column-gap: calc(8 * var(--lu)); }
 .label-type {
-  font-size: 8px;
+  font-size: calc(8 * var(--lu));
   letter-spacing: 0.16em;
   text-transform: uppercase;
   font-weight: 700;
   color: #333;
 }
-.label-grade { font-size: 8px; font-weight: 700; color: #333; }
+.label-grade { font-size: calc(8 * var(--lu)); font-weight: 700; color: #333; }
 .label-strain {
   font-family: var(--font-display);
   font-weight: 500;
-  font-size: 15px;
+  font-size: calc(15 * var(--lu));
   line-height: 1.05;
   color: #000;
 }
-.label-species { font-size: 8.5px; font-style: italic; color: #444; margin-top: -1px; }
+.label-species { font-size: calc(8.5 * var(--lu)); font-style: italic; color: #444; margin-top: calc(-1 * var(--lu)); }
 .label-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 2px 8px;
-  font-size: 7.5px;
+  gap: calc(2 * var(--lu)) calc(8 * var(--lu));
+  font-size: calc(7.5 * var(--lu));
   color: #333;
   margin-top: auto;
 }
@@ -3361,13 +3375,13 @@ html[data-pulse-burst="1"] .qbg { animation: qbg-flare 4s var(--ease-out) 1; }
 .label-sku-block {
   display: flex;
   align-items: baseline;
-  gap: 6px;
-  border-top: 1px solid #000;
-  margin-top: 0.03in;
-  padding-top: 0.03in;
+  gap: calc(6 * var(--lu));
+  border-top: max(1px, var(--lu)) solid #000;
+  margin-top: calc(2.88 * var(--lu));
+  padding-top: calc(2.88 * var(--lu));
 }
 .label-sku-caption {
-  font-size: 7px;
+  font-size: calc(7 * var(--lu));
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: #555;
@@ -3376,7 +3390,7 @@ html[data-pulse-burst="1"] .qbg { animation: qbg-flare 4s var(--ease-out) 1; }
 .label-sku {
   font-family: var(--font-mono);
   font-weight: 600;
-  font-size: 13px;
+  font-size: calc(13 * var(--lu));
   letter-spacing: 0.02em;
   color: #000;
 }
@@ -3393,7 +3407,6 @@ html[data-pulse-burst="1"] .qbg { animation: qbg-flare 4s var(--ease-out) 1; }
     margin: 0 !important;
     page-break-after: avoid;
   }
-  .label-sku-block { border-top: 1px solid #000; }
 }
 
 /* ── Batch field workflows ─────────────────────────────────────────────── */
@@ -3576,12 +3589,14 @@ label.choice-chip { display: inline-flex; align-items: center; margin: 0; }
 .offline-queue-pill { position: fixed; left: 16px; bottom: 16px; z-index: 90; border: 1px solid var(--spore); border-radius: 999px; background: var(--ink); color: var(--spore); padding: 9px 13px; font: inherit; font-size: 11px; box-shadow: var(--shadow-lift); cursor: pointer; }
 .qtoast-action { align-self: center; border: 1px solid currentColor; border-radius: 999px; padding: 6px 9px; background: transparent; color: var(--lumen); font: inherit; font-size: 11px; cursor: pointer; }
 
-.batch-label-sheet { flex-direction: row; gap: .08in; }
+.batch-label-sheet { flex-direction: row; gap: calc(7.68 * var(--lu)); }
 .batch-label-copy { min-width: 0; flex: 1; display: flex; flex-direction: column; }
-.batch-label-lot { font-family: var(--font-mono); font-size: 11px; font-weight: 700; margin-top: .02in; }
-.batch-label-qr { width: 32%; max-width: .9in; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #111; }
+.batch-label-lot { font-family: var(--font-mono); font-size: calc(11 * var(--lu)); font-weight: 700; margin-top: calc(1.92 * var(--lu)); }
+.batch-label-qr { width: 32%; max-width: calc(86.4 * var(--lu)); display: flex; flex-direction: column; justify-content: center; align-items: center; color: #111; }
 .batch-label-qr img { display: block; width: 100%; height: auto; }
-.batch-label-qr span { font-size: 6.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; white-space: nowrap; }
+.batch-label-qr span { font-size: calc(6.5 * var(--lu)); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; white-space: nowrap; }
+/* 6×4 stock is proportionally taller than the small rolls: spend it on the scan target. */
+.batch-label-sheet[data-size="xl"] .batch-label-qr { width: 40%; }
 .batch-label-pages .label-sheet { margin-bottom: 12px; }
 
 @media (max-width: 880px) {
