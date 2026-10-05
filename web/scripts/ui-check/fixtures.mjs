@@ -605,6 +605,8 @@ export default {
       grade: "A",
       labor_minutes: 45,
       notes: null,
+      // Embedded for the flush label (/label/harvest/1).
+      batches: { lot_code: "JMF-2606-A", container_id: "TUB-05", strains: { ...strainsJMF, species: "Psilocybe cubensis" } },
     },
   ],
 

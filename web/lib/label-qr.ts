@@ -20,11 +20,15 @@ export async function batchScanUrl(batchId: number): Promise<string> {
   return `${proto}://${host}/batches/${batchId}`;
 }
 
+// SVG so the code stays crisp at any stock size; a bitmap blurs when a 6×4
+// label prints it at 2+ inches.
 export async function batchQrDataUrl(batchId: number): Promise<string> {
-  return QRCode.toDataURL(await batchScanUrl(batchId), {
+  const svg = await QRCode.toString(await batchScanUrl(batchId), {
+    type: "svg",
     errorCorrectionLevel: "M",
     margin: 1,
     width: 360,
     color: { dark: "#000000", light: "#ffffff" },
   });
+  return `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
 }
