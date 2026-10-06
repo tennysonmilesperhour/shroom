@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { currentCollection } from "@/lib/collection";
 import { createServiceClient } from "@/utils/supabase/service";
 import { Card } from "@/components/ui";
@@ -71,7 +72,8 @@ interface PresetRaw {
   preset_materials: { count: number }[];
 }
 
-export default async function BatchesPage() {
+export default async function BatchesPage({ searchParams }: { searchParams: Promise<{ archived?: string }> }) {
+  const archived = (await searchParams).archived === "1";
   const supabase = createServiceClient();
   const collection = await currentCollection();
   const [batches, protocols, strainOpts, roomOpts, presetRaw, savedViews] = await Promise.all([
@@ -79,6 +81,7 @@ export default async function BatchesPage() {
       supabase
         .from("batches")
         .select("*, strains(name), rooms(name)").in("strain_id", collection.strainIds)
+        .filter("archived_at", archived ? "not.is" : "is", null)
         .order("created_at", { ascending: false }),
       "load batches",
     ),
@@ -140,7 +143,8 @@ export default async function BatchesPage() {
     <>
       <div>
         <div className="eyebrow">Production</div>
-        <h1 className="section">Batches in cycle</h1>
+        <h1 className="section">{archived ? "Archived batches" : "Batches in cycle"}</h1>
+        <Link href={archived ? "/batches" : "/batches?archived=1"}>{archived ? "Show active batches" : "View archived batches"}</Link>
         <p className="lead">
           Each batch is a traceable lot moving container-by-container through the lifecycle.
         </p>
@@ -157,7 +161,7 @@ export default async function BatchesPage() {
         <p className="muted" style={{ marginTop: 0, fontSize: 12.5 }}>
           Drag a tub between columns to move it through the lifecycle. Click to open.
         </p>
-        <BatchBoard batches={boardBatches} stages={STAGES} stageLabel={STAGE_LABEL} />
+        <BatchBoard batches={archived ? [] : boardBatches} stages={STAGES} stageLabel={STAGE_LABEL} />
       </Card>
 
       <Card title="Spawn task templates">

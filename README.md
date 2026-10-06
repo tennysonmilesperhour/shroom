@@ -8,6 +8,10 @@ Cloud imports require a service account with Sheets read access and Supabase cre
 
 Batches supports CSV imports with `lot_code,strain,inoculated_on,notes`. Each new row creates one grain bag. Flushes and harvests remain linked under its batch detail page. Existing lots are preserved; this does not reset or delete batches. Batch deletion cascades to harvests, stage events, contamination, materials and media metadata; it removes dry inventory, and orders linked to harvests block deletion. Preserve historical lots instead of deleting them for a board reset.
 
+CSV imports require a signed preview before confirmation. Archive/restore uses a transaction that keeps linked history. Apply `20261006210441_import_guardrails_and_batch_archive.sql` for archive support, harvest revisions, unknown-weight flags and transactional import guards. Imports reject ambiguous references, invalid weights, identity moves and weight reductions over 50%. Missing weights remain unknown rather than becoming zero.
+
+The dashboard and Sync page surface import health; `/api/health/sheet` returns 503 for stale/failed imports or a nonempty queue. Remaining completion gates and expected risks are in [the reliability roadmap](docs/reliability-roadmap.md). Historical workbook instructions below describe the prior setup and do not override the native Master Sheet source above.
+
 # 🍄 Shroom OS
 
 **A full-scale mushroom grow-operation manager + business backend** — built to match

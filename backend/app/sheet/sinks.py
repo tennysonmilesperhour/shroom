@@ -301,7 +301,7 @@ class SupabaseSink:
         counts["batches"] = self._upsert("batches", [
             _prune({
                 "lot_code": b.lot_code, "strain_id": strain_ids.get(b.strain.lower()),
-                "stage": b.stage, "container_id": b.container_id, "container_type": "tub",
+                "stage": b.stage, "container_id": b.container_id,
                 "inoculated_on": _iso(b.inoculated_on), "transferred_on": _iso(b.transferred_on),
                 "first_pins_on": _iso(b.first_pins_on), "contamination_flag": b.contamination_flag,
                 "issues": b.issues, "notes": b.notes,
@@ -322,8 +322,10 @@ class SupabaseSink:
         counts["harvests"] = self._upsert("harvests", [
             _prune({
                 "batch_id": batch_ids.get(h.tub), "harvested_on": _iso(h.harvested_on),
-                "flush_number": h.flush_number, "weight_kg": round(h.fresh_g / 1000, 4),
-                "dry_weight_kg": round(h.dry_g / 1000, 4), "notes": h.notes,
+                "flush_number": h.flush_number, "weight_kg": round(h.fresh_g / 1000, 4) if h.fresh_recorded else None,
+                "dry_weight_kg": round(h.dry_g / 1000, 4) if h.dry_recorded else None,
+                "fresh_weight_recorded": True if h.fresh_recorded else None,
+                "dry_weight_recorded": True if h.dry_recorded else None, "notes": h.notes,
                 "source_ref": h.lot_code,
             }) for h in parsed.harvests
             if batch_ids.get(h.tub) and h.harvested_on
@@ -386,6 +388,8 @@ def build_import_plan(parsed: ParsedWorkbook) -> dict[str, list[dict]]:
     strain from free text or let the database default decide its collection.
     Harvests may ensure a batch for a known strain without overwriting it.
     """
+    from .safety import validate_import
+    validate_import(parsed)
     from copy import deepcopy
     from .parse import Batch, validate_container_id
     parsed = deepcopy(parsed)

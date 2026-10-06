@@ -19,6 +19,7 @@ sys.path.insert(0, str(Path(__file__).parent / '_vendor'))
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 from openpyxl import load_workbook
 from backend.app.sheet.parse import parse_workbook
+from backend.app.sheet.safety import validate_layout
 from backend.app.sheet.sinks import build_import_plan, SupabaseSink
 
 MAX_BYTES = 4 * 1024 * 1024
@@ -40,6 +41,7 @@ def preview_workbook(data: bytes) -> tuple[dict, dict]:
         for ws in wb.worksheets:
             if (ws.max_row or 0) > 20000 or (ws.max_column or 0) > 200 or (ws.max_row or 0) * (ws.max_column or 0) > 500000:
                 raise ValueError('A sheet is too large. Remove unused rows and columns, then try again.')
+        validate_layout(wb)
         parsed = parse_workbook(wb)
         plan = build_import_plan(parsed)
         counts = {table: len(rows) for table, rows in plan.items() if rows}

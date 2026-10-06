@@ -10,6 +10,7 @@ import { kgToLb } from "@/lib/format";
 import AddPanel from "@/components/AddPanel";
 import AddHarvestForm from "../../harvests/AddHarvestForm";
 import AdvanceStage from "./AdvanceStage";
+import ArchiveBatchButton from "@/components/ArchiveBatchButton";
 import RowActions from "@/components/RowActions";
 import BatchMediaUpload from "@/components/BatchMediaUpload";
 import BatchMediaGallery, { type BatchMediaItem } from "@/components/BatchMediaGallery";
@@ -22,6 +23,7 @@ import BatchRoomControl from "@/components/BatchRoomControl";
 export const dynamic = "force-dynamic";
 
 interface BatchDetailRow {
+  archived_at: string | null;
   id: number;
   lot_code: string;
   stage: string;
@@ -333,6 +335,7 @@ export default async function BatchDetailPage({
             ))}
           </div>
         </div>
+        <ArchiveBatchButton id={batch.id} archived={Boolean(batch.archived_at)} />
         <RowActions
           entity="batch"
           id={batch.id}

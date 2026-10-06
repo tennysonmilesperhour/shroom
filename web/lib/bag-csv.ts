@@ -16,6 +16,7 @@ export function parseBagCsv(raw: string) {
   if (value || row.length) { row.push(value.replace(/\r$/, "")); rows.push(row); }
   const headers = rows.shift()?.map((s) => s.trim().toLowerCase()) ?? [];
   if (!["lot_code", "strain", "inoculated_on"].every((s) => headers.includes(s))) throw new Error("Required columns: lot_code,strain,inoculated_on; optional: notes.");
+  if (new Set(headers).size !== headers.length || headers.some((h) => !["lot_code", "strain", "inoculated_on", "notes"].includes(h))) throw new Error("Use unique columns: lot_code,strain,inoculated_on,notes.");
   const seen = new Set<string>();
   const bags = rows.filter((r) => r.some((s) => s.trim())).map((r, i) => {
     if (r.length !== headers.length) throw new Error(`Row ${i + 2}: column count does not match.`);

@@ -83,8 +83,8 @@ def test_import_rejects_narrative_and_ambiguous_container_rows(container):
 
 def test_harvest_cannot_bypass_container_validation():
     wb = Workbook(); ws = wb.active; ws.title = 'Harvest Tracker'
-    ws.append(['Strain', 'Tub', 'Flush', 'Fresh', 'Harvest Date'])
-    ws.append(['Oyster', 'NS block (assign ID)', 1, 30, '2026-09-25'])
+    ws.append(['Strain', 'Tub', 'Flush', 'Fresh', 'Harvest Date', 'Dry (g)'])
+    ws.append(['Oyster', 'NS block (assign ID)', 1, 30, '2026-09-25', 3])
     with pytest.raises(ValueError, match='Harvest Tracker row 2'):
         api.preview_workbook(workbook_bytes(wb))
 

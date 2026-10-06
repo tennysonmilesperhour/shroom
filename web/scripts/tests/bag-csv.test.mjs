@@ -8,3 +8,7 @@ test('bag CSV supports quoted notes and rejects duplicates or invalid dates', ()
   assert.throws(() => parseBagCsv(header + row + '\n' + row), /duplicate/);
   assert.throws(() => parseBagCsv(header + row.replace('2026-05-29', '2026-02-30')), /date/);
 });
+test('rejects duplicate or unknown headers', () => {
+  assert.throws(() => parseBagCsv('lot_code,strain,inoculated_on,strain\nA,GT,,GT'), /unique/);
+  assert.throws(() => parseBagCsv('lot_code,strain,inoculated_on,typo\nA,GT,,x'), /unique/);
+});
