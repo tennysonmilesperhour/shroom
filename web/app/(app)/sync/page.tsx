@@ -157,9 +157,7 @@ export default async function SyncPage() {
             </>
           ) : (
             <p className="muted" style={{ margin: 0 }}>
-              <Badge tone="amber">not connected</Badge> Add <code>GOOGLE_SERVICE_ACCOUNT_JSON</code> and{" "}
-              <code>MASTER_SHEET_GOOGLE_ID</code> to the Vercel project and share the sheet with the service
-              account as an Editor. Until then, changes stay in the pending list below.
+              <Badge tone="amber">disabled</Badge> The native Master Sheet is the source of truth. App edits are not pushed during the board rebuild. The old workbook is a frozen backup.
             </p>
           )}
           <p className="muted" style={{ margin: 0, fontSize: 13 }}>

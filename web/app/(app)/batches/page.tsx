@@ -8,6 +8,7 @@ import AddBatchForm, { type PresetOption } from "./AddBatchForm";
 import BatchBoard from "./BatchBoard";
 import BatchTable, { type SavedBatchView } from "@/components/BatchTable";
 import { STAGE_ORDER, STAGE_LABEL, normalizeStage } from "@/lib/stages";
+import ImportBags from "./ImportBags";
 import ExportLinks from "@/components/ExportLinks";
 
 export const dynamic = "force-dynamic";
@@ -149,6 +150,8 @@ export default async function BatchesPage() {
       <AddPanel label="New batch" buttonLabel="Inoculate new batch">
         <AddBatchForm strains={strainOpts} rooms={roomOpts} presets={presets} />
       </AddPanel>
+
+      <AddPanel label="Import grain bags" buttonLabel="Import CSV"><ImportBags /></AddPanel>
 
       <Card title="Tub / bag board" variant="featured">
         <p className="muted" style={{ marginTop: 0, fontSize: 12.5 }}>

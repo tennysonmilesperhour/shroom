@@ -117,6 +117,7 @@ export default async function Dashboard() {
         )
         .in("strain_id", collection.strainIds)
         .order("harvested_on", { ascending: false })
+        .order("harvest_id", { ascending: false })
         .limit(20),
       "load spotlight harvests",
     ),
@@ -231,11 +232,11 @@ export default async function Dashboard() {
             <div className="spotlight-meta">
               <div className="spotlight-stat">
                 <div className="label">Fresh</div>
-                <div className="value"><CountUp value={spotlight.fresh_g ?? 0} /><span className="muted" style={{ fontSize: "0.6em", marginLeft: 4 }}>g</span></div>
+                <div className="value">{(spotlight.fresh_g ?? 0).toLocaleString("en-US")}<span className="muted" style={{ fontSize: "0.6em", marginLeft: 4 }}>g</span></div>
               </div>
               <div className="spotlight-stat">
                 <div className="label">Dry</div>
-                <div className="value"><CountUp value={spotlight.dry_g ?? 0} /><span className="muted" style={{ fontSize: "0.6em", marginLeft: 4 }}>g</span></div>
+                <div className="value">{(spotlight.dry_g ?? 0).toLocaleString("en-US")}<span className="muted" style={{ fontSize: "0.6em", marginLeft: 4 }}>g</span></div>
               </div>
               <div className="spotlight-stat">
                 <div className="label">Ratio</div>

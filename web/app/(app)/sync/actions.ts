@@ -106,7 +106,7 @@ export async function pushToSheet(): Promise<SyncActionResult> {
   if (!writebackConfigured()) {
     return {
       ok: false,
-      message: "Sheet write-back isn’t connected. Set GOOGLE_SERVICE_ACCOUNT_JSON and MASTER_SHEET_GOOGLE_ID.",
+      message: "Write-back is disabled while the Master Sheet is authoritative.",
     };
   }
   const supabase = createServiceClient();

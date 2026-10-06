@@ -1,18 +1,7 @@
-"""Locate and load the Master Cultivation Reference workbook.
+"""Load the authoritative native Master Sheet through the Sheets API.
 
-The sheet is the single source of truth. It lives in the operator's synced
-"Mushrooms" Google Drive folder as a real .xlsx. This module returns an openpyxl
-workbook from whichever source is configured, in priority order:
-
-  1. ``--path`` / ``MASTER_SHEET_PATH``  — a local .xlsx (synced Drive folder,
-     a checked-out fixture, or a manual download). Best for offline / CI.
-  2. Google Drive media download of ``MASTER_SHEET_FILE_ID`` using either a
-     service-account key (``GOOGLE_SERVICE_ACCOUNT_JSON``, recommended — never
-     expires, set once) or a short-lived OAuth access token
-     (``GOOGLE_OAUTH_TOKEN``). Best for an unattended / button-triggered sync.
-
-Keeping the fetch behind one function means the parser and sinks never care
-where the bytes came from.
+Explicit local paths and legacy file IDs remain available for backup recovery.
+Native values are converted to an openpyxl workbook for the shared parser.
 """
 from __future__ import annotations
 
@@ -39,8 +28,9 @@ _WRITE_SCOPES = (
 GOOGLE_SHEET_MIME = "application/vnd.google-apps.spreadsheet"
 XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
-# The canonical file in Isaac's Drive ("Master Cultivation Reference.xlsx").
-DEFAULT_FILE_ID = "1KJSAauzZ-CBpA1f4hDISsLzAiFnoh4jC"
+# Authoritative native Master Sheet; the prior .xlsx is a frozen backup.
+DEFAULT_FILE_ID = "1sSsGKaBU4tIP1YGvVVVDS7i2PzuxhiQBPFdezbFRbn8"
+_SHEETS_SCOPE = "https://www.googleapis.com/auth/spreadsheets.readonly"
 
 _DRIVE_MEDIA_URL = "https://www.googleapis.com/drive/v3/files/{id}"
 _DRIVE_EXPORT_URL = "https://www.googleapis.com/drive/v3/files/{id}/export"
@@ -166,8 +156,8 @@ def resolve_read_file_id(file_id: str | None = None) -> str:
     ``load_workbook_bytes`` exports it — so pull and status agree on the file."""
     return (
         file_id
-        or os.environ.get("MASTER_SHEET_FILE_ID")
         or os.environ.get("MASTER_SHEET_GOOGLE_ID")
+        or os.environ.get("MASTER_SHEET_FILE_ID")
         or DEFAULT_FILE_ID
     )
 
@@ -183,7 +173,7 @@ def describe_source() -> dict:
         ref = os.environ.get(var)
         if ref:
             return {"configured": True, "kind": kind, "ref": ref}
-    return {"configured": False, "kind": None, "ref": None}
+    return {"configured": credentials_available(), "kind": "google_sheet", "ref": DEFAULT_FILE_ID}
 
 
 def resolve_workbook(path: str | None = None, file_id: str | None = None,
@@ -198,10 +188,12 @@ def resolve_workbook(path: str | None = None, file_id: str | None = None,
         return load_workbook(path, read_only=True, data_only=True)
 
     file_id = resolve_read_file_id(file_id)
-    token = resolve_token(token=token)
+    token = resolve_token((_DRIVE_SCOPE, _SHEETS_SCOPE), token=token)
     if file_id and token:
         # load_workbook_bytes handles both a native Google Sheet (exported) and
         # a real .xlsx (media-downloaded).
+        if file_id == DEFAULT_FILE_ID or file_id == os.environ.get("MASTER_SHEET_GOOGLE_ID"):
+            return load_google_sheet(file_id, token)
         data = load_workbook_bytes(file_id, token)
         return load_workbook(io.BytesIO(data), read_only=True, data_only=True)
 
@@ -210,3 +202,28 @@ def resolve_workbook(path: str | None = None, file_id: str | None = None,
         "or GOOGLE_SERVICE_ACCOUNT_JSON / GOOGLE_OAUTH_TOKEN (+ optional "
         "MASTER_SHEET_FILE_ID / MASTER_SHEET_GOOGLE_ID) to pull it from Google Drive."
     )
+
+
+def load_google_sheet(file_id: str, token: str) -> Workbook:
+    """Read evaluated values through Sheets API; retain the existing tab parser."""
+    response = httpx.get(
+        f"https://sheets.googleapis.com/v4/spreadsheets/{file_id}",
+        params={"includeGridData": "true", "fields": "sheets(properties(title),data(startRow,startColumn,rowData(values(effectiveValue,effectiveFormat(numberFormat)))))"},
+        headers={"Authorization": f"Bearer {token}"}, timeout=60,
+    )
+    response.raise_for_status()
+    wb = Workbook()
+    wb.remove(wb.active)
+    for tab in response.json().get("sheets", []):
+        ws = wb.create_sheet(tab["properties"]["title"])
+        for grid in tab.get("data", []):
+            for row_index, row in enumerate(grid.get("rowData", [])):
+                for col_index, cell in enumerate(row.get("values", [])):
+                    value = cell.get("effectiveValue", {})
+                    actual = next((value[k] for k in ("numberValue", "stringValue", "boolValue") if k in value), None)
+                    target = ws.cell(grid.get("startRow", 0) + row_index + 1, grid.get("startColumn", 0) + col_index + 1, actual)
+                    fmt = cell.get("effectiveFormat", {}).get("numberFormat", {})
+                    if fmt.get("type") in ("DATE", "DATE_TIME") and isinstance(actual, (int, float)):
+                        from openpyxl.utils.datetime import from_excel
+                        target.value = from_excel(actual)
+    return wb

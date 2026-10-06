@@ -32,6 +32,7 @@ export async function enqueueSync(
   op: SyncOp,
   payload: Record<string, unknown> = {},
 ): Promise<void> {
+  if (!writebackConfigured() || !MAPPED_ENTITIES.has(entity) || op === "delete") return;
   const { error } = await supabase.from("sheet_sync_queue").insert({
     entity,
     entity_id: entityId,

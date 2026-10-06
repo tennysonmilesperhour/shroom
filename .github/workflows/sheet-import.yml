@@ -51,8 +51,8 @@ jobs:
       - name: Import sheet
         env:
           GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
-          MASTER_SHEET_FILE_ID: ${{ secrets.MASTER_SHEET_FILE_ID }}
-          MASTER_SHEET_GOOGLE_ID: ${{ secrets.MASTER_SHEET_GOOGLE_ID }}
+          MASTER_SHEET_FILE_ID: ""
+          MASTER_SHEET_GOOGLE_ID: "1sSsGKaBU4tIP1YGvVVVDS7i2PzuxhiQBPFdezbFRbn8"
           SHEET_IMPORT_REQUEST_ID: ${{ inputs.request_id }}
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
