@@ -18,6 +18,7 @@ import VoiceObservation from "@/components/VoiceObservation";
 import BatchWorkflowTools from "@/components/BatchWorkflowTools";
 import { BATCH_MEDIA_BUCKET } from "@/lib/batch-media";
 import BatchRoomControl from "@/components/BatchRoomControl";
+import BatchStageTiming from "@/components/BatchStageTiming";
 
 export const dynamic = "force-dynamic";
 
@@ -423,6 +424,13 @@ export default async function BatchDetailPage({
           </div>
         </div>
       </Card>
+
+      <BatchStageTiming
+        batchId={batch.id}
+        strainId={batch.strain_id}
+        strainName={batch.strains?.name ?? "This strain"}
+        rooms={roomOpts}
+      />
 
       <section id="batch-photos" className="anchor-section">
         <AddPanel label="Add batch photo" buttonLabel="Take or upload photo">

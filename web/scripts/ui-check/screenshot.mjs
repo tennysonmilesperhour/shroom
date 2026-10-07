@@ -29,6 +29,7 @@ const ROUTES = [
   "/label/batch/1",
   "/label/batch/1?size=md",
   "/label/batches?ids=1",
+  "/label/batches?ids=111&next=fruiting",
   "/label/harvest/1",
   "/",
   "/batches",
@@ -107,6 +108,15 @@ const SCENARIOS = [
   { name: "photo-upload", route: "/batches/1", act: async (page) => {
     await page.getByRole("button", { name: /Take or upload photo/ }).click();
     await page.locator('input[type="file"]').waitFor();
+  } },
+  { name: "stage-timing-prompt", route: "/batches/1", act: async (page) => {
+    const prompt = page.locator(".timing-prompt").first();
+    await prompt.getByRole("button", { name: "Yes, record" }).click();
+    await prompt.locator(".timing-prompt-form").waitFor();
+    await prompt.scrollIntoViewIfNeeded();
+  } },
+  { name: "stage-timing-strain", route: "/strains/1", act: async (page) => {
+    await page.locator(".timing-automation").scrollIntoViewIfNeeded();
   } },
   { name: "functional-batches", route: "/batches", act: async (page) => {
     await page.getByRole("button", { name: /Functional/ }).click();

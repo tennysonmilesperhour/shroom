@@ -4,6 +4,7 @@ import PrintLabel from "@/components/PrintLabel";
 import { sizeFor } from "@/lib/label-size";
 import BatchLabelSheet, { type BatchLabelData } from "@/components/BatchLabelSheet";
 import { batchQrDataUrl } from "@/lib/label-qr";
+import { normalizeStage, STAGE_ORDER, type Stage } from "@/lib/stages";
 
 export const dynamic = "force-dynamic";
 
@@ -21,9 +22,14 @@ interface BatchLabelRow {
 export default async function BatchLabelsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ ids?: string; size?: string }>;
+  searchParams: Promise<{ ids?: string; size?: string; next?: string }>;
 }) {
-  const { ids: rawIds = "", size: sizeKey } = await searchParams;
+  const { ids: rawIds = "", size: sizeKey, next } = await searchParams;
+  // next=<stage per id> prints stickers ahead of a predicted stage change.
+  const ahead = new Map(
+    rawIds.split(",").map((id, i): [number, string] => [Number(id), next?.split(",")[i] ?? ""])
+      .filter(([, stage]) => STAGE_ORDER.includes(stage as Stage)),
+  );
   const ids = [...new Set(rawIds.split(",").map(Number).filter(Number.isFinite))].slice(0, 100);
   const size = sizeFor(sizeKey);
   const rows = ids.length
@@ -41,7 +47,7 @@ export default async function BatchLabelsPage({
       lotCode: row.lot_code,
       containerId: row.container_id,
       containerType: row.container_type,
-      stage: row.stage,
+      stage: ahead.get(row.id) ?? normalizeStage(row.stage),
       inoculatedOn: row.inoculated_on,
       strain: row.strains?.name ?? null,
       species: row.strains?.species ?? null,
@@ -54,7 +60,7 @@ export default async function BatchLabelsPage({
     <div className="label-page batch-label-pages">
       <div className="label-toolbar-wrap no-print">
         <Link href="/batches" className="back-link">&larr; Back to batches</Link>
-        {labels.length > 0 && <PrintLabel size={size} basePath={`/label/batches?ids=${ids.join(",")}`} />}
+        {labels.length > 0 && <PrintLabel size={size} basePath={`/label/batches?ids=${ids.join(",")}${next ? `&next=${encodeURIComponent(next)}` : ""}`} />}
       </div>
       {labels.length === 0 ? (
         <p className="muted no-print">Select batches in Bulk actions, then choose Print QR labels.</p>
