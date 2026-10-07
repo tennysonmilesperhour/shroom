@@ -20,14 +20,16 @@ interface CardProps {
   title?: string;
   variant?: CardVariant;
   className?: string;
+  /** Anchor for "What's new" walkthroughs (see lib/whats-new.ts). */
+  tour?: string;
   children: ReactNode;
 }
 
-export function Card({ title, variant = "default", className = "", children }: CardProps) {
+export function Card({ title, variant = "default", className = "", tour, children }: CardProps) {
   const variantClass = variant === "default" ? "" : variant;
   const classes = ["card", variantClass, className].filter(Boolean).join(" ");
   return (
-    <div className={classes}>
+    <div className={classes} data-tour={tour}>
       {title && <h3>{title}</h3>}
       {children}
     </div>

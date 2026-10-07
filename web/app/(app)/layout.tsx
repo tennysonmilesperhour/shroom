@@ -10,6 +10,7 @@ import FeedbackPanel from "@/components/FeedbackPanel";
 import ThemeToggle from "@/components/ThemeToggle";
 import MushroomModeToggle from "@/components/MushroomModeToggle";
 import OfflineQueueStatus from "@/components/OfflineQueueStatus";
+import WhatsNew from "@/components/WhatsNew";
 import { createServiceClient } from "@/utils/supabase/service";
 import { currentCollection } from "@/lib/collection";
 
@@ -80,7 +81,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
       <div className="content">
         <div className="mode-bar">
+          <span aria-hidden="true" />
           <MushroomModeToggle />
+          <WhatsNew />
         </div>
         <main id="main" tabIndex={-1}>
           {children}

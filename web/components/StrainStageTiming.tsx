@@ -66,7 +66,7 @@ export default async function StrainStageTiming({ strainId }: { strainId: number
     .sort(([a], [b]) => a.localeCompare(b));
 
   return (
-    <Card title="Stage timing">
+    <Card title="Stage timing" tour="strain-stage-timing">
       {baselines.strain.transitions.size === 0 ? (
         <p className="muted" style={{ margin: 0 }}>
           No completed stage changes yet. Each time a batch moves to its next stage, the days it took are recorded here.
@@ -99,23 +99,25 @@ export default async function StrainStageTiming({ strainId }: { strainId: number
         </>
       )}
 
-      <div className="timing-automation-head">
-        <div>
-          <div className="eyebrow">Automation</div>
-          <span className="muted form-help">
-            {unlocked
-              ? "Confidence is high enough to automate."
-              : `Unlocks at ${AUTOMATION_CONFIDENCE}% confidence. More consistent runs raise it.`}
-          </span>
+      <div data-tour="strain-automation">
+        <div className="timing-automation-head">
+          <div>
+            <div className="eyebrow">Automation</div>
+            <span className="muted form-help">
+              {unlocked
+                ? "Confidence is high enough to automate."
+                : `Unlocks at ${AUTOMATION_CONFIDENCE}% confidence. More consistent runs raise it.`}
+            </span>
+          </div>
+          {unlocked ? <Badge tone="green">ready</Badge> : <ConfidenceMeter value={confidence} />}
         </div>
-        {unlocked ? <Badge tone="green">ready</Badge> : <ConfidenceMeter value={confidence} />}
+        <StageAutomationToggles
+          strainId={strainId}
+          alerts={auto?.alerts_enabled ?? false}
+          labels={auto?.labels_enabled ?? false}
+          unlocked={unlocked}
+        />
       </div>
-      <StageAutomationToggles
-        strainId={strainId}
-        alerts={auto?.alerts_enabled ?? false}
-        labels={auto?.labels_enabled ?? false}
-        unlocked={unlocked}
-      />
     </Card>
   );
 }

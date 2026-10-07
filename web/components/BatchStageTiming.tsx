@@ -116,7 +116,7 @@ export default async function BatchStageTiming({
   const hasBaseline = rows.some((r) => (r.stats?.n ?? 0) >= MIN_SAMPLES);
 
   return (
-    <Card title="Stage timing">
+    <Card title="Stage timing" tour="batch-stage-timing">
       {prompts[0] && <StageTimingPrompt key={prompts[0].fromStage} batchId={batchId} prompt={prompts[0]} more={prompts.length - 1} />}
       <ul className="timing-rows" aria-label="Days this batch spent in each stage compared with its strain">
         {rows.map((row) => {
