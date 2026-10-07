@@ -9,6 +9,7 @@ import BatchBoard from "./BatchBoard";
 import BatchTable, { type SavedBatchView } from "@/components/BatchTable";
 import { STAGE_ORDER, STAGE_LABEL, normalizeStage } from "@/lib/stages";
 import ExportLinks from "@/components/ExportLinks";
+import UpcomingStageChanges from "@/components/UpcomingStageChanges";
 
 export const dynamic = "force-dynamic";
 
@@ -145,6 +146,8 @@ export default async function BatchesPage() {
         </p>
         <ExportLinks items={[["batches", "Batches"]]} />
       </div>
+
+      <UpcomingStageChanges strainIds={collection.strainIds} />
 
       <AddPanel label="New batch" buttonLabel="Inoculate new batch">
         <AddBatchForm strains={strainOpts} rooms={roomOpts} presets={presets} />

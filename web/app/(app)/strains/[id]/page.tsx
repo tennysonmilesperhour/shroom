@@ -10,6 +10,7 @@ import { normalizeUrl, displayUrl } from "@/lib/external";
 import RunSporeCrawlButton from "../RunSporeCrawlButton";
 import { alkaloidSplit, evidenceTone, evidenceLabel, hueColor } from "@/lib/spectrum";
 import RowActions from "@/components/RowActions";
+import StrainStageTiming from "@/components/StrainStageTiming";
 
 export const dynamic = "force-dynamic";
 
@@ -364,6 +365,8 @@ export default async function StrainDetailPage({
           </div>
         </Card>
       )}
+
+      <StrainStageTiming strainId={strain.id} />
 
       <Card title="Batches">
         {batches.length === 0 ? (

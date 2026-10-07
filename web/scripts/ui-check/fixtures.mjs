@@ -524,6 +524,37 @@ export default {
       strains: strainsJMF,
       rooms: null,
     },
+    // Finished Golden Teacher tub runs: the history the stage-timing baselines learn from.
+    ...[
+      ["GT-2601-A", "2026-01-05", 15, 40],
+      ["GT-2601-B", "2026-01-19", 14, 38],
+      ["GT-2602-A", "2026-02-02", 16, 42],
+      ["GT-2602-B", "2026-02-16", 15, 39],
+      ["GT-2603-A", "2026-03-02", 14, 41],
+      ["GT-2603-B", "2026-03-16", 15, 37],
+      ["GT-2604-A", "2026-04-06", 16, 40],
+      ["GT-2604-B", "2026-04-20", 15, 43],
+      ["GT-2605-A", "2026-05-04", 14, 39],
+      ["GT-2605-B", "2026-05-18", 24, 40],
+    ].map(([lot, inoc, colonDays, fruitDays], i) => {
+      const at = (days) => new Date(Date.parse(`${inoc}T00:00:00Z`) + days * 86_400_000).toISOString().slice(0, 10);
+      return {
+        id: 101 + i, lot_code: lot, stage: "spent", strain_id: 1, room_id: 1, block_count: 4, substrate_weight_kg: 6.5,
+        container_id: `TUB-${String(20 + i).padStart(2, "0")}`, container_type: "tub", tub_size: "66 qt",
+        spawn_type: "rye grain", substrate_type: "CVG", bag_type: null,
+        inoculated_on: inoc, colonized_on: inoc, fruiting_on: at(colonDays), spent_on: at(colonDays + fruitDays),
+        contamination_flag: false, rating: 7, issues: null, notes: "", lineage_parent_id: null,
+        created_at: `${inoc}T15:00:00Z`, strains: strainsGT, rooms: roomA,
+      };
+    }),
+    {
+      // Due to fruit about now: drives the "Upcoming stage changes" alert.
+      id: 111, lot_code: "GT-2609-C", stage: "colonization", strain_id: 1, room_id: 2, block_count: 4, substrate_weight_kg: 6.5,
+      container_id: "TUB-31", container_type: "tub", tub_size: "66 qt", spawn_type: "rye grain", substrate_type: "Coir",
+      bag_type: null, inoculated_on: new Date(Date.now() - 14 * 86_400_000).toISOString().slice(0, 10),
+      colonized_on: null, fruiting_on: null, spent_on: null, contamination_flag: false, rating: null, issues: null,
+      notes: "", lineage_parent_id: null, created_at: "2026-09-23T15:00:00Z", strains: strainsGT, rooms: roomB,
+    },
   ],
 
   // ── Harvests (base table) ───────────────────────────────────────────────
@@ -1511,6 +1542,14 @@ export default {
     { id: 1, batch_id: 1, stage: "colonization", room_id: 2, note: "Inoculated 4 quarts into TUB-07", created_at: "2026-07-02T15:05:00Z" },
     { id: 2, batch_id: 1, stage: "fruiting", room_id: 1, note: "Advance stage", created_at: "2026-07-21T15:02:00Z" },
     { id: 3, batch_id: 4, stage: "moved", room_id: 1, note: "Moved to tent", created_at: "2026-08-01T16:00:00Z" },
+  ],
+
+  stage_timing_notes: [
+    { id: 1, batch_id: 110, from_stage: "colonization", to_stage: "fruiting", observed_days: 24, expected_days: 15, direction: "slow", response: "changed", factors: ["temperature", "spawn"], note: "Heater tripped for four days; switched to a lighter spawn ratio.", created_at: "2026-06-12T10:00:00Z" },
+  ],
+
+  stage_timing_automation: [
+    { strain_id: 1, alerts_enabled: true, labels_enabled: true },
   ],
 
   // ── Commerce ────────────────────────────────────────────────────────────
