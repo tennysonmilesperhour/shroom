@@ -118,6 +118,17 @@ const SCENARIOS = [
   { name: "stage-timing-strain", route: "/strains/1", act: async (page) => {
     await page.locator(".timing-automation").scrollIntoViewIfNeeded();
   } },
+  { name: "whats-new-panel", route: "/", act: async (page) => {
+    await page.locator(".whats-new-btn[data-ready]").click();
+    await page.locator(".whats-new-panel").waitFor();
+  } },
+  { name: "whats-new-tour", route: "/", act: async (page) => {
+    await page.locator(".whats-new-btn[data-ready]").click();
+    await page.locator(".whats-new-show").first().click();
+    await page.locator(".tour-card").getByRole("button", { name: "Next" }).click();
+    await page.locator(".tour-spotlight").waitFor({ timeout: 30_000 });
+    await page.waitForFunction(() => !document.querySelector(".tour-card")?.textContent?.includes("Finding it"));
+  } },
   { name: "functional-batches", route: "/batches", act: async (page) => {
     await page.getByRole("button", { name: /Functional/ }).click();
     await page.waitForTimeout(900);
@@ -180,6 +191,9 @@ async function settle(page) {
   // networkidle never settles (version poller); wait for the shell instead.
   await page.locator("main, .label-page, .batch-label-sheet").first().waitFor({ timeout: 30_000 });
   await page.evaluate(() => document.fonts.ready);
+  // App pages: wait until React has hydrated (the What's new button marks it),
+  // otherwise scenario clicks can land before handlers are attached.
+  if (await page.locator(".whats-new-btn").count()) await page.locator(".whats-new-btn[data-ready]").waitFor({ timeout: 30_000 });
   await page.waitForTimeout(700); // count-up animations
   if (await page.getByRole('heading', { name: 'We couldn’t load this page.' }).count()) throw new Error('Application error boundary rendered');
   if (await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1)) throw new Error('Horizontal page overflow');

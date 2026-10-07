@@ -43,6 +43,19 @@ built**, at both widths before it ships:
 Don't rely on `npm run build` passing as proof a UI change works — it compiles,
 it doesn't render.
 
+## "What's new" entry for every visible change
+
+The glowing **What's new** button at the top of the app reads `web/lib/whats-new.ts`.
+Any change Isaac or his client would notice gets an entry there (newest first) in the
+same PR:
+
+- Plain language, no technical jargon: what it does for them, not how it was built.
+- If it adds or changes something they can *do*, give it `steps` so "Show me" walks
+  through it (each step points at a spot on screen; see the comments in the file).
+- Bug fixes and behind-the-scenes work don't need an entry unless they change what
+  someone sees or does.
+- Run the UI-check harness on any new tour so its targets actually exist.
+
 ## When to pause and ask
 
 Only stop for explicit sign-off when a change is **destructive, outward-facing, or
