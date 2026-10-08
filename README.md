@@ -1,3 +1,17 @@
+## October 2026 Master Sheet migration
+
+The authoritative source is native Google Sheet `1sSsGKaBU4tIP1YGvVVVDS7i2PzuxhiQBPFdezbFRbn8`, read with the Sheets API. The old Excel workbook is a frozen backup; explicit local-file imports remain available for recovery.
+
+Write-back is disabled by default. Apply `20261006000000_master_sheet_read_only.sql` to archive and clear the pending backlog and block database workflow enqueueing. Do not replay stale edits into the rebuilt Sheet. Re-enabling requires removing the `master_sheet_read_only` trigger and explicitly setting `SHEET_WRITEBACK_ENABLED=1`; leave the full-database export workflow disabled during rebuilding.
+
+Cloud imports require a service account with Sheets read access and Supabase credentials in GitHub Actions. Share the Sheet with the service account. Set `GOOGLE_SERVICE_ACCOUNT_JSON`, `SUPABASE_URL`, and `SUPABASE_SERVICE_ROLE_KEY` repository secrets.
+
+Batches supports CSV imports with `lot_code,strain,inoculated_on,notes`. Each new row creates one grain bag. Flushes and harvests remain linked under its batch detail page. Existing lots are preserved; this does not reset or delete batches. Batch deletion cascades to harvests, stage events, contamination, materials and media metadata; it removes dry inventory, and orders linked to harvests block deletion. Preserve historical lots instead of deleting them for a board reset.
+
+CSV imports require a signed preview before confirmation. Archive/restore uses a transaction that keeps linked history. Apply `20261006210441_import_guardrails_and_batch_archive.sql` for archive support, harvest revisions, unknown-weight flags and transactional import guards. Imports reject ambiguous references, invalid weights, identity moves and weight reductions over 50%. Missing weights remain unknown rather than becoming zero.
+
+The dashboard and Sync page surface import health; `/api/health/sheet` returns 503 for stale/failed imports or a nonempty queue. Remaining completion gates and expected risks are in [the reliability roadmap](docs/reliability-roadmap.md). Historical workbook instructions below describe the prior setup and do not override the native Master Sheet source above.
+
 # 🍄 Shroom OS
 
 **A full-scale mushroom grow-operation manager + business backend** — built to match

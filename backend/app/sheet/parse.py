@@ -161,6 +161,8 @@ class Harvest:
     harvested_on: date | None
     fresh_g: float = 0.0
     dry_g: float = 0.0
+    fresh_recorded: bool = True
+    dry_recorded: bool = True
     notes: str = ""
     # Weight cells that held text instead of a number ("Dry (g): see #121").
     unparsed: list[str] = field(default_factory=list)
@@ -816,14 +818,14 @@ def _join_text(a: str, b: str) -> str:
 
 # Workbook IDs must identify one physical container, not an annotation or list.
 # Keep support for established IDs such as T-01, G-03, LM-01, and T1.
-_CONTAINER_ID = re.compile(r"[A-Za-z]{1,12}-?\d+(?:-[A-Za-z0-9]+)?\Z")
+_CONTAINER_ID = re.compile(r"(?:[A-Za-z]{1,12}-?\d+(?:-[A-Za-z0-9]+)?|QB-[A-Za-z0-9]{1,12}-\d{6}(?:-[A-Za-z0-9]+)?)\Z")
 
 
 def validate_container_id(value: str, context: str) -> None:
     if not _CONTAINER_ID.fullmatch(value):
         raise ValueError(
             f"{context}: '{value[:100]}' is not a single container ID. "
-            "Use an ID such as T-01 or LM-01; move annotations and summaries "
+            "Use an ID such as QB-GT-260529, T-01 or LM-01; move annotations and summaries "
             "outside the import table. Split multiple containers into separate rows."
         )
 
@@ -917,6 +919,7 @@ def parse_harvests(wb: Workbook) -> list[Harvest]:
     c_tub = _col(headers, "tub")
     c_flush = _col(headers, "flush")
     c_date = _col(headers, "harvest date")
+    c_harvest_id = _col(headers, "harvest id")
     c_fresh = _col(headers, "fresh")
     c_dry = _col(headers, "dry (g)", "dry")
     c_notes = _col(headers, "notes")
@@ -936,13 +939,15 @@ def parse_harvests(wb: Workbook) -> list[Harvest]:
             # lot_code stays tub+flush: it's the harvest's stable natural key
             # (source_ref) in the sheet. `tub` is what resolves the batch now
             # that batches are one-per-container.
-            lot_code=_lot_code(tub, flush),
+            lot_code=util.clean(_at(row, c_harvest_id)) or _lot_code(tub, flush),
             tub=tub,
             strain=_strip_name(strain),
             flush_number=flush,
             harvested_on=harvested_on,
             fresh_g=fresh,
             dry_g=dry,
+            fresh_recorded=util.grams(_at(row, c_fresh)) is not None,
+            dry_recorded=util.grams(_at(row, c_dry)) is not None,
             notes=_with_unparsed(util.clean(_at(row, c_notes)), unparsed),
             unparsed=unparsed,
             date_text="" if harvested_on else util.clean(_at(row, c_date)),

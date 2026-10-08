@@ -41,6 +41,7 @@ permissions:
 
 jobs:
   export:
+    if: vars.SHEET_WRITEBACK_ENABLED == '1'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

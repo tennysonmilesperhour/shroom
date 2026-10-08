@@ -24,7 +24,8 @@ interface ServiceAccount {
 }
 
 export function sheetWritebackConfig(): { id: string; account: ServiceAccount } | null {
-  const id = process.env.MASTER_SHEET_GOOGLE_ID?.trim();
+  if (process.env.SHEET_WRITEBACK_ENABLED !== "1") return null;
+  const id = process.env.MASTER_SHEET_GOOGLE_ID?.trim() || "1sSsGKaBU4tIP1YGvVVVDS7i2PzuxhiQBPFdezbFRbn8";
   const raw = process.env.GOOGLE_SERVICE_ACCOUNT_JSON?.trim();
   if (!id || !raw) return null;
   try {

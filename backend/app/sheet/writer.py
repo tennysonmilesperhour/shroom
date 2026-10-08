@@ -450,6 +450,8 @@ def describe_target() -> dict:
     minting a token. Powers /api/sync/status so the UI can tell the operator
     whether write-back is wired up and to where.
     """
+    if os.environ.get("SHEET_WRITEBACK_ENABLED") != "1":
+        return {"configured": False, "kind": "disabled", "ref": None, "writable": False}
     for var, kind, needs_token in _WRITE_BACKENDS:
         ref = os.environ.get(var)
         if ref:
@@ -465,6 +467,9 @@ def resolve_writer(*, path: str | None = None, token: str | None = None) -> Shee
 
     Raises RuntimeError with an actionable message when nothing is configured.
     """
+    if path is None and os.environ.get("SHEET_WRITEBACK_ENABLED") != "1":
+        raise RuntimeError("Write-back is disabled: the native Master Sheet is authoritative.")
+
     def _token(var: str) -> str:
         tok = source.resolve_write_token(token=token)
         if not tok:

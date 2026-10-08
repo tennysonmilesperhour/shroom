@@ -356,6 +356,7 @@ def test_autosync_disabled_marks_dirty_without_pushing(monkeypatch, seeded, tmp_
 
 
 def test_autosync_run_push_writes_and_clears_dirty(monkeypatch, seeded, tmp_path):
+    monkeypatch.setenv("SHEET_WRITEBACK_ENABLED", "1")
     target = tmp_path / "auto.xlsx"
     monkeypatch.setenv("MASTER_SHEET_PATH", str(target))
     monkeypatch.delenv("MASTER_SHEET_GOOGLE_ID", raising=False)
@@ -435,6 +436,7 @@ def test_status_read_source_honors_google_id(client, monkeypatch):
 
 
 def test_push_then_download_over_api(client, monkeypatch, tmp_path):
+    monkeypatch.setenv("SHEET_WRITEBACK_ENABLED", "1")
     # Create a strain through the real API…
     r = client.post("/api/strains", json={"name": "API Strain", "ease_rating": 6})
     assert r.status_code == 201
@@ -460,3 +462,13 @@ def test_push_then_download_over_api(client, monkeypatch, tmp_path):
     assert dl.headers["content-type"].startswith(
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     assert dl.content[:2] == b"PK"  # xlsx is a zip
+
+
+def test_writeback_disabled_by_default(client, monkeypatch, tmp_path):
+    monkeypatch.delenv("SHEET_WRITEBACK_ENABLED", raising=False)
+    target = tmp_path / "frozen.xlsx"
+    monkeypatch.setenv("MASTER_SHEET_PATH", str(target))
+    response = client.post("/api/sync/push")
+    assert response.status_code == 400
+    assert "disabled" in response.json()["detail"]
+    assert not target.exists()

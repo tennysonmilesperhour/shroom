@@ -50,9 +50,13 @@ def run(target: str, *, path: str | None = None, file_id: str | None = None,
         service_key: str | None = None) -> dict[str, dict[str, int]]:
     wb = resolve_workbook(path=path, file_id=file_id, token=token)
     try:
+        from .safety import validate_layout
+        validate_layout(wb, master=not bool(path or os.environ.get("MASTER_SHEET_PATH")))
         parsed = parse_workbook(wb)
     finally:
         wb.close()
+    from .safety import validate_import
+    validate_import(parsed)
     summary: dict[str, dict[str, int]] = {}
 
     if target in ("sqlite", "both"):

@@ -32,7 +32,7 @@ _pending = False
 
 
 def enabled() -> bool:
-    return os.environ.get("SHEET_SYNC_AUTO", "").strip().lower() in _TRUE
+    return os.environ.get("SHEET_WRITEBACK_ENABLED") == "1" and os.environ.get("SHEET_SYNC_AUTO", "").strip().lower() in _TRUE
 
 
 def _debounce_seconds() -> float:

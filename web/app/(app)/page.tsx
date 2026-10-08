@@ -1,3 +1,4 @@
+import { importHealth } from "@/lib/sheet-sync-status";
 import Link from "next/link";
 import { createServiceClient } from "@/utils/supabase/service";
 import { Kpi, Card, Badge } from "@/components/ui";
@@ -16,6 +17,7 @@ import { cookies } from "next/headers";
 export const dynamic = "force-dynamic";
 
 interface BatchRow {
+  archived_at: string | null;
   id: number;
   created_at: string;
   stage: string;
@@ -70,6 +72,7 @@ interface SpotlightHarvest {
 }
 
 interface ActiveBatchPick {
+  archived_at: string | null;
   id: number;
   lot_code: string;
   stage: string;
@@ -89,8 +92,8 @@ export default async function Dashboard() {
   const isFunctional = mode === "functional";
   const supabase = createServiceClient();
   const collection = await currentCollection();
-  const [allBatches, allDry, env, allYields, allTasks, inv, valuation, allSpotlights, strainTypes] = await Promise.all([
-    must<BatchRow[]>(supabase.from("batches").select("id,created_at,stage,block_count,strains(mushroom_type)"), "load batches"),
+  const [allBatches, allDry, env, allYields, allTasks, inv, valuation, allSpotlights, strainTypes, importRuns] = await Promise.all([
+    must<BatchRow[]>(supabase.from("batches").select("id,created_at,stage,block_count,archived_at,strains(mushroom_type)"), "load batches"),
     must<DryRatioRow[]>(supabase.from("v_dry_ratio").select("harvested_on,strain_id,fresh_g,dry_g,below_floor"), "load dry ratios"),
     must<EnvStatusRow[]>(supabase.from("v_environment_status").select("room_id,room,in_spec"), "load environment status"),
     must<YieldRow[]>(
@@ -117,6 +120,7 @@ export default async function Dashboard() {
         )
         .in("strain_id", collection.strainIds)
         .order("harvested_on", { ascending: false })
+        .order("harvest_id", { ascending: false })
         .limit(20),
       "load spotlight harvests",
     ),
@@ -124,6 +128,7 @@ export default async function Dashboard() {
       supabase.from("strains").select("id,mushroom_type"),
       "load strain types",
     ),
+    soft<{ status: string; started_at: string }>(supabase.from("sheet_imports").select("status,started_at").order("started_at", { ascending: false }).limit(10)),
   ]);
 
   const typeByStrain = new Map(strainTypes.map((s) => [s.id, s.mushroom_type]));
@@ -133,7 +138,7 @@ export default async function Dashboard() {
   const spotlight = allSpotlights.find(
     (h) => h.strain_id != null && includedTypes.has(typeByStrain.get(h.strain_id) ?? ""),
   ) ?? null;
-  const active = batches.filter((b) => ACTIVE_STAGES.has(b.stage)).length;
+  const active = batches.filter((b) => !b.archived_at && ACTIVE_STAGES.has(b.stage)).length;
   const blocks = batches
     .filter((b) => !RETIRED_STAGES.has(b.stage))
     .reduce((s, b) => s + (b.block_count ?? 0), 0);
@@ -165,7 +170,7 @@ export default async function Dashboard() {
     // (same as loadCommandIndex in the layout), so we cast the row shape.
     supabase
       .from("batches")
-      .select("id,lot_code,stage,strains(name)")
+      .select("id,lot_code,stage,archived_at,strains(name)")
       .in("strain_id", collection.strainIds)
       .order("created_at", { ascending: false }),
   ]);
@@ -178,7 +183,7 @@ export default async function Dashboard() {
   const tasksSeries = weeklyTotals(tasks.map((row) => ({ date: row.created_at, amount: 1 })), now);
 
   const activeBatches: QuickLogBatch[] = ((batchPickRes.data as ActiveBatchPick[] | null) ?? [])
-    .filter((b) => ACTIVE_STAGES.has(b.stage))
+    .filter((b) => !b.archived_at && ACTIVE_STAGES.has(b.stage))
     .slice(0, 60)
     .map((b) => ({ id: b.id, lot_code: b.lot_code, stage: b.stage, strain: b.strains?.name ?? null }));
 
@@ -190,8 +195,10 @@ export default async function Dashboard() {
     lastHarvestOn: spotlight?.harvested_on ?? null,
   };
 
+  const sheetHealth = importHealth(importRuns);
   return (
     <>
+      {sheetHealth.state !== "healthy" && <p role="status">{sheetHealth.message} <Link href="/sync">Check Sheet sync</Link></p>}
       <OperationPulse vitals={vitals} />
 
       <h1 className="sr-only">Dashboard</h1>
@@ -231,11 +238,11 @@ export default async function Dashboard() {
             <div className="spotlight-meta">
               <div className="spotlight-stat">
                 <div className="label">Fresh</div>
-                <div className="value"><CountUp value={spotlight.fresh_g ?? 0} /><span className="muted" style={{ fontSize: "0.6em", marginLeft: 4 }}>g</span></div>
+                <div className="value">{spotlight.fresh_g == null ? "Not recorded" : spotlight.fresh_g.toLocaleString("en-US")}<span className="muted" style={{ fontSize: "0.6em", marginLeft: 4 }}>g</span></div>
               </div>
               <div className="spotlight-stat">
                 <div className="label">Dry</div>
-                <div className="value"><CountUp value={spotlight.dry_g ?? 0} /><span className="muted" style={{ fontSize: "0.6em", marginLeft: 4 }}>g</span></div>
+                <div className="value">{spotlight.dry_g == null ? "Not recorded" : spotlight.dry_g.toLocaleString("en-US")}<span className="muted" style={{ fontSize: "0.6em", marginLeft: 4 }}>g</span></div>
               </div>
               <div className="spotlight-stat">
                 <div className="label">Ratio</div>

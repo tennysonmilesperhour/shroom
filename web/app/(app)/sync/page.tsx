@@ -5,7 +5,7 @@ import MarkSyncedButton from "./MarkSyncedButton";
 import SyncFromSheetButton from "./SyncFromSheetButton";
 import PushToSheetButton from "./PushToSheetButton";
 import WorkbookUpload from "./WorkbookUpload";
-import { activeSheetImport, displayImportStatus } from "@/lib/sheet-sync-status";
+import { activeSheetImport, displayImportStatus, importHealth } from "@/lib/sheet-sync-status";
 import { writebackConfigured } from "@/lib/sheet-writeback";
 
 export const dynamic = "force-dynamic";
@@ -71,7 +71,8 @@ export default async function SyncPage() {
   const pendingTotal = pendingCount.count ?? pending.length;
 
   const inProgress = activeSheetImport(imports);
-  const lastImport = imports[0] ?? null;
+  const health = importHealth(imports);
+  const lastImport = imports.find((run) => run.status === "ok") ?? null;
   const lastSyncLabel = lastImport
     ? new Date(lastImport.started_at).toISOString().slice(0, 16).replace("T", " ")
     : "—";
@@ -93,10 +94,12 @@ export default async function SyncPage() {
         </p>
       </div>
 
+      <Card title="Sheet connection health"><p role="status">{health.message}</p>{!writeback && pendingTotal > 0 && <p role="alert">Write-back is disabled, but {pendingTotal} pending operations remain. Apply the queue cleanup migration; do not replay them into the rebuilt Sheet.</p>}<p>The Master Sheet owns imported fields. App edits to those fields can be replaced on the next import. Photos, tasks, orders, archive status, and other app-only fields stay in the app.</p></Card>
+
       <WorkbookUpload />
 
       <div className="kpi-row sync-kpis">
-        <Kpi label="Last import" value={lastSyncLabel} />
+        <Kpi label="Last successful import" value={lastSyncLabel} />
         <Kpi label="Pending ops (to sheet)" countTo={pendingTotal} />
         <Kpi label="Entities in visible ops" countTo={entries.length} />
         <Kpi label="Synced (last 50)" countTo={recent.length} />
@@ -157,9 +160,7 @@ export default async function SyncPage() {
             </>
           ) : (
             <p className="muted" style={{ margin: 0 }}>
-              <Badge tone="amber">not connected</Badge> Add <code>GOOGLE_SERVICE_ACCOUNT_JSON</code> and{" "}
-              <code>MASTER_SHEET_GOOGLE_ID</code> to the Vercel project and share the sheet with the service
-              account as an Editor. Until then, changes stay in the pending list below.
+              <Badge tone="amber">disabled</Badge> The native Master Sheet is the source of truth. App edits are not pushed during the board rebuild. The old workbook is a frozen backup.
             </p>
           )}
           <p className="muted" style={{ margin: 0, fontSize: 13 }}>

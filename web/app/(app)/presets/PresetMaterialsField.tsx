@@ -115,7 +115,7 @@ export default function PresetMaterialsField({
                 aria-label="Quantity"
                 placeholder="Qty"
                 min={0}
-                step="0.01"
+                step="any"
                 value={r.quantity}
                 onChange={(e) => patch(r.key, { quantity: e.target.value })}
               />
