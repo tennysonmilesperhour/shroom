@@ -20,7 +20,9 @@ const req = (method, path, body) => fetch(`/api${path}`, {
 });
 
 const $ = (id) => document.getElementById(id);
-const el = (html) => { const d = document.createElement('div'); d.innerHTML = html.trim(); return d.firstChild; };
+const escapeHtml = (value) => String(value ?? '').replace(/[&<>'"]/g, (char) => ({
+  '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;',
+})[char]);
 const g = (kg) => Math.round(kg * 1000);            // kg -> grams
 const money = (n) => `$${(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const stars = (n) => '★'.repeat(n) + '☆'.repeat(Math.max(0, 5 - n));
@@ -427,7 +429,14 @@ views.advisor = async () => {
     if (r.answered) {
       $('adv-a').textContent = r.answer;
     } else {
-      $('adv-a').innerHTML = `<div class="ctx">${r.reason}</div><pre style="white-space:pre-wrap;margin-top:10px">${r.context_preview || ''}</pre>`;
+      const answer = $('adv-a');
+      const reason = document.createElement('div');
+      reason.className = 'ctx';
+      reason.textContent = r.reason;
+      const preview = document.createElement('pre');
+      preview.style.cssText = 'white-space:pre-wrap;margin-top:10px';
+      preview.textContent = r.context_preview || '';
+      answer.replaceChildren(reason, preview);
     }
   };
   root.querySelectorAll('.advisor-quick button').forEach((b) => b.addEventListener('click', () => ask(b.dataset.q)));
@@ -483,34 +492,38 @@ const summarizePull = (imported) => {
 
 // Persistent log that survives panel refreshes (the old code wiped it on every
 // re-render, so actions looked like they did nothing).
-const syncLog = (html, cls = 'muted') => {
+const syncLog = (message, cls = 'muted') => {
   const box = $('sync-log');
-  if (box) box.innerHTML = `<div class="${cls}">${html}</div>`;
+  if (!box) return;
+  const entry = document.createElement('div');
+  entry.className = cls;
+  entry.textContent = message;
+  box.replaceChildren(entry);
 };
 
 const renderSyncPanel = (s) => {
   const panel = $('sync-panel');
   if (!panel) return;
   const rt = s.read_source, wt = s.write_target, st = s.sync_state || {};
-  const badge = (ok, yes, no) => `<span class="badge ${ok ? 'green' : 'amber'}">${ok ? yes : no}</span>`;
+  const badge = (ok, yes, no) => `<span class="badge ${ok ? 'green' : 'amber'}">${escapeHtml(ok ? yes : no)}</span>`;
   const rows = Object.entries(s.pushable_rows || {})
-    .map(([k, v]) => `<div class="env-row"><span>${k}</span><span class="badge ${v ? 'green' : 'muted'}">${v}</span></div>`).join('');
+    .map(([k, v]) => `<div class="env-row"><span>${escapeHtml(k)}</span><span class="badge ${v ? 'green' : 'muted'}">${escapeHtml(v)}</span></div>`).join('');
   const canPull = rt.configured;
   const canPush = wt.configured && wt.writable;
   const dirty = st.dirty_count || 0;
   panel.innerHTML = `
     <div class="card" style="margin-bottom:16px">
       <div class="env-row"><span>Unsynced app changes</span>
-        <span class="badge ${dirty ? 'amber' : 'green'}">${dirty ? plural(dirty, 'change') + ' pending' : 'all pushed'}</span></div>
-      <div class="env-row"><span>Last pushed to sheet</span><span class="muted">${relTime(st.last_pushed_at)}</span></div>
-      <div class="env-row"><span>Last imported from sheet</span><span class="muted">${relTime(st.last_pulled_at)}</span></div>
+        <span class="badge ${dirty ? 'amber' : 'green'}">${escapeHtml(dirty ? plural(dirty, 'change') + ' pending' : 'all pushed')}</span></div>
+      <div class="env-row"><span>Last pushed to sheet</span><span class="muted">${escapeHtml(relTime(st.last_pushed_at))}</span></div>
+      <div class="env-row"><span>Last imported from sheet</span><span class="muted">${escapeHtml(relTime(st.last_pulled_at))}</span></div>
       <div class="env-row"><span>Auto-push on change</span>${badge(s.auto_push, 'on', 'off — push manually')}</div>
     </div>
     <div class="grid two">
       <div class="card">
         <h3>Pull — Sheet → App</h3>
         <div class="env-row"><span>Read source</span>${badge(rt.configured, SYNC_KIND[rt.kind] || rt.kind, 'not configured')}</div>
-        <div class="muted" style="margin:6px 0 12px;word-break:break-all">${rt.ref || 'Set MASTER_SHEET_PATH or MASTER_SHEET_GOOGLE_ID on the server.'}</div>
+        <div class="muted" style="margin:6px 0 12px;word-break:break-all">${escapeHtml(rt.ref || 'Set MASTER_SHEET_PATH or MASTER_SHEET_GOOGLE_ID on the server.')}</div>
         <button class="primary" id="sync-pull" ${canPull ? '' : 'disabled title="No read source configured"'}>Import from sheet</button>
       </div>
       <div class="card">
@@ -532,7 +545,7 @@ const renderSyncPanel = (s) => {
   const refresh = async () => { try { renderSyncPanel(await API('/sync/status')); } catch (e) { /* keep last panel */ } };
   const busy = (btn, fn) => async () => {
     const label = btn.textContent; btn.disabled = true; btn.textContent = '…';
-    try { await fn(); } catch (e) { syncLog(`<b>Error:</b> ${e.message}`, 'badge red'); }
+    try { await fn(); } catch (e) { syncLog(`Error: ${e.message}`, 'badge red'); }
     finally { await refresh(); }   // refresh only the panel — never the log
   };
 
@@ -543,7 +556,7 @@ const renderSyncPanel = (s) => {
   }));
   if (canPush) push.addEventListener('click', busy(push, async () => {
     syncLog('Pushing to sheet…'); const r = await POST_CHECKED('/sync/push');
-    syncLog(`${summarizePush(r.written)} <span class="muted">→ ${SYNC_KIND[r.target.kind] || r.target.kind}</span>`, 'badge green');
+    syncLog(`${summarizePush(r.written)} → ${SYNC_KIND[r.target.kind] || r.target.kind}`, 'badge green');
   }));
   dl.addEventListener('click', () => { window.location = '/api/sync/workbook.xlsx'; });
 };
