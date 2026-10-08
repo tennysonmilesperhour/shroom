@@ -899,7 +899,11 @@ footer.note{padding:var(--space-7) var(--space-6);color:var(--faint);font-size:1
   window.__toast = (title, body, tone='lumen')=>{
     if(!toastWrap){toastWrap=document.createElement('div');toastWrap.className='toasts';document.body.appendChild(toastWrap);}
     const t=document.createElement('div');t.className='toast '+tone;
-    t.innerHTML='<span class="tk"></span><div><b>'+title+'</b>'+(body?'<div class="tb">'+body+'</div>':'')+'</div>';
+    const tick=document.createElement('span');tick.className='tk';
+    const content=document.createElement('div');
+    const heading=document.createElement('b');heading.textContent=title;content.appendChild(heading);
+    if(body){const detail=document.createElement('div');detail.className='tb';detail.textContent=body;content.appendChild(detail);}
+    t.append(tick,content);
     toastWrap.appendChild(t); requestAnimationFrame(()=>t.classList.add('show'));
     setTimeout(()=>{t.classList.remove('show');t.addEventListener('transitionend',()=>t.remove());},3600);
   };
@@ -1023,7 +1027,7 @@ footer.note{padding:var(--space-7) var(--space-6);color:var(--faint);font-size:1
   const renderCmd=()=>{
     const q=cq.value.trim().toLowerCase();
     filtered=CMD.filter(c=>!q||c.t.toLowerCase().includes(q)||c.g.toLowerCase().includes(q)||c.m.toLowerCase().includes(q));
-    if(!filtered.length){clist.innerHTML='<div class="cempty">No matches for “'+cq.value+'”.</div>';return;}
+    if(!filtered.length){const empty=document.createElement('div');empty.className='cempty';empty.textContent='No matches for “'+cq.value+'”.';clist.replaceChildren(empty);return;}
     cidx=Math.min(cidx,filtered.length-1);
     let html='',lastG=null;
     filtered.forEach((c,n)=>{ if(c.g!==lastG){html+='<div class="cgrp">'+c.g+'</div>';lastG=c.g;}
